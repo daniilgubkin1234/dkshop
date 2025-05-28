@@ -1,0 +1,31 @@
+
+services:
+  db:
+    image: postgres:15
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: shop
+      POSTGRES_PASSWORD: shop
+      POSTGRES_DB: shopdb
+    ports: ["5432:5432"]
+
+  api:
+    image: python:3.11-slim
+    working_dir: /code
+    command: >
+      sh -c "pip install fastapi[all] sqlmodel psycopg2-binary &&
+             uvicorn app.main:app --host 0.0.0.0 --port 8001 --reload"
+    volumes:
+      - ./backend/app:/code/app
+    depends_on: [db]
+    env_file: .env
+    ports: ["8001:8001"]
+
+  bot:
+    build: ./backend/bot          # ← одна строка, без context
+    working_dir: /bot
+    command: python main.py
+    volumes:
+      - ./backend/bot:/bot
+    env_file: .env
+    depends_on: [api]
