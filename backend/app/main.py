@@ -1,15 +1,16 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, status
 from sqlmodel import SQLModel, Session, select
 from fastapi.middleware.cors import CORSMiddleware
 from .db import engine
 from .models import Product, FAQ, Question
 from sqlalchemy import or_, func
+
 app = FastAPI(title="DK Exhaust API")
 
-# ⬇️  добавляем CORS прямо здесь
+# CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],   # на dev можно ["*"]
+    allow_origins=["http://localhost:5173"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -22,34 +23,34 @@ def on_startup() -> None:
 def health():
     return {"status": "ok"}
 
+# 1) Список продуктов (с поиском по q)
 @app.get("/products")
-def products(q: str | None = None):
-    with Session(engine) as s:
-        stmt = select(Product)
-        if q:
-            stmt = stmt.where(Product.name.ilike(f"%{q}%"))
-        return s.exec(stmt).all()
-
-@app.post("/questions")
-def save_question(question: Question):
-    with Session(engine) as s:
-        s.add(question)
-        s.commit()
-        s.refresh(question)
-        return question
-@app.get("/products")
-def products(q: str | None = None):
-    with Session(engine) as s:
+def list_products(q: str | None = None):
+    with Session(engine) as session:
         stmt = select(Product)
         if q:
             tokens = q.lower().split()
             cleaned = [tok.replace("-", "") for tok in tokens]
-            stmt = stmt.where(or_(
-                *(
-                    or_(
-                        Product.name.ilike(f"%{tok}%"),
-                        func.replace(Product.model_compat, '-', '').ilike(f"%{tok}%")
-                    ) for tok in cleaned
+            stmt = stmt.where(
+                or_(
+                    *(
+                        or_(
+                            Product.name.ilike(f"%{tok}%"),
+                            func.replace(Product.model_compat, "-", "").ilike(f"%{tok}%")
+                        )
+                        for tok in cleaned
+                    )
                 )
-            ))
-        return s.exec(stmt).all()
+            )
+        return session.exec(stmt).all()
+
+# 2) Создание продукта
+@app.post("/products", response_model=Product, status_code=status.HTTP_201_CREATED)
+def create_product(item: Product):
+    with Session(engine) as session:
+        session.add(item)
+        session.commit()
+        session.refresh(item)
+        return item
+
+# ваши существующие вопросы и FAQ...
