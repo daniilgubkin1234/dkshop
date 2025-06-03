@@ -10,7 +10,7 @@ services:
     ports: ["5432:5432"]
 
   api:
-    image: python:3.11-slim
+    image: python:3.12-slim
     working_dir: /code
     command: >
       sh -c "pip install fastapi[all] sqlmodel psycopg2-binary &&
@@ -29,3 +29,12 @@ services:
       - ./backend/bot:/bot
     env_file: .env
     depends_on: [api]
+
+  node:
+    image: node:20-alpine
+    working_dir: /app
+    volumes:
+      - ./webapp:/app
+    ports:
+      - "5173:5173"
+    command: ["npm", "run", "dev"]

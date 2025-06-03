@@ -30,3 +30,15 @@ class Question(SQLModel, table=True):
     text: str
     created_at: datetime = Field(default_factory=datetime.utcnow)
     status: str = "open"      # open / answered
+
+class Order(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    user_id: int
+    items: List[dict] = Field(
+        sa_column=Column(JSON),
+        default_factory=list
+    )
+    name: str
+    phone: str
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    status: str = "pending"

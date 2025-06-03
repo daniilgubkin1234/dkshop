@@ -1,0 +1,27 @@
+/* webapp/src/components/CartLink.css */
+
+.cart-link {
+    position: relative;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    color: #fff;
+    margin-left: 16px; /* Отступ слева, если нужно */
+  }
+  
+  .cart-icon {
+    font-size: 24px;  /* Размер иконки */
+  }
+  
+  .cart-badge {
+    position: absolute;
+    top: -6px;
+    right: -10px;
+    background-color: #e53935;
+    color: #fff;
+    font-size: 12px;
+    font-weight: bold;
+    padding: 2px 6px;
+    border-radius: 12px;
+  }
+  

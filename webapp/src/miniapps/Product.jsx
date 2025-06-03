@@ -2,15 +2,18 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { fetchProductById } from '../api.js';
+import { useCart } from '../context/CartContext.jsx';  // ← хук корзины
 import './Product.css';
 
 export default function Product() {
-  const { id } = useParams();      // Берём ID из URL
+  const { id } = useParams();
   const navigate = useNavigate();
-
-  const [item, setItem] = useState(null);
+  const [item, setItem] = useState(undefined);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+
+  // Функция из контекста корзины
+  const { addToCart } = useCart();
 
   useEffect(() => {
     async function loadItem() {
@@ -20,7 +23,7 @@ export default function Product() {
         setItem(prod);
       } catch (e) {
         console.error(e);
-        setError(e.message || 'Не удалось загрузить товар');
+        setError('Не удалось загрузить товар');
       } finally {
         setLoading(false);
       }
@@ -29,13 +32,8 @@ export default function Product() {
   }, [id]);
 
   if (loading) {
-    return (
-      <p style={{ padding: 20, color: '#fff', textAlign: 'center' }}>
-        Загрузка товара...
-      </p>
-    );
+    return <p style={{ padding: 20 }}>Загрузка…</p>;
   }
-
   if (error) {
     return (
       <div style={{ padding: 20, textAlign: 'center' }}>
@@ -57,7 +55,6 @@ export default function Product() {
       </div>
     );
   }
-
   if (!item) {
     return null;
   }
@@ -65,15 +62,12 @@ export default function Product() {
   return (
     <div className="product-page">
       {/* Кнопка «← Назад» */}
-      <button
-        className="product-back"
-        onClick={() => navigate(-1)}
-      >
+      <button className="product-back" onClick={() => navigate(-1)}>
         ← Назад
       </button>
 
       <div className="product-content">
-        {/* Блок изображения */}
+        {/* Блок с изображением */}
         <div className="product-page__image">
           {item.images && item.images.length > 0 ? (
             <img src={item.images[0]} alt={item.name} />
@@ -82,7 +76,7 @@ export default function Product() {
           )}
         </div>
 
-        {/* Блок с подробной информацией */}
+        {/* Блок с деталями товара */}
         <div className="product-page__info">
           <h2 className="product-page__title">{item.name}</h2>
 
@@ -109,7 +103,15 @@ export default function Product() {
             </div>
           )}
 
-          {/* Кнопка «Открыть в боте» (если внутри Telegram-WebApp) */}
+          {/* Кнопка «В корзину» */}
+          <button
+            className="btn-add-cart-single"
+            onClick={() => addToCart(item)}
+          >
+            В корзину
+          </button>
+
+          {/* Кнопка «Открыть в боте» (если Telegram-WebApp) */}
           {window.TelegramWebApp && (
             <button
               className="product-cta"

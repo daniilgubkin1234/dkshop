@@ -18,6 +18,7 @@
   display: flex;
   flex-direction: column;
   transition: transform 0.15s ease, box-shadow 0.15s ease;
+  position: relative; /* Для корректного позиционирования кнопки */
 }
 
 .product-card:hover {
@@ -33,8 +34,6 @@
   object-fit: cover;
   background: #f0f0f0;
 }
-
-/* Если у товара есть собственный img, он перекроет фоновый цвет */
 
 /* === Блок с текстовой информацией === */
 .product-info {
@@ -62,12 +61,21 @@
   margin: 0;
 }
 
-/* === Если нужно показать модель/тип под названием === */
-/*
-.product-subtitle {
-  font-size: 12px;
-  color: #4f4f4f;
-  margin: 0 0 6px;
-  line-height: 1.2;
+/* === Кнопка «В корзину» === */
+.btn-add-cart {
+  margin: 0 12px 12px;        /* Отступ сверху 0, слева/справа 12px, снизу 12px */
+  padding: 8px 0;             /* Вертикальный padding 8px, по бокам ноль (ширину задаём 100%) */
+  background-color: #e53935;
+  border: none;
+  color: #fff;
+  font-size: 14px;
+  cursor: pointer;
+  border-radius: 4px;
+  width: calc(100% - 24px);   /* Чтобы кнопка занимала ширину карточки минус отступы */
+  text-align: center;
+  transition: background 0.2s ease;
 }
-*/
+
+.btn-add-cart:hover {
+  background-color: #d32f2f;
+}

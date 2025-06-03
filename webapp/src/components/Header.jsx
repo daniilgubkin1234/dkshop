@@ -1,10 +1,13 @@
 // webapp/src/components/Header.jsx
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import CartLink from './CartLink.jsx';    // ← импортируем иконку корзины
 import './Header.css';
 
 const Header = ({ onSearch }) => {
   const [query, setQuery] = useState('');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (window.TelegramWebApp) {
@@ -34,13 +37,25 @@ const Header = ({ onSearch }) => {
     setIsSidebarOpen((prev) => !prev);
   };
 
+  // При клике на логотип — уходим в каталог ("/")
+  const handleLogoClick = () => {
+    navigate('/');
+  };
+
   return (
     <>
       <header className="header-container">
-        {/* Верхняя строка */}
+        {/* ===== Верхняя строка ===== */}
         <div className="header-top">
           <div className="header-top__left">
-            <span className="header-logo-text">DK PROduct</span>
+            {/* Логотип */}
+            <span
+              className="header-logo-text"
+              onClick={handleLogoClick}
+              style={{ cursor: 'pointer' }}
+            >
+              DK PROduct
+            </span>
           </div>
           <div className="header-top__right">
             <button className="header-official">
@@ -59,14 +74,16 @@ const Header = ({ onSearch }) => {
           </div>
         </div>
 
-        {/* Нижняя строка */}
+        {/* ===== Нижняя строка ===== */}
         <div className="header-bottom">
           <div className="header-bottom__left">
+            {/* Кнопка «←» (только если TelegramWebApp) */}
             {window.TelegramWebApp && (
               <button className="header-back" onClick={handleBack}>
                 ←
               </button>
             )}
+            {/* Поле поиска */}
             <div className="header-search-wrapper">
               <span className="header-search-icon-left">
                 <svg
@@ -101,7 +118,7 @@ const Header = ({ onSearch }) => {
                 <path d="M3 5h18v2H3zM6 11h12v2H6zM10 17h4v2h-4z" />
               </svg>
             </button>
-            {/* Кнопка «гамбургер» */}
+            {/* Иконка‐гамбургер, открывает sidebar */}
             <button className="header-menu" onClick={toggleSidebar}>
               <svg
                 width="20"
@@ -113,11 +130,13 @@ const Header = ({ onSearch }) => {
                 <path d="M3 12h18v2H3zM3 6h18v2H3zM3 18h18v2H3z" />
               </svg>
             </button>
+            {/* Иконка корзины с количеством */}
+            <CartLink />
           </div>
         </div>
       </header>
 
-      {/* ---------- Выезжающее боковое меню (Sidebar) ---------- */}
+      {/* ===== Выезжающее боковое меню (Sidebar) ===== */}
       <div
         className={`sidebar-overlay ${isSidebarOpen ? 'visible' : ''}`}
         onClick={toggleSidebar}
@@ -151,7 +170,7 @@ const Header = ({ onSearch }) => {
                 Контакты
               </a>
             </li>
-            {/* Добавьте другие пункты меню по необходимости */}
+            {/* При необходимости можно добавить другие пункты меню */}
           </ul>
         </nav>
       </aside>

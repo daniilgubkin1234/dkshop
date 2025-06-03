@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { fetchProducts } from '../api.js';
+import { useCart } from '../context/CartContext.jsx';  // ← контекст корзины
 import './ProductList.css';
 
 export default function ProductList() {
@@ -10,8 +11,11 @@ export default function ProductList() {
   const [error, setError] = useState(null);
   const navigate = useNavigate();
 
+  // Функция из контекста корзины
+  const { addToCart } = useCart();
+
   useEffect(() => {
-    // Если внутри Telegram WebApp, то расширим окно
+    // Если внутри Telegram WebApp, расширим окно
     if (window.Telegram?.WebApp?.expand) {
       window.Telegram.WebApp.expand();
     }
@@ -28,13 +32,18 @@ export default function ProductList() {
         setLoading(false);
       }
     }
-
     load();
   }, []);
 
   const handleClick = (id) => {
-    // Переход на страницу товара (без /mini)
     navigate(`/product/${id}`);
+  };
+
+  // Обработчик добавления в корзину
+  // e.stopPropagation() нужен, чтобы клик по кнопке не срабатывал как клик по карточке
+  const handleAddToCart = (e, product) => {
+    e.stopPropagation();
+    addToCart(product);
   };
 
   if (loading) {
@@ -44,7 +53,6 @@ export default function ProductList() {
       </p>
     );
   }
-
   if (error) {
     return (
       <p style={{ color: '#e53935', textAlign: 'center', marginTop: 32 }}>
@@ -52,7 +60,6 @@ export default function ProductList() {
       </p>
     );
   }
-
   if (!Array.isArray(products) || products.length === 0) {
     return (
       <p style={{ color: '#fff', textAlign: 'center', marginTop: 32 }}>
@@ -69,24 +76,26 @@ export default function ProductList() {
           className="product-card"
           onClick={() => handleClick(p.id)}
         >
-          {/* Блок для изображения */}
           {p.images && p.images.length > 0 ? (
-            <img
-              src={p.images[0]}
-              alt={p.name}
-              className="product-image"
-            />
+            <img src={p.images[0]} alt={p.name} className="product-image" />
           ) : (
             <div className="product-image--placeholder" />
           )}
 
-          {/* Информация: название и цена */}
           <div className="product-info">
             <h3 className="product-title">{p.name}</h3>
             <p className="product-price">
               {p.price.toLocaleString()} ₽
             </p>
           </div>
+
+          {/* Кнопка «В корзину» */}
+          <button
+            className="btn-add-cart"
+            onClick={(e) => handleAddToCart(e, p)}
+          >
+            В корзину
+          </button>
         </div>
       ))}
     </div>

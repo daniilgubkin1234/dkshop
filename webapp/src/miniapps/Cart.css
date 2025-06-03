@@ -1,0 +1,178 @@
+/* webapp/src/miniapps/Cart.css */
+
+.cart-empty {
+    text-align: center;
+    color: #fff;
+    margin-top: 100px;
+  }
+  
+  .btn-back {
+    margin-top: 16px;
+    padding: 8px 16px;
+    background-color: #e53935;
+    border: none;
+    color: #fff;
+    font-size: 16px;
+    cursor: pointer;
+    border-radius: 4px;
+  }
+  
+  .btn-back:hover {
+    background-color: #d32f2f;
+  }
+  
+  .cart-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding-bottom: 40px;
+    color: #fff;
+    font-family: sans-serif;
+  }
+  
+  .cart-container h2 {
+    margin-top: 24px;
+    margin-bottom: 16px;
+    font-size: 28px;
+    text-align: center;
+  }
+  
+  .cart-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  .cart-item {
+    display: flex;
+    background-color: #1e1e1e;
+    border-radius: 8px;
+    padding: 12px;
+    align-items: center;
+    gap: 12px;
+  }
+  
+  .cart-item-image {
+    width: 100px;
+    height: 100px;
+    object-fit: contain;
+    background-color: #2a2a2a;
+    border-radius: 4px;
+  }
+  
+  .cart-item-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .cart-item-name {
+    margin: 0;
+    font-size: 18px;
+  }
+  
+  .cart-item-price {
+    margin: 0;
+    font-size: 16px;
+    color: #ccc;
+  }
+  
+  /* === Блок только для одного <input> со спиннером === */
+  .cart-item-quantity {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 4px;
+  }
+  
+  .qty-input {
+    width: 60px;                 /* Сделаем чуть шире, чтобы внутри влазило число */
+    height: 32px;
+    text-align: center;
+    background-color: #2a2a2a;
+    color: #fff;
+    border: 1px solid #555;
+    border-radius: 4px;
+    font-size: 16px;
+    padding: 4px;
+    /* Убираем стрелочки по умолчанию, если нужно кастомное оформление: */
+    /* -moz-appearance: textfield;  для Firefox */
+    /* &::-webkit-outer-spin-button, &::-webkit-inner-spin-button { */
+    /*    -webkit-appearance: none; */
+    /*    margin: 0; */
+    /* } */
+  }
+  
+  .qty-input:invalid {
+    /* Если введено неверное значение (например, пустая строка), обводка станет красной */
+    border-color: #e53935;
+  }
+  
+  .btn-remove {
+    align-self: start;
+    background-color: #e53935;
+    border: none;
+    color: #fff;
+    padding: 6px 12px;
+    font-size: 14px;
+    cursor: pointer;
+    border-radius: 4px;
+    max-width: fit-content;
+  }
+  
+  .btn-remove:hover {
+    background-color: #d32f2f;
+  }
+  
+  .cart-item-subtotal {
+    width: 100px;
+    text-align: right;
+    font-size: 16px;
+    font-weight: 600;
+  }
+  
+  .cart-summary {
+    margin-top: 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .cart-total {
+    font-size: 20px;
+    font-weight: 600;
+  }
+  
+  .cart-buttons {
+    display: flex;
+    gap: 12px;
+  }
+  
+  .btn-clear {
+    background-color: #555;
+    border: none;
+    color: #fff;
+    padding: 8px 16px;
+    font-size: 16px;
+    cursor: pointer;
+    border-radius: 4px;
+  }
+  
+  .btn-clear:hover {
+    background-color: #666;
+  }
+  
+  .btn-checkout {
+    background-color: #e53935;
+    border: none;
+    color: #fff;
+    padding: 8px 16px;
+    font-size: 16px;
+    cursor: pointer;
+    border-radius: 4px;
+  }
+  
+  .btn-checkout:hover {
+    background-color: #d32f2f;
+  }
+  
