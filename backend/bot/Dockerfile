@@ -1,10 +1,8 @@
 FROM python:3.11-slim
+WORKDIR /bot
 
-WORKDIR /code
-
-COPY backend/requirements.txt ./requirements.txt
+COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY backend/app ./app
-
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8001", "--reload"]
+COPY . .        
+CMD ["python", "main.py"]

@@ -17,12 +17,11 @@ from telegram.ext import (
     filters,
     Defaults,
 )
-from utils import https_product_url
 
-# ──────────────────────── Конфигурация ──────────────────────────
-BOT_TOKEN   = os.getenv("BOT_TOKEN")
-API_URL     = os.getenv("API_URL", "http://api:8001")
-FRONT_URL   = os.getenv("FRONT_URL", "http://localhost:5173")
+# ──────────── Конфигурация ─────────────
+BOT_TOKEN   = os.getenv("BOT_TOKEN")                       # обязателен
+API_URL     = os.getenv("API_URL",   "http://api:8001")    # FastAPI
+FRONT_URL   = os.getenv("FRONT_URL", "https://dkshopbot.ru")
 HTTP_TIMEOUT = aiohttp.ClientTimeout(total=5)
 
 logging.basicConfig(
@@ -30,30 +29,38 @@ logging.basicConfig(
     level=logging.INFO,
 )
 
-# ──────────────────────── Хэндлеры ──────────────────────────────
+# ──────────── Хэндлеры ─────────────
 async def cmd_start(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text(
-        "Привет! Напишите, например, «глушитель 2107», а я проверю наличие."
+        "Доброго времени суток! 👋\nВведите интересующий вас запрос."
     )
 
-def build_product_message(product: dict) -> tuple[str, InlineKeyboardMarkup | None]:
-    text = f"Нашёл: <b>{product['name']}</b>\nЦена: <b>{product['price']} ₽</b>"
-    kb = None
-    url = https_product_url(product["id"])
-    if url:
-        kb = InlineKeyboardMarkup(
-            [[InlineKeyboardButton("Открыть карточку",
-                                   web_app=WebAppInfo(url=url))]]
-        )
+
+def build_product_message(product: dict) -> tuple[str, InlineKeyboardMarkup]:
+    """
+    Формируем текст + Web-кнопку на карточку товара.
+    """
+    web_url = f"{FRONT_URL.rstrip('/')}/product/{product['id']}"
+
+    text = (
+        f"<b>{product['name']}</b>\n"
+        f"Цена: <b>{product['price']} ₽</b>"
+    )
+
+    kb = InlineKeyboardMarkup(
+        [[InlineKeyboardButton("Открыть карточку",
+                               web_app=WebAppInfo(url=web_url))]]
+    )
     return text, kb
+
 
 async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.message.text.strip().lower()
 
-    # ─ сначала ищем FAQ
+    # 1. пробуем найти FAQ-ответ
     try:
-        async with aiohttp.ClientSession(timeout=HTTP_TIMEOUT) as session:
-            async with session.get(f"{API_URL}/faq", params={"q": query}) as r:
+        async with aiohttp.ClientSession(timeout=HTTP_TIMEOUT) as s:
+            async with s.get(f"{API_URL}/faq", params={"q": query}) as r:
                 r.raise_for_status()
                 faqs = await r.json()
                 if faqs:
@@ -62,13 +69,13 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     except Exception:
         logging.warning("FAQ API not responding")
 
-    # ─ затем ищем товар
+    # 2. ищем товар
     try:
-        async with aiohttp.ClientSession(timeout=HTTP_TIMEOUT) as session:
-            async with session.get(f"{API_URL}/products", params={"q": query}) as r:
+        async with aiohttp.ClientSession(timeout=HTTP_TIMEOUT) as s:
+            async with s.get(f"{API_URL}/products", params={"q": query}) as r:
                 r.raise_for_status()
                 products = await r.json()
-    except Exception as e:
+    except Exception:
         logging.exception("API request failed")
         await update.message.reply_text(
             "Сервис временно недоступен, попробуйте позже 🙏"
@@ -77,21 +84,22 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
 
     if products:
         txt, kb = build_product_message(products[0])
-        await update.message.reply_text(txt, reply_markup=kb, parse_mode="HTML")
+        await update.message.reply_text(txt, reply_markup=kb)
         return
 
-    # ─ ничего не нашли → сохраняем как вопрос
+    # 3. ничего не нашли → сохраняем вопрос
     await update.message.reply_text("Передаю вопрос менеджеру 👨‍🔧")
     try:
-        async with aiohttp.ClientSession(timeout=HTTP_TIMEOUT) as session:
-            await session.post(f"{API_URL}/questions", json={
+        async with aiohttp.ClientSession(timeout=HTTP_TIMEOUT) as s:
+            await s.post(f"{API_URL}/questions", json={
                 "user_id": update.effective_user.id,
                 "text": query,
             })
     except Exception:
         logging.warning("Could not send question to API")
 
-# ──────────────────────── Запуск ────────────────────────────────
+
+# ──────────── Запуск ─────────────
 def main() -> None:
     if not BOT_TOKEN:
         raise RuntimeError("Please set BOT_TOKEN env-var")
@@ -108,6 +116,7 @@ def main() -> None:
 
     logging.info("Bot started")
     app.run_polling(allowed_updates=["message"])
+
 
 if __name__ == "__main__":
     main()
