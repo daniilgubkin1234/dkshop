@@ -12,7 +12,9 @@ app = FastAPI(title="DK Exhaust API")
 # CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://dkshopbot.ru"],
+    allow_origins=["http://localhost:5173",
++        "https://dkshopbot.ru",
++        "https://t.me" ],
     allow_methods=["*"],
     allow_headers=["*"],
 )
