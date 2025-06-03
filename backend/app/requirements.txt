@@ -1,9 +1,7 @@
 python-telegram-bot==20.8
 aiohttp==3.9.5
-
 python-dotenv
-
-requests>=2.28
+requests>=2.28got
 urllib3<2.0,>=1.26
 fastapi
 uvicorn[standard]
