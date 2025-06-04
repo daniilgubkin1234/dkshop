@@ -11,23 +11,26 @@ export default function AdminLogin() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Проверка: если уже есть невалидный токен — удаляем его
-    const token = localStorage.getItem('auth_token');
+    const token = localStorage.getItem("auth_token");
     if (token) {
-      fetch('https://dkshopbot.ru/admin/orders', {
-        headers: { Authorization: `Basic ${token}` }
-      }).then(res => {
-        if (res.ok) {
-          navigate('/admin/orders');
-        } else {
-          localStorage.removeItem('auth_token');
-        }
-      }).catch(() => {
-        localStorage.removeItem('auth_token');
-      });
+      console.log("🔐 token found in localStorage:", token);
+  
+      // ❌ временно комментируем редирект
+      // fetch("https://dkshopbot.ru/admin/orders", {
+      //   headers: { Authorization: `Basic ${token}` },
+      // })
+      //   .then((res) => {
+      //     if (res.ok) {
+      //       navigate("/admin/orders");
+      //     } else {
+      //       localStorage.removeItem("auth_token");
+      //     }
+      //   })
+      //   .catch(() => {
+      //     localStorage.removeItem("auth_token");
+      //   });
     }
   }, []);
-
   const handleLogin = () => {
     const token = btoa(`${username}:${password}`);
     fetch('https://dkshopbot.ru/admin/orders', {
@@ -48,7 +51,7 @@ export default function AdminLogin() {
 
   return (
     <div className="admin-container admin-login">
-      <h2>Вход в админку</h2>
+      <h2>Вход в панель администратора</h2>
       <input placeholder="Логин" value={username} onChange={e => setUsername(e.target.value)} />
       <br /><br />
       <input placeholder="Пароль" type="password" value={password} onChange={e => setPassword(e.target.value)} />
