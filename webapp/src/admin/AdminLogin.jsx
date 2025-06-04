@@ -1,33 +1,48 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-function AdminLogin() {
-  const [login, setLogin] = useState("");
+const AdminLogin = () => {
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
-  const handleLogin = async () => {
-    const token = btoa(`${login}:${password}`);
-    try {
-      const res = await fetch("/admin/orders", {
-        headers: {
-          Authorization: `Basic ${token}`
+  useEffect(() => {
+    const token = localStorage.getItem("auth_token");
+    if (!token) return;
+
+    fetch("https://dkshopbot.ru/admin/orders", {
+      headers: { Authorization: `Basic ${token}` },
+    })
+      .then((res) => {
+        if (res.ok) {
+          console.log("Token is valid, redirecting to /admin/orders");
+          navigate("/admin/orders");
+        } else {
+          console.log("Token is invalid, removing");
+          localStorage.removeItem("auth_token");
         }
+      })
+      .catch((err) => {
+        console.error("Error checking token:", err);
+        localStorage.removeItem("auth_token");
       });
+  }, [navigate]);
 
-      const contentType = res.headers.get("content-type");
-
-      if (!res.ok || !contentType || !contentType.includes("application/json")) {
-        throw new Error("Unauthorized");
-      }
-
-      localStorage.setItem("auth_token", token);
-      navigate("/admin/orders");
-    } catch (err) {
-      localStorage.removeItem("auth_token");
-      setError("Неверный логин или пароль");
-    }
+  const handleLogin = () => {
+    const token = btoa(`${username}:${password}`);
+    fetch("https://dkshopbot.ru/admin/orders", {
+      headers: { Authorization: `Basic ${token}` },
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error("Ошибка авторизации");
+        localStorage.setItem("auth_token", token);
+        navigate("/admin/orders");
+      })
+      .catch(() => {
+        localStorage.removeItem("auth_token");
+        setError("Неверный логин или пароль");
+      });
   };
 
   return (
@@ -35,21 +50,23 @@ function AdminLogin() {
       <h2>Вход в админку</h2>
       <input
         placeholder="Логин"
-        value={login}
-        onChange={(e) => setLogin(e.target.value)}
+        value={username}
+        onChange={(e) => setUsername(e.target.value)}
       />
-      <br /><br />
+      <br />
+      <br />
       <input
         placeholder="Пароль"
         type="password"
         value={password}
         onChange={(e) => setPassword(e.target.value)}
       />
-      <br /><br />
+      <br />
+      <br />
       <button onClick={handleLogin}>Войти</button>
       {error && <p style={{ color: "red" }}>{error}</p>}
     </div>
   );
-}
+};
 
 export default AdminLogin;
