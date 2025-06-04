@@ -24,7 +24,7 @@ app.add_middleware(
 )
 
 
-
+security = HTTPBasic()
 
 @app.on_event("startup")
 def on_startup() -> None:
