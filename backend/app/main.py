@@ -18,7 +18,10 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173",
         "https://dkshopbot.ru",
-        "https://t.me" ],
+        "https://t.me" ,
+        "https://dkshopbot.ru/admin/login",
+        "https://dkshopbot.ru/admin/orders"
+        ],
     allow_methods=["*"],
     allow_headers=["*"],
 )
