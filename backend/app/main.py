@@ -11,7 +11,7 @@ from .models import Order
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi import Depends, HTTPException
 import secrets
-app = FastAPI(title="DK Exhaust API")
+app = FastAPI(title="DK API")
 
 # CORS
 app.add_middleware(
