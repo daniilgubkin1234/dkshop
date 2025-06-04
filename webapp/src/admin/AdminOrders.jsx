@@ -27,7 +27,7 @@ export default function AdminOrders() {
   useEffect(() => { loadOrders(); }, []);
 
   return (
-    <div className="admin-container admin-login">
+    <div className="admin-container admin-orders">
       <h2>Заказы</h2>
       <table border="1" cellPadding="8">
         <thead>

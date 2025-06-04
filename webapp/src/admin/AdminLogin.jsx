@@ -21,11 +21,14 @@ export default function AdminLogin() {
         localStorage.setItem('auth_token', token);
         navigate('/admin/orders');
       })
-      .catch(() => setErr('Неверный логин или пароль'));
+      .catch(() => {
+        localStorage.removeItem('auth_token'); // 🧽 очистка старого
+        setErr('Неверный логин или пароль');
+      });
   };
 
   return (
-    <div className="admin-container admin-orders">
+    <div className="admin-container admin-login">
       <h2>Вход в админку</h2>
       <input placeholder="Логин" value={username} onChange={e => setUsername(e.target.value)} />
       <br /><br />
