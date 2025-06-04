@@ -30,7 +30,7 @@ export default function App() {
           <Route path="/product/:id" element={<Product />} />
           <Route path="/cart" element={<Cart />} />
 
-          <Route path="/admin" element={<AdminLogin />} />
+          <Route path="/admin/login" element={<AdminLogin />} />
           <Route path="/admin/orders" element={<AdminOrders />} />
 
           {/* Все остальные пути перенаправляем на главную */}
