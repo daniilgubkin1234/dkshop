@@ -1,5 +1,6 @@
 # bot/main.py
 import os
+import re
 import logging
 import aiohttp
 from telegram import (
@@ -17,7 +18,8 @@ from telegram.ext import (
     filters,
     Defaults,
 )
-
+from dotenv import load_dotenv
+load_dotenv()
 # ──────────── Конфигурация ─────────────
 BOT_TOKEN   = os.getenv("BOT_TOKEN")                       # обязателен
 API_URL     = os.getenv("API_URL",   "http://api:8001")    # FastAPI
