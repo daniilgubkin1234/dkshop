@@ -19,6 +19,7 @@ export default function App() {
       {/* Основной контент (страницы переключаются через маршруты) */}
       <main style={{ padding: '20px 16px', fontFamily: 'sans-serif', background: '#121212' }}>
         <Routes>
+        {console.log("App loaded")}
           {/* Главная страница */}
           <Route path="/" element={<ProductList />} />
 
@@ -29,7 +30,7 @@ export default function App() {
           <Route path="/product/:id" element={<Product />} />
           <Route path="/cart" element={<Cart />} />
 
-          <Route path="/admin/login" element={<AdminLogin />} />
+          <Route path="/admin" element={<AdminLogin />} />
           <Route path="/admin/orders" element={<AdminOrders />} />
 
           {/* Все остальные пути перенаправляем на главную */}
