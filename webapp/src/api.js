@@ -1,36 +1,22 @@
-// webapp/src/api.js
-
-// Базовый URL бэкенда (подхватывается из .env):
-// VITE_API_URL=http://localhost:8001  (пример)
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8001';
 
-/**
- * Получить список всех товаров.
- * Возвращает Promise с массивом объектов.
- */
 export async function fetchProducts() {
   const response = await fetch(`${API_URL}/products`);
   if (!response.ok) {
-    throw new Error(`Ошибка при загрузке списка товаров: ${response.status}`);
+    throw new Error(`Ошибка при загрузке товаров: ${response.status}`);
   }
   return await response.json();
 }
 
-/**
- * Получить один товар по ID.
- * Если endpoint /products/:id не существует, можно
- * вызывать fetchProducts() + фильтрацию.
- */
 export async function fetchProductById(id) {
-  // Первым шагом попробуем endpoint /products/{id}
   let response = await fetch(`${API_URL}/products/${id}`);
   if (response.ok) {
     return await response.json();
   }
-  // Если сервер вернул 404 или другое, пробуем получить всё и отфильтровать
+  // fallback: если не найдено, то получить весь список и найти
   response = await fetch(`${API_URL}/products`);
   if (!response.ok) {
-    throw new Error(`Ошибка при загрузке списка товаров: ${response.status}`);
+    throw new Error(`Ошибка при загрузке товаров: ${response.status}`);
   }
   const all = await response.json();
   const found = all.find((item) => String(item.id) === String(id));
@@ -38,4 +24,21 @@ export async function fetchProductById(id) {
     throw new Error('Товар не найден');
   }
   return found;
+}
+
+/**
+ * Оформление заказа.
+ * @param {{ user_id:number, name:string, phone:string, items:{product_id:number,quantity:number}[] }} orderData
+ * @returns {Promise<any>} 
+ */
+export async function postOrder(orderData) {
+  const response = await fetch(`${API_URL}/orders`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(orderData),
+  });
+  if (!response.ok) {
+    throw new Error(`Ошибка при оформлении заказа: ${response.status}`);
+  }
+  return await response.json();
 }

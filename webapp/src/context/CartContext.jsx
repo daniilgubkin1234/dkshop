@@ -1,4 +1,12 @@
-// webapp/src/context/CartContext.jsx
+/**
+ * webapp/src/context/CartContext.jsx
+ *
+ * Хранит состояние корзины в React Context + локалсторадж.
+ * Экспортирует:
+ *   - useCart() – хук для получения всех методов/свойств корзины
+ *   - CartProvider – провайдер, который нужно обернуть вокруг всего <App>
+ */
+
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
 const CartContext = createContext(null);
@@ -6,42 +14,38 @@ const CartContext = createContext(null);
 export function useCart() {
   const ctx = useContext(CartContext);
   if (!ctx) {
-    // Если контекст не найден, бросаем ошибку
     throw new Error('useCart должен вызываться внутри CartProvider');
   }
   return ctx;
 }
 
 export function CartProvider({ children }) {
-  // Инициализируем cartItems из localStorage (или пустой массив)
+  // Инициализируем cartItems из localStorage
   const [cartItems, setCartItems] = useState(() => {
     try {
       const raw = localStorage.getItem('dkshop_cart');
       return raw ? JSON.parse(raw) : [];
-    } catch (e) {
-      console.error('Ошибка чтения корзины из localStorage:', e);
+    } catch {
       return [];
     }
   });
 
-  // Сохраняем cartItems в localStorage при каждом изменении
+  // Сохраняем cartItems в localStorage
   useEffect(() => {
     try {
       localStorage.setItem('dkshop_cart', JSON.stringify(cartItems));
-    } catch (e) {
-      console.error('Ошибка сохранения корзины в localStorage:', e);
+    } catch {
+      /* игнорируем */
     }
   }, [cartItems]);
 
-  // Вспомогательный хелпер для поиска индекса по id
   const findIndex = (id) => cartItems.findIndex((item) => item.id === id);
 
-  // Добавляем товар в корзину (или увеличиваем quantity на 1)
+  // Добавляет товар в корзину (или увеличивает quantity на 1)
   const addToCart = (product) => {
     setCartItems((prev) => {
       const idx = prev.findIndex((it) => it.id === product.id);
       if (idx === -1) {
-        // Если товара ещё нет — добавляем новый
         return [
           ...prev,
           {
@@ -53,7 +57,6 @@ export function CartProvider({ children }) {
           },
         ];
       } else {
-        // Клонируем массив и увеличиваем quantity ровно на 1
         const updated = [...prev];
         updated[idx].quantity += 1;
         return updated;
@@ -61,7 +64,7 @@ export function CartProvider({ children }) {
     });
   };
 
-  // Уменьшаем количество на 1; если quantity станет 0 — удаляем позицию
+  // Уменьшает quantity на 1; если quantity = 0, убирает товар
   const removeOneFromCart = (productId) => {
     setCartItems((prev) => {
       const idx = prev.findIndex((it) => it.id === productId);
@@ -76,12 +79,12 @@ export function CartProvider({ children }) {
     });
   };
 
-  // Удаляем товар полностью
+  // Удаляет весь товар (вне зависимости от quantity)
   const removeFromCart = (productId) => {
     setCartItems((prev) => prev.filter((it) => it.id !== productId));
   };
 
-  // Устанавливаем точное значение quantity (если ввели вручную)
+  // Обновить точное количество (при ручном вводе)
   const updateQuantity = (productId, newQuantity) => {
     setCartItems((prev) => {
       const idx = findIndex(productId);
@@ -96,30 +99,31 @@ export function CartProvider({ children }) {
     });
   };
 
-  // Полностью очищаем корзину
+  // Полностью очистить корзину
   const clearCart = () => {
     setCartItems([]);
   };
 
-  // Общее число единиц (для бейджа)
+  // Общее число единиц (для бейджа, если нужно)
   const totalCount = cartItems.reduce((sum, it) => sum + it.quantity, 0);
 
-  // Итоговая сумма (totalPrice всегда число, хотя массив может быть пуст)
-  const totalPrice = cartItems.reduce(
-    (sum, it) => sum + it.price * it.quantity,
-    0
+  // Итоговая сумма (сумма цен * quantity)
+  const totalPrice = cartItems.reduce((sum, it) => sum + it.price * it.quantity, 0);
+
+  return (
+    <CartContext.Provider
+      value={{
+        cartItems,
+        addToCart,
+        removeOneFromCart,
+        removeFromCart,
+        updateQuantity,
+        clearCart,
+        totalCount,
+        totalPrice,
+      }}
+    >
+      {children}
+    </CartContext.Provider>
   );
-
-  const value = {
-    cartItems,
-    addToCart,
-    removeOneFromCart,
-    removeFromCart,
-    updateQuantity,
-    clearCart,
-    totalCount,
-    totalPrice,
-  };
-
-  return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 }

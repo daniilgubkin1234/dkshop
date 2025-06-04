@@ -1,6 +1,21 @@
-// webapp/src/miniapps/Cart.jsx
+/**
+ * webapp/src/miniapps/Cart.jsx
+ *
+ * Рендерит:
+ * - список товаров корзины (cartItems)
+ * - блок «Итого»
+ * - форму: имя + телефон
+ * - кнопки «Очистить корзину» и «Оформить заказ»
+ *
+ * Логика:
+ * - извлекает user_id из window.Telegram.WebApp.initDataUnsafe.user.id
+ * - собирает payload вида { user_id, name, phone, items: [...] }
+ * - отправляет через postOrder(payload)
+ */
+
 import React, { useState } from 'react';
 import { useCart } from '../context/CartContext.jsx';
+import { postOrder } from '../api.js';
 import { useNavigate } from 'react-router-dom';
 import './Cart.css';
 
@@ -13,6 +28,7 @@ export default function Cart() {
     ctx = null;
   }
 
+  // Если контекст корзины недоступен, показываем заглушку
   if (!ctx) {
     return (
       <div className="cart-empty">
@@ -27,7 +43,6 @@ export default function Cart() {
   const {
     cartItems = [],
     updateQuantity,
-    removeOneFromCart,
     removeFromCart,
     clearCart,
     totalPrice = 0,
@@ -39,37 +54,40 @@ export default function Cart() {
   const navigate = useNavigate();
 
   const handleSubmit = async () => {
-    if (!name || !phone) {
+    // Валидация: имя и телефон
+    if (!name.trim() || !phone.trim()) {
       setStatus('❗ Заполните имя и телефон');
       return;
     }
 
+    // Telegram-юзер
+    const userId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id;
+    if (!userId) {
+      setStatus('❗ Не удалось определить пользователя Telegram');
+      return;
+    }
+
+    // Корзина не пуста?
+    if (cartItems.length === 0) {
+      setStatus('❗ Корзина пуста');
+      return;
+    }
+
+    // Формируем массив items: [{product_id, quantity}, …]
+    const payload = {
+      user_id: userId,
+      name: name.trim(),
+      phone: phone.trim(),
+      items: cartItems.map((item) => ({
+        product_id: item.id,
+        quantity: item.quantity,
+      })),
+    };
+
     try {
-      const userId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id;
-      if (!userId) {
-        setStatus('❗ Не удалось определить пользователя Telegram');
-        return;
-      }
-
-      const payload = {
-        user_id: userId,
-        name,
-        phone,
-        items: cartItems.map((item) => ({
-          product_id: item.id,
-          quantity: item.quantity,
-        })),
-      };
-
-      const res = await fetch('http://localhost:8001/orders', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-
-      if (!res.ok) throw new Error('Ошибка при отправке');
-
-      const data = await res.json();
+      // Отправляем заказ
+      const data = await postOrder(payload);
+      // Предполагаем, что data = { order_id: 123 }
       setStatus(`✅ Заказ #${data.order_id} оформлен!`);
       clearCart();
     } catch (err) {
@@ -78,6 +96,7 @@ export default function Cart() {
     }
   };
 
+  // Если в корзине нет товаров, показываем «Ваша корзина пуста»
   if (cartItems.length === 0) {
     return (
       <div className="cart-empty">
@@ -139,21 +158,27 @@ export default function Cart() {
           type="text"
           placeholder="ФИО"
           value={name}
-          onChange={(e) => setName(e.target.value)}
+          onChange={(e) => {
+            setName(e.target.value);
+            setStatus('');
+          }}
           style={{ marginBottom: 12, width: '100%', padding: 8 }}
         />
         <input
           type="tel"
           placeholder="Телефон для связи"
           value={phone}
-          onChange={(e) => setPhone(e.target.value)}
+          onChange={(e) => {
+            setPhone(e.target.value);
+            setStatus('');
+          }}
           style={{ marginBottom: 12, width: '100%', padding: 8 }}
         />
         <div className="cart-buttons">
-          <button className="btn-clear" onClick={clearCart}>
+          <button className="btn-clear" onClick={() => clearCart()}>
             Очистить корзину
           </button>
-          <button className="btn-checkout" onClick={handleSubmit}>
+          <button className="btn-checkout" onClick={() => handleSubmit()}>
             Оформить заказ
           </button>
         </div>
