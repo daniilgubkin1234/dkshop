@@ -24,27 +24,7 @@ app.add_middleware(
 )
 
 
-def check_admin(credentials: HTTPBasicCredentials = Depends(security)):
-    correct_user = secrets.compare_digest(credentials.username, "admin")
-    correct_pass = secrets.compare_digest(credentials.password, os.getenv("ADMIN_PASSWORD", "admin123"))
-    if not (correct_user and correct_pass):
-        raise HTTPException(status_code=401, detail="Unauthorized")
 
-@app.get("/admin/orders")
-def get_orders(creds: HTTPBasicCredentials = Depends(check_admin)):
-    with Session(engine) as s:
-        return s.exec(select(Order).order_by(Order.created_at.desc())).all()
-
-@app.patch("/admin/orders/{order_id}")
-def update_order_status(order_id: int, new_status: str, creds: HTTPBasicCredentials = Depends(check_admin)):
-    with Session(engine) as s:
-        order = s.get(Order, order_id)
-        if not order:
-            raise HTTPException(status_code=404, detail="Order not found")
-        order.status = new_status
-        s.add(order)
-        s.commit()
-        return order
 
 @app.on_event("startup")
 def on_startup() -> None:
@@ -138,3 +118,25 @@ def delete_faq(faq_id: int):
             session.delete(faq)
             session.commit()
         return {"ok": True}
+    
+def check_admin(credentials: HTTPBasicCredentials = Depends(security)):
+    correct_user = secrets.compare_digest(credentials.username, "admin")
+    correct_pass = secrets.compare_digest(credentials.password, os.getenv("ADMIN_PASSWORD", "admin123"))
+    if not (correct_user and correct_pass):
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+@app.get("/admin/orders")
+def get_orders(creds: HTTPBasicCredentials = Depends(check_admin)):
+    with Session(engine) as s:
+        return s.exec(select(Order).order_by(Order.created_at.desc())).all()
+
+@app.patch("/admin/orders/{order_id}")
+def update_order_status(order_id: int, new_status: str, creds: HTTPBasicCredentials = Depends(check_admin)):
+    with Session(engine) as s:
+        order = s.get(Order, order_id)
+        if not order:
+            raise HTTPException(status_code=404, detail="Order not found")
+        order.status = new_status
+        s.add(order)
+        s.commit()
+        return order
