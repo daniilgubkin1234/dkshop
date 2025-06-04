@@ -33,8 +33,6 @@ export default function App() {
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route path="/admin/orders" element={<AdminOrders />} />
 
-          {/* Все остальные пути перенаправляем на главную */}
-          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
 
