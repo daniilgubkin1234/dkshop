@@ -94,7 +94,9 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     faq_keywords = (
     "как", "что", "почему", "зачем",
     "сколько", "где", "когда",
-    "можно ли", "нужно ли", "какие", "какое"
+    "можно ли", "нужно ли", "какие", "какое", "изготавливаете",
+    "для чего", "могу ли", "транспортными компаниями", "в чем отличие",
+    "какие сроки", "входят ли", "какого"
 )
     if any(query.startswith(kw + " ") or f" {kw} " in query for kw in faq_keywords):
         try:
