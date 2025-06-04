@@ -7,6 +7,9 @@ import Footer from './components/Footer.jsx';
 import ProductList from './miniapps/ProductList.jsx';
 import Product from './miniapps/Product.jsx';
 import Cart from './miniapps/Cart.jsx';
+import AdminLogin from './admin/AdminLogin.jsx';
+import AdminOrders from './admin/AdminOrders.jsx';
+
 export default function App() {
   return (
     <>
@@ -25,6 +28,10 @@ export default function App() {
           {/* Страница карточки товара */}
           <Route path="/product/:id" element={<Product />} />
           <Route path="/cart" element={<Cart />} />
+
+          <Route path="/admin/login" element={<AdminLogin />} />
+          <Route path="/admin/orders" element={<AdminOrders />} />
+
           {/* Все остальные пути перенаправляем на главную */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

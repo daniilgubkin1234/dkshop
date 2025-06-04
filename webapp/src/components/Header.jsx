@@ -1,13 +1,14 @@
 // webapp/src/components/Header.jsx
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import CartLink from './CartLink.jsx';    // ← импортируем иконку корзины
+import { useNavigate, Link } from 'react-router-dom';
+import CartLink from './CartLink.jsx';
 import './Header.css';
 
 const Header = ({ onSearch }) => {
   const [query, setQuery] = useState('');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const navigate = useNavigate();
+  const isLoggedIn = localStorage.getItem('auth_token') !== null;
 
   useEffect(() => {
     if (window.TelegramWebApp) {
@@ -32,12 +33,10 @@ const Header = ({ onSearch }) => {
     }
   };
 
-  // Открыть/закрыть боковое меню
   const toggleSidebar = () => {
-    setIsSidebarOpen((prev) => !prev);
+    setIsSidebarOpen(prev => !prev);
   };
 
-  // При клике на логотип — уходим в каталог ("/")
   const handleLogoClick = () => {
     navigate('/');
   };
@@ -45,10 +44,9 @@ const Header = ({ onSearch }) => {
   return (
     <>
       <header className="header-container">
-        {/* ===== Верхняя строка ===== */}
+        {/* Верхняя строка */}
         <div className="header-top">
           <div className="header-top__left">
-            {/* Логотип */}
             <span
               className="header-logo-text"
               onClick={handleLogoClick}
@@ -71,19 +69,36 @@ const Header = ({ onSearch }) => {
               </svg>
               <span>Official channel</span>
             </button>
+
+            {/* Показать ссылку "Админка", только если вошёл */}
+            {isLoggedIn && (
+              <Link
+                to="/admin/orders"
+                style={{
+                  marginLeft: '12px',
+                  color: '#61dafb',
+                  background: 'transparent',
+                  textDecoration: 'none',
+                  border: '1px solid #61dafb',
+                  borderRadius: '4px',
+                  padding: '6px 10px',
+                  fontSize: '14px'
+                }}
+              >
+                Админка
+              </Link>
+            )}
           </div>
         </div>
 
-        {/* ===== Нижняя строка ===== */}
+        {/* Нижняя строка */}
         <div className="header-bottom">
           <div className="header-bottom__left">
-            {/* Кнопка «←» (только если TelegramWebApp) */}
             {window.TelegramWebApp && (
               <button className="header-back" onClick={handleBack}>
                 ←
               </button>
             )}
-            {/* Поле поиска */}
             <div className="header-search-wrapper">
               <span className="header-search-icon-left">
                 <svg
@@ -108,35 +123,21 @@ const Header = ({ onSearch }) => {
 
           <div className="header-bottom__right">
             <button className="header-filter">
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="#fff"
-                xmlns="http://www.w3.org/2000/svg"
-              >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="#fff">
                 <path d="M3 5h18v2H3zM6 11h12v2H6zM10 17h4v2h-4z" />
               </svg>
             </button>
-            {/* Иконка‐гамбургер, открывает sidebar */}
             <button className="header-menu" onClick={toggleSidebar}>
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="#fff"
-                xmlns="http://www.w3.org/2000/svg"
-              >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="#fff">
                 <path d="M3 12h18v2H3zM3 6h18v2H3zM3 18h18v2H3z" />
               </svg>
             </button>
-            {/* Иконка корзины с количеством */}
             <CartLink />
           </div>
         </div>
       </header>
 
-      {/* ===== Выезжающее боковое меню (Sidebar) ===== */}
+      {/* Sidebar */}
       <div
         className={`sidebar-overlay ${isSidebarOpen ? 'visible' : ''}`}
         onClick={toggleSidebar}
@@ -151,26 +152,17 @@ const Header = ({ onSearch }) => {
         <nav className="sidebar-nav">
           <ul>
             <li>
-              <a href="#payment" onClick={toggleSidebar}>
-                Оплата заказа
-              </a>
+              <a href="#payment" onClick={toggleSidebar}>Оплата заказа</a>
             </li>
             <li>
-              <a href="#refund" onClick={toggleSidebar}>
-                Возврат
-              </a>
+              <a href="#refund" onClick={toggleSidebar}>Возврат</a>
             </li>
             <li>
-              <a href="#delivery" onClick={toggleSidebar}>
-                Доставка
-              </a>
+              <a href="#delivery" onClick={toggleSidebar}>Доставка</a>
             </li>
             <li>
-              <a href="#contacts" onClick={toggleSidebar}>
-                Контакты
-              </a>
+              <a href="#contacts" onClick={toggleSidebar}>Контакты</a>
             </li>
-            {/* При необходимости можно добавить другие пункты меню */}
           </ul>
         </nav>
       </aside>

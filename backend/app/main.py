@@ -7,6 +7,10 @@ from sqlalchemy import or_, func
 from .models import Order 
 import requests
 import os
+from .models import Order
+from fastapi.security import HTTPBasic, HTTPBasicCredentials
+from fastapi import Depends, HTTPException
+import secrets
 app = FastAPI(title="DK Exhaust API")
 
 # CORS
@@ -18,6 +22,29 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+def check_admin(credentials: HTTPBasicCredentials = Depends(security)):
+    correct_user = secrets.compare_digest(credentials.username, "admin")
+    correct_pass = secrets.compare_digest(credentials.password, os.getenv("ADMIN_PASSWORD", "admin123"))
+    if not (correct_user and correct_pass):
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+@app.get("/admin/orders")
+def get_orders(creds: HTTPBasicCredentials = Depends(check_admin)):
+    with Session(engine) as s:
+        return s.exec(select(Order).order_by(Order.created_at.desc())).all()
+
+@app.patch("/admin/orders/{order_id}")
+def update_order_status(order_id: int, new_status: str, creds: HTTPBasicCredentials = Depends(check_admin)):
+    with Session(engine) as s:
+        order = s.get(Order, order_id)
+        if not order:
+            raise HTTPException(status_code=404, detail="Order not found")
+        order.status = new_status
+        s.add(order)
+        s.commit()
+        return order
 
 @app.on_event("startup")
 def on_startup() -> None:
