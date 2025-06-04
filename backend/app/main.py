@@ -5,7 +5,7 @@ from .db import engine
 from .models import Product, FAQ, Question
 from sqlalchemy import or_, func
 from .models import Order 
-
+import requests
 import os
 app = FastAPI(title="DK Exhaust API")
 
