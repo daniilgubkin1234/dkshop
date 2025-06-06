@@ -26,14 +26,14 @@ class FAQ(SQLModel, table=True):
 
 class Question(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
-    user_id: int
+    user_id: Optional[int] = Field(default=None)
     text: str
     created_at: datetime = Field(default_factory=datetime.utcnow)
     status: str = "open"      # open / answered
 
 class Order(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
-    user_id: int
+    user_id: Optional[int] = Field(default=None)
     items: List[dict] = Field(
         sa_column=Column(JSON),
         default_factory=list
