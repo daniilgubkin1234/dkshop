@@ -123,11 +123,11 @@ def delete_faq(faq_id: int):
 def check_admin(credentials: HTTPBasicCredentials = Depends(security)):
     correct_user = secrets.compare_digest(
         credentials.username,
-        os.getenv("ADMIN_USER")
+        os.getenv("ADMIN_USER", "")
     )
     correct_pass = secrets.compare_digest(
         credentials.password,
-        os.getenv("ADMIN_PASSWORD")
+        os.getenv("ADMIN_PASSWORD", "")
     )
     if not (correct_user and correct_pass):
         raise HTTPException(status_code=401, detail="Unauthorized")
