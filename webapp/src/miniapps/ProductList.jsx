@@ -50,9 +50,9 @@ export default function ProductList({ onSearchChange }) {
   };
 
   const filtered = products.filter((p) =>
-    p.name.toLowerCase().includes(filterQuery.toLowerCase())
-  );
-
+  typeof p?.name === 'string' &&
+  p.name.toLowerCase().includes(filterQuery.toLowerCase())
+);
   if (loading) {
     return (
       <p style={{ color: '#fff', textAlign: 'center', marginTop: 32 }}>
