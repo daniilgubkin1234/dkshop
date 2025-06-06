@@ -1,5 +1,5 @@
 // webapp/src/App.jsx
-import React from 'react';
+import React, { useState } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 
 import Header from './components/Header.jsx';
@@ -11,33 +11,31 @@ import AdminLogin from './admin/AdminLogin.jsx';
 import AdminOrders from './admin/AdminOrders.jsx';
 
 export default function App() {
+  const [handleSearch, setHandleSearch] = useState(null);
+
   return (
     <>
-      {/* Шапка приложения */}
-      <Header />
+      <Header onSearch={(q) => handleSearch && handleSearch(q)} />
 
-      {/* Основной контент (страницы переключаются через маршруты) */}
       <main style={{ padding: '20px 16px', fontFamily: 'sans-serif', background: '#121212' }}>
         <Routes>
-        {console.log("App loaded")}
-          {/* Главная страница */}
-          <Route path="/" element={<ProductList />} />
-
-          {/* Страница «Каталог» */}
-          <Route path="/catalog" element={<ProductList />} />
-
-          {/* Страница карточки товара */}
+          <Route
+            path="/"
+            element={<ProductList onSearchChange={setHandleSearch} />}
+          />
+          <Route
+            path="/catalog"
+            element={<ProductList onSearchChange={setHandleSearch} />}
+          />
           <Route path="/product/:id" element={<Product />} />
           <Route path="/cart" element={<Cart />} />
-
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route path="/admin/orders" element={<AdminOrders />} />
-
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
 
-      {/* Футер: полезные ссылки и телефон */}
-      <Footer />    {/* ← добавили компонент Footer */}
+      <Footer />
     </>
   );
 }

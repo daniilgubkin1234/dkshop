@@ -2,20 +2,18 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { fetchProducts } from '../api.js';
-import { useCart } from '../context/CartContext.jsx';  // ← контекст корзины
+import { useCart } from '../context/CartContext.jsx';
 import './ProductList.css';
 
-export default function ProductList() {
+export default function ProductList({ onSearchChange }) {
   const [products, setProducts] = useState([]);
+  const [filterQuery, setFilterQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
-
-  // Функция из контекста корзины
   const { addToCart } = useCart();
 
   useEffect(() => {
-    // Если внутри Telegram WebApp, расширим окно
     if (window.Telegram?.WebApp?.expand) {
       window.Telegram.WebApp.expand();
     }
@@ -32,19 +30,28 @@ export default function ProductList() {
         setLoading(false);
       }
     }
+
     load();
   }, []);
+
+  useEffect(() => {
+    if (onSearchChange) {
+      onSearchChange((query) => setFilterQuery(query));
+    }
+  }, [onSearchChange]);
 
   const handleClick = (id) => {
     navigate(`/product/${id}`);
   };
 
-  // Обработчик добавления в корзину
-  // e.stopPropagation() нужен, чтобы клик по кнопке не срабатывал как клик по карточке
   const handleAddToCart = (e, product) => {
     e.stopPropagation();
     addToCart(product);
   };
+
+  const filtered = products.filter((p) =>
+    p.name.toLowerCase().includes(filterQuery.toLowerCase())
+  );
 
   if (loading) {
     return (
@@ -53,6 +60,7 @@ export default function ProductList() {
       </p>
     );
   }
+
   if (error) {
     return (
       <p style={{ color: '#e53935', textAlign: 'center', marginTop: 32 }}>
@@ -60,17 +68,18 @@ export default function ProductList() {
       </p>
     );
   }
-  if (!Array.isArray(products) || products.length === 0) {
+
+  if (!filtered.length) {
     return (
       <p style={{ color: '#fff', textAlign: 'center', marginTop: 32 }}>
-        Товары не найдены
+        Ничего не найдено
       </p>
     );
   }
 
   return (
     <div className="product-grid">
-      {products.map((p) => (
+      {filtered.map((p) => (
         <div
           key={p.id}
           className="product-card"
@@ -89,7 +98,6 @@ export default function ProductList() {
             </p>
           </div>
 
-          {/* Кнопка «В корзину» */}
           <button
             className="btn-add-cart"
             onClick={(e) => handleAddToCart(e, p)}

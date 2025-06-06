@@ -1,6 +1,7 @@
 // src/admin/AdminOrders.jsx
 import React, { useEffect, useState } from 'react';
 import './Admin.css';
+
 export default function AdminOrders() {
   const [orders, setOrders] = useState([]);
 
@@ -18,6 +19,18 @@ export default function AdminOrders() {
     const token = localStorage.getItem('auth_token');
     fetch(`https://dkshopbot.ru/admin/orders/${id}?new_status=${newStatus}`, {
       method: 'PATCH',
+      headers: { Authorization: `Basic ${token}` }
+    })
+      .then(loadOrders)
+      .catch(console.error);
+  };
+
+  const deleteOrder = (id) => {
+    const token = localStorage.getItem('auth_token');
+    if (!window.confirm(`Удалить заказ #${id}?`)) return;
+
+    fetch(`https://dkshopbot.ru/admin/orders/${id}`, {
+      method: 'DELETE',
       headers: { Authorization: `Basic ${token}` }
     })
       .then(loadOrders)
@@ -52,6 +65,12 @@ export default function AdminOrders() {
                 <button onClick={() => updateStatus(o.id, 'accepted')}>Принят</button>
                 <button onClick={() => updateStatus(o.id, 'shipped')}>Отгружен</button>
                 <button onClick={() => updateStatus(o.id, 'done')}>Завершён</button>
+                <button
+                  onClick={() => deleteOrder(o.id)}
+                  style={{ marginLeft: 8, background: '#e53935', color: '#fff' }}
+                >
+                  Удалить
+                </button>
               </td>
             </tr>
           ))}

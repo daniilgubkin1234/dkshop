@@ -151,3 +151,13 @@ def update_order_status(order_id: int, new_status: str, creds: HTTPBasicCredenti
         s.add(order)
         s.commit()
         return order
+
+@app.delete("/admin/orders/{order_id}")
+def delete_order(order_id: int, creds: HTTPBasicCredentials = Depends(check_admin)):
+    with Session(engine) as s:
+        order = s.get(Order, order_id)
+        if not order:
+            raise HTTPException(status_code=404, detail="Order not found")
+        s.delete(order)
+        s.commit()
+        return {"ok": True}
