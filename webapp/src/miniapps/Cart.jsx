@@ -1,19 +1,6 @@
-/**
- * webapp/src/miniapps/Cart.jsx
- *
- * Рендерит:
- * - список товаров корзины (cartItems)
- * - блок «Итого»
- * - форму: имя + телефон
- * - кнопки «Очистить корзину» и «Оформить заказ»
- *
- * Логика:
- * - извлекает user_id из window.Telegram.WebApp.initDataUnsafe.user.id
- * - собирает payload вида { user_id, name, phone, items: [...] }
- * - отправляет через postOrder(payload)
- */
+// webapp/src/miniapps/Cart.jsx
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useCart } from '../context/CartContext.jsx';
 import { postOrder } from '../api.js';
 import { useNavigate } from 'react-router-dom';
@@ -51,29 +38,85 @@ export default function Cart() {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [status, setStatus] = useState('');
+  const [userId, setUserId] = useState(null);
   const navigate = useNavigate();
 
-  const handleSubmit = async () => {
-    // Валидация: имя и телефон
-    if (!name.trim() || !phone.trim()) {
-      setStatus('❗ Заполните имя и телефон');
+  /**
+   * useEffect: динамически подключаем Telegram WebApp SDK,
+   * ждём, пока скрипт загрузится и инициализируется,
+   * затем вытягиваем userId из window.Telegram.WebApp.initDataUnsafe.user.id
+   */
+  useEffect(() => {
+    // Если скрипт уже есть на странице, то просто пробуем взять user сразу
+    if (document.getElementById('telegram-webapp-sdk')) {
+      if (window.Telegram && window.Telegram.WebApp) {
+        window.Telegram.WebApp.ready();
+        const user = window.Telegram.WebApp.initDataUnsafe?.user;
+        if (user && user.id) {
+          setUserId(user.id);
+        }
+      }
       return;
     }
 
-    // Telegram-юзер
-    const userId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id;
+    // Создаём <script> для Telegram WebApp SDK
+    const script = document.createElement('script');
+    script.id = 'telegram-webapp-sdk';
+    script.src = 'https://telegram.org/js/telegram-web-app.js';
+    script.async = true;
+
+    // Когда скрипт загрузится — запускаем WebApp.ready() и получаем userId
+    script.onload = () => {
+      if (window.Telegram && window.Telegram.WebApp) {
+        window.Telegram.WebApp.ready();
+        const user = window.Telegram.WebApp.initDataUnsafe?.user;
+        if (user && user.id) {
+          setUserId(user.id);
+        }
+      }
+    };
+
+    // Вставляем <script> в <body>
+    document.body.appendChild(script);
+
+    // При размонтировании компонента убираем скрипт
+    return () => {
+      document.body.removeChild(script);
+    };
+  }, []);
+
+  // Функция отправки заказа на бэкенд
+  const postOrderRequest = async (data) => {
+    try {
+      const response = await postOrder(data);
+      // Предполагаем, что бэкенд вернёт объект { order_id: <число> }
+      setStatus(`✅ Заказ #${response.order_id} оформлен!`);
+      clearCart();
+    } catch (err) {
+      console.error(err);
+      setStatus('❗ Не удалось оформить заказ');
+    }
+  };
+
+  // Обработчик клика “Оформить заказ”
+  const handleSubmit = () => {
+    // Если не определили userId из Telegram
     if (!userId) {
       setStatus('❗ Не удалось определить пользователя Telegram');
       return;
     }
-
-    // Корзина не пуста?
+    // Проверяем, заполнены ли имя и телефон
+    if (!name.trim() || !phone.trim()) {
+      setStatus('❗ Заполните имя и телефон');
+      return;
+    }
+    // Проверяем, что в корзине есть товары
     if (cartItems.length === 0) {
       setStatus('❗ Корзина пуста');
       return;
     }
 
-    // Формируем массив items: [{product_id, quantity}, …]
+    // Формируем массив items в нужном формате
     const payload = {
       user_id: userId,
       name: name.trim(),
@@ -84,19 +127,10 @@ export default function Cart() {
       })),
     };
 
-    try {
-      // Отправляем заказ
-      const data = await postOrder(payload);
-      // Предполагаем, что data = { order_id: 123 }
-      setStatus(`✅ Заказ #${data.order_id} оформлен!`);
-      clearCart();
-    } catch (err) {
-      console.error(err);
-      setStatus('❗ Не удалось оформить заказ');
-    }
+    postOrderRequest(payload);
   };
 
-  // Если в корзине нет товаров, показываем «Ваша корзина пуста»
+  // Если корзина пуста, показываем заглушку “Ваша корзина пуста”
   if (cartItems.length === 0) {
     return (
       <div className="cart-empty">
@@ -160,7 +194,7 @@ export default function Cart() {
           value={name}
           onChange={(e) => {
             setName(e.target.value);
-            setStatus('');
+            setStatus(''); // сбрасываем статус при вводе
           }}
           style={{ marginBottom: 12, width: '100%', padding: 8 }}
         />
@@ -170,7 +204,7 @@ export default function Cart() {
           value={phone}
           onChange={(e) => {
             setPhone(e.target.value);
-            setStatus('');
+            setStatus(''); // сбрасываем статус при вводе
           }}
           style={{ marginBottom: 12, width: '100%', padding: 8 }}
         />
@@ -178,7 +212,7 @@ export default function Cart() {
           <button className="btn-clear" onClick={() => clearCart()}>
             Очистить корзину
           </button>
-          <button className="btn-checkout" onClick={() => handleSubmit()}>
+          <button className="btn-checkout" onClick={handleSubmit}>
             Оформить заказ
           </button>
         </div>
