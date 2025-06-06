@@ -19,8 +19,6 @@ app.add_middleware(
     allow_origins=["http://localhost:5173",
         "https://dkshopbot.ru",
         "https://t.me" ,
-        "https://dkshopbot.ru/admin/login",
-        "https://dkshopbot.ru/admin/orders"
         ],
     allow_methods=["*"],
     allow_headers=["*"],
