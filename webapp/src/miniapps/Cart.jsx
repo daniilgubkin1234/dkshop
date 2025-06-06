@@ -1,124 +1,67 @@
 // webapp/src/miniapps/Cart.jsx
 
-import React, { useState, useEffect } from 'react';
-import { useCart } from '../context/CartContext.jsx';
-import { postOrder } from '../api.js';
-import { useNavigate } from 'react-router-dom';
-import './Cart.css';
+import React, { useState } from "react";
+import { useCart } from "../context/CartContext.jsx";
+import { postOrder } from "../api.js";
+import { useNavigate } from "react-router-dom";
+import "./Cart.css";
 
 export default function Cart() {
+  // 1. Достаем корзину из контекста
   let ctx;
   try {
     ctx = useCart();
   } catch (err) {
-    console.error(err.message);
+    console.error("Cart.jsx: useCart() error:", err.message);
     ctx = null;
   }
 
-  // Если контекст корзины недоступен, показываем заглушку
+  // Если корзина недоступна (например, компонент вызывают вне контекста)
   if (!ctx) {
     return (
       <div className="cart-empty">
         <h2>Корзина недоступна</h2>
-        <button className="btn-back" onClick={() => (window.location.href = '/')}>
+        <button className="btn-back" onClick={() => (window.location.href = "/")}>
           Вернуться на главную
         </button>
       </div>
     );
   }
 
-  const {
-    cartItems = [],
-    updateQuantity,
-    removeFromCart,
-    clearCart,
-    totalPrice = 0,
-  } = ctx;
-
-  const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [status, setStatus] = useState('');
-  const [userId, setUserId] = useState(null);
+  const { cartItems, updateQuantity, removeFromCart, clearCart, totalPrice } = ctx;
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [status, setStatus] = useState("");
   const navigate = useNavigate();
 
-  /**
-   * useEffect: динамически подключаем Telegram WebApp SDK,
-   * ждём, пока скрипт загрузится и инициализируется,
-   * затем вытягиваем userId из window.Telegram.WebApp.initDataUnsafe.user.id
-   */
-  useEffect(() => {
-    // Если скрипт уже есть на странице, то просто пробуем взять user сразу
-    if (document.getElementById('telegram-webapp-sdk')) {
-      if (window.Telegram && window.Telegram.WebApp) {
-        window.Telegram.WebApp.ready();
-        const user = window.Telegram.WebApp.initDataUnsafe?.user;
-        if (user && user.id) {
-          setUserId(user.id);
-        }
-      }
-      return;
-    }
-
-    // Создаём <script> для Telegram WebApp SDK
-    const script = document.createElement('script');
-    script.id = 'telegram-webapp-sdk';
-    script.src = 'https://telegram.org/js/telegram-web-app.js';
-    script.async = true;
-
-    // Когда скрипт загрузится — запускаем WebApp.ready() и получаем userId
-    script.onload = () => {
-      if (window.Telegram && window.Telegram.WebApp) {
-        window.Telegram.WebApp.ready();
-        const user = window.Telegram.WebApp.initDataUnsafe?.user;
-        if (user && user.id) {
-          setUserId(user.id);
-        }
-      }
-    };
-
-    // Вставляем <script> в <body>
-    document.body.appendChild(script);
-
-    // При размонтировании компонента убираем скрипт
-    return () => {
-      document.body.removeChild(script);
-    };
-  }, []);
-
-  // Функция отправки заказа на бэкенд
+  // 2. Отправка заказа на бэкенд
   const postOrderRequest = async (data) => {
     try {
       const response = await postOrder(data);
-      // Предполагаем, что бэкенд вернёт объект { order_id: <число> }
-      setStatus(`✅ Заказ #${response.order_id} оформлен!`);
+      setStatus(`✅ Заказ #${response.order_id} отправлен!`);
       clearCart();
     } catch (err) {
-      console.error(err);
-      setStatus('❗ Не удалось оформить заказ');
+      console.error("postOrder error:", err);
+      setStatus("❌ Не удалось оформить заказ");
     }
   };
 
-  // Обработчик клика “Оформить заказ”
+  // 3. Обработчик клика «Оформить заказ»
   const handleSubmit = () => {
-    // Если не определили userId из Telegram
-    if (!userId) {
-      setStatus('❗ Не удалось определить пользователя Telegram');
-      return;
-    }
-    // Проверяем, заполнены ли имя и телефон
+    // Проверяем, что ФИО и телефон заполнены
     if (!name.trim() || !phone.trim()) {
-      setStatus('❗ Заполните имя и телефон');
-      return;
-    }
-    // Проверяем, что в корзине есть товары
-    if (cartItems.length === 0) {
-      setStatus('❗ Корзина пуста');
+      setStatus("❗ Заполните ФИО и телефон");
       return;
     }
 
-    // Формируем массив items в нужном формате
+    // Проверяем, что в корзине есть товары
+    if (!cartItems || cartItems.length === 0) {
+      setStatus("❗ Ваша корзина пуста");
+      return;
+    }
+
+    // Формируем payload: без user_id, только имя, телефон и товары
     const payload = {
-      user_id: userId,
       name: name.trim(),
       phone: phone.trim(),
       items: cartItems.map((item) => ({
@@ -130,12 +73,12 @@ export default function Cart() {
     postOrderRequest(payload);
   };
 
-  // Если корзина пуста, показываем заглушку “Ваша корзина пуста”
-  if (cartItems.length === 0) {
+  // 4. Если корзина пуста — показываем сообщение
+  if (!cartItems || cartItems.length === 0) {
     return (
       <div className="cart-empty">
         <h2>Ваша корзина пуста</h2>
-        <button className="btn-back" onClick={() => navigate('/')}>
+        <button className="btn-back" onClick={() => navigate("/")}>
           Вернуться в каталог
         </button>
       </div>
@@ -194,9 +137,9 @@ export default function Cart() {
           value={name}
           onChange={(e) => {
             setName(e.target.value);
-            setStatus(''); // сбрасываем статус при вводе
+            setStatus("");
           }}
-          style={{ marginBottom: 12, width: '100%', padding: 8 }}
+          style={{ marginBottom: 12, width: "100%", padding: 8 }}
         />
         <input
           type="tel"
@@ -204,9 +147,9 @@ export default function Cart() {
           value={phone}
           onChange={(e) => {
             setPhone(e.target.value);
-            setStatus(''); // сбрасываем статус при вводе
+            setStatus("");
           }}
-          style={{ marginBottom: 12, width: '100%', padding: 8 }}
+          style={{ marginBottom: 12, width: "100%", padding: 8 }}
         />
         <div className="cart-buttons">
           <button className="btn-clear" onClick={() => clearCart()}>
