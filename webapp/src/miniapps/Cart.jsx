@@ -33,19 +33,25 @@ export default function Cart() {
   const [phone, setPhone] = useState("");
   const [status, setStatus] = useState("");
   const navigate = useNavigate();
-
+  const [orderInfo, setOrderInfo] = useState(null);
   // 2. Отправка заказа на бэкенд
   const postOrderRequest = async (data) => {
     try {
       const response = await postOrder(data);
-      setStatus(`✅ Заказ #${response.order_id} отправлен!`);
+      setOrderInfo({
+        orderId: response.order_id,
+        name: data.name,
+        phone: data.phone,
+        items: data.items,
+        total: totalPrice,
+      });
       clearCart();
     } catch (err) {
       console.error("postOrder error:", err);
       setStatus("❌ Не удалось оформить заказ");
     }
   };
-
+  
   // 3. Обработчик клика «Оформить заказ»
   const handleSubmit = () => {
     // Проверяем, что ФИО и телефон заполнены
@@ -72,7 +78,22 @@ export default function Cart() {
 
     postOrderRequest(payload);
   };
-
+// ✅ Успешное оформление — показываем инфо
+if (orderInfo) {
+  return (
+    <div className="cart-empty">
+      <h2>✅ Заказ успешно оформлен!</h2>
+      <p>Номер заказа: <b>#{orderInfo.orderId}</b></p>
+      <p>На имя: <b>{orderInfo.name}</b></p>
+      <p>Телефон: <b>{orderInfo.phone}</b></p>
+      <p>Позиций: {orderInfo.items.length}</p>
+      <p>Сумма: {orderInfo.total.toLocaleString()} ₽</p>
+      <button className="btn-back" onClick={() => navigate("/")}>
+        Вернуться на главную
+      </button>
+    </div>
+  );
+}
   // 4. Если корзина пуста — показываем сообщение
   if (!cartItems || cartItems.length === 0) {
     return (
