@@ -121,16 +121,20 @@ def delete_faq(faq_id: int):
         return {"ok": True}
     
 def check_admin(credentials: HTTPBasicCredentials = Depends(security)):
-    correct_user = secrets.compare_digest(
-        credentials.username,
-        os.getenv("ADMIN_USER", "")
-    )
-    correct_pass = secrets.compare_digest(
-        credentials.password,
-        os.getenv("ADMIN_PASSWORD", "")
-    )
+    # Берём имя пользователя и пароль из окружения, или "" (пустую строку), если переменных нет:
+    admin_user = os.getenv("ADMIN_USER", "")
+    admin_pass = os.getenv("ADMIN_PASSWORD", "")
+
+    # Сравниваем введённое с тем, что в окружении
+    correct_user = secrets.compare_digest(credentials.username, admin_user)
+    correct_pass = secrets.compare_digest(credentials.password, admin_pass)
+
     if not (correct_user and correct_pass):
-        raise HTTPException(status_code=401, detail="Unauthorized")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Unauthorized",
+            headers={"WWW-Authenticate": "Basic"},
+        )
 
 @app.get("/admin/orders")
 def get_orders(creds: HTTPBasicCredentials = Depends(check_admin)):
