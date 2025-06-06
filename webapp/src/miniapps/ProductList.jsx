@@ -1,14 +1,22 @@
-// webapp/src/miniapps/ProductList.jsx
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { fetchProducts } from '../api.js';
 import { useCart } from '../context/CartContext.jsx';
 import './ProductList.css';
 
+const MODEL_CARDS = [
+  { label: 'ВАЗ 2101-07', model: '2101-07', img: '/models/2101.jpg' },
+  { label: 'SAMARA, 2108-15', model: '2108-21', img: '/models/2108.jpg' },
+  { label: 'PRIORA, 2110-12', model: '2110-21', img: '/models/2110.jpg' },
+  { label: 'KALINA, GRANTA', model: 'GRANTA', img: '/models/granta.jpg', disabled: true },
+  { label: '2170-21', model: '2170-21', img: '/models/2170.jpg' },
+];
+
 export default function ProductList({ onSearchChange }) {
   const [products, setProducts] = useState([]);
   const [filterQuery, setFilterQuery] = useState('');
   const [selectedModel, setSelectedModel] = useState(null);
+  const [showAllModels, setShowAllModels] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
@@ -64,45 +72,34 @@ export default function ProductList({ onSearchChange }) {
 
   const uniqueModels = [...new Set(products.map((p) => p.model_compat).filter(Boolean))];
 
-  if (loading) {
-    return (
-      <p style={{ color: '#fff', textAlign: 'center', marginTop: 32 }}>
-        Загрузка товаров...
-      </p>
-    );
-  }
-
-  if (error) {
-    return (
-      <p style={{ color: '#e53935', textAlign: 'center', marginTop: 32 }}>
-        {error}
-      </p>
-    );
-  }
-
   return (
     <>
-      <div className="model-scroll">
-        {uniqueModels.map((model) => (
-          <button
+      {/* Карточки моделей */}
+      <div className="model-cards">
+        {(showAllModels ? MODEL_CARDS : MODEL_CARDS.slice(0, 4)).map(({ label, model, img, disabled }) => (
+          <div
             key={model}
-            className={`model-tab ${selectedModel === model ? 'active' : ''}`}
-            onClick={() => setSelectedModel(model)}
+            className={`model-card ${selectedModel === model ? 'active' : ''} ${disabled ? 'disabled' : ''}`}
+            onClick={() => !disabled && setSelectedModel(model)}
           >
-            {model}
-          </button>
+            <img src={img} alt={label} />
+            <span>{label}</span>
+          </div>
         ))}
-        {selectedModel && (
-          <button className="model-tab reset" onClick={() => setSelectedModel(null)}>
-            Сбросить
+        {MODEL_CARDS.length > 4 && (
+          <button className="toggle-more" onClick={() => setShowAllModels((v) => !v)}>
+            {showAllModels ? 'Скрыть' : 'Показать все'}
           </button>
         )}
       </div>
 
-      {filtered.length === 0 ? (
-        <p style={{ color: '#fff', textAlign: 'center', marginTop: 32 }}>
-          Ничего не найдено
-        </p>
+      {/* Результаты */}
+      {loading ? (
+        <p style={{ color: '#fff', textAlign: 'center', marginTop: 32 }}>Загрузка товаров...</p>
+      ) : error ? (
+        <p style={{ color: '#e53935', textAlign: 'center', marginTop: 32 }}>{error}</p>
+      ) : filtered.length === 0 ? (
+        <p style={{ color: '#fff', textAlign: 'center', marginTop: 32 }}>Ничего не найдено</p>
       ) : (
         <div className="product-grid">
           {filtered.map((p) => (
