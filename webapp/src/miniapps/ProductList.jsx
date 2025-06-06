@@ -5,11 +5,21 @@ import { useCart } from '../context/CartContext.jsx';
 import './ProductList.css';
 
 const MODEL_CARDS = [
-  { label: 'ВАЗ 2101-07', model: '2101-07', img: '/models/2101.jpg' },
-  { label: 'SAMARA, 2108-15', model: '2108-21', img: '/models/2108.jpg' },
-  { label: 'PRIORA, 2110-12', model: '2110-21', img: '/models/2110.jpg' },
-  { label: 'KALINA, GRANTA', model: 'GRANTA', img: '/models/granta.jpg', disabled: true },
-  { label: '2170-21', model: '2170-21', img: '/models/2170.jpg' },
+  { label: 'ВАЗ 2101-07', model: '2101-07', img: '/models/logo.jpg' },
+  { label: 'SAMARA, 2108-21', model: '2108-21', img: '/models/logo.jpg' },
+  { label: 'PRIORA, 2110-21', model: '2110-21', img: '/models/logo.jpg' },
+  { label: 'KALINA, GRANTA', model: 'GRANTA', img: '/models/logo.jpg' },
+  { label: 'PRIORA 2170-21', model: '2170-21', img: '/models/logo.jpg' },
+
+  // ↓ новые модели, пока без картинок (добавь картинки — уберём disabled)
+  { label: '2101-21', model: '2101-21', img: '/models/logo.jpg' },
+  { label: '1117-21', model: '1117-21', img: '/models/logo.jpg'},
+  { label: '2102-04', model: '2102-04', img: '/models/logo.jpg'},
+  { label: '2102-21', model: '2102-21', img: '/models/logo.jpg'},
+  { label: '2170-71', model: '2170-71', img: '/models/logo.jpg' },
+  { label: '2117-21', model: '2117-21', img: '/models/logo.jpg' },
+  { label: '1117-11', model: '1117-11', img: '/models/logo.jpg' },
+  { label: '1117-18', model: '1117-18', img: '/models/logo.jpg' },
 ];
 
 export default function ProductList({ onSearchChange }) {
