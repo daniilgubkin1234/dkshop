@@ -8,6 +8,7 @@ import './ProductList.css';
 export default function ProductList({ onSearchChange }) {
   const [products, setProducts] = useState([]);
   const [filterQuery, setFilterQuery] = useState('');
+  const [selectedModel, setSelectedModel] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
@@ -49,15 +50,19 @@ export default function ProductList({ onSearchChange }) {
     addToCart(product);
   };
 
-  // ⬇️ Расширенный фильтр: name + model_compat + type
   const filtered = products.filter((p) => {
     const q = (filterQuery || '').toLowerCase();
-    return (
-      (p.name || '').toLowerCase().includes(q) ||
-      (p.model_compat || '').toLowerCase().includes(q) ||
-      (p.type || '').toLowerCase().includes(q)
-    );
+    const name = (p.name || '').toLowerCase();
+    const model = (p.model_compat || '').toLowerCase();
+    const type = (p.type || '').toLowerCase();
+
+    const matchesText = name.includes(q) || model.includes(q) || type.includes(q);
+    const matchesModel = !selectedModel || p.model_compat === selectedModel;
+
+    return matchesText && matchesModel;
   });
+
+  const uniqueModels = [...new Set(products.map((p) => p.model_compat).filter(Boolean))];
 
   if (loading) {
     return (
@@ -75,34 +80,51 @@ export default function ProductList({ onSearchChange }) {
     );
   }
 
-  if (!filtered.length) {
-    return (
-      <p style={{ color: '#fff', textAlign: 'center', marginTop: 32 }}>
-        Ничего не найдено
-      </p>
-    );
-  }
-
   return (
-    <div className="product-grid">
-      {filtered.map((p) => (
-        <div key={p.id} className="product-card" onClick={() => handleClick(p.id)}>
-          {p.images?.[0] ? (
-            <img src={p.images[0]} alt={p.name} className="product-image" />
-          ) : (
-            <div className="product-image--placeholder" />
-          )}
-
-          <div className="product-info">
-            <h3 className="product-title">{p.name}</h3>
-            <p className="product-price">{p.price.toLocaleString()} ₽</p>
-          </div>
-
-          <button className="btn-add-cart" onClick={(e) => handleAddToCart(e, p)}>
-            В корзину
+    <>
+      <div className="model-scroll">
+        {uniqueModels.map((model) => (
+          <button
+            key={model}
+            className={`model-tab ${selectedModel === model ? 'active' : ''}`}
+            onClick={() => setSelectedModel(model)}
+          >
+            {model}
           </button>
+        ))}
+        {selectedModel && (
+          <button className="model-tab reset" onClick={() => setSelectedModel(null)}>
+            Сбросить
+          </button>
+        )}
+      </div>
+
+      {filtered.length === 0 ? (
+        <p style={{ color: '#fff', textAlign: 'center', marginTop: 32 }}>
+          Ничего не найдено
+        </p>
+      ) : (
+        <div className="product-grid">
+          {filtered.map((p) => (
+            <div key={p.id} className="product-card" onClick={() => handleClick(p.id)}>
+              {p.images?.[0] ? (
+                <img src={p.images[0]} alt={p.name} className="product-image" />
+              ) : (
+                <div className="product-image--placeholder" />
+              )}
+
+              <div className="product-info">
+                <h3 className="product-title">{p.name}</h3>
+                <p className="product-price">{p.price.toLocaleString()} ₽</p>
+              </div>
+
+              <button className="btn-add-cart" onClick={(e) => handleAddToCart(e, p)}>
+                В корзину
+              </button>
+            </div>
+          ))}
         </div>
-      ))}
-    </div>
+      )}
+    </>
   );
 }

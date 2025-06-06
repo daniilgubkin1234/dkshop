@@ -79,3 +79,40 @@
 .btn-add-cart:hover {
   background-color: #d32f2f;
 }
+
+
+.model-scroll {
+  display: flex;
+  overflow-x: auto;
+  gap: 8px;
+  margin: 16px 0;
+  padding: 0 16px 8px;
+}
+
+.model-tab {
+  flex-shrink: 0;
+  padding: 6px 12px;
+  border-radius: 16px;
+  border: 1px solid #555;
+  background: #1c1c1c;
+  color: #fff;
+  cursor: pointer;
+  font-size: 14px;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.model-tab:hover {
+  background-color: #333;
+}
+
+.model-tab.active {
+  background: #e53935;
+  border-color: #e53935;
+}
+
+.model-tab.reset {
+  background: #444;
+  border-color: #aaa;
+  color: #fff;
+}
