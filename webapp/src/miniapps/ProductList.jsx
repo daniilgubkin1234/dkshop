@@ -51,7 +51,7 @@ export default function ProductList({ onSearchChange }) {
 
   const filtered = products.filter((p) =>
   typeof p?.name === 'string' &&
-  p.name.toLowerCase().includes(filterQuery.toLowerCase())
+  p.name.toLowerCase().includes((filterQuery || '').toLowerCase())
 );
   if (loading) {
     return (
