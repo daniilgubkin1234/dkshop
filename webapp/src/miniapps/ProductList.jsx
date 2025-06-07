@@ -5,21 +5,18 @@ import { useCart } from '../context/CartContext.jsx';
 import './ProductList.css';
 
 const MODEL_CARDS = [
-  { label: 'ВАЗ 2101-07', model: '2101-07', img: '/models/logo.jpg' },
-  { label: 'SAMARA, 2108-21', model: '2108-21', img: '/models/logo.jpg' },
-  { label: 'PRIORA, 2110-21', model: '2110-21', img: '/models/logo.jpg' },
-  { label: 'KALINA, GRANTA', model: 'GRANTA', img: '/models/logo.jpg' },
-  { label: 'PRIORA 2170-21', model: '2170-21', img: '/models/logo.jpg' },
-
-  // ↓ новые модели, пока без картинок (добавь картинки — уберём disabled)
-  { label: '2101-21', model: '2101-21', img: '/models/logo.jpg' },
-  { label: '1117-21', model: '1117-21', img: '/models/logo.jpg'},
-  { label: '2102-04', model: '2102-04', img: '/models/logo.jpg'},
-  { label: '2102-21', model: '2102-21', img: '/models/logo.jpg'},
-  { label: '2170-71', model: '2170-71', img: '/models/logo.jpg' },
-  { label: '2117-21', model: '2117-21', img: '/models/logo.jpg' },
-  { label: '1117-11', model: '1117-11', img: '/models/logo.jpg' },
-  { label: '1117-18', model: '1117-18', img: '/models/logo.jpg' },
+  { label: 'ВАЗ 2101-07', models: ['2101-07'], img: '/models/logo.jpg' },
+  { label: 'SAMARA 2108-21', models: ['2108-21'], img: '/models/logo.jpg' },
+  { label: 'PRIORA 2110-21', models: ['2110-21'], img: '/models/logo.jpg' },
+  { label: 'КАЛИНА (1117–1119)', models: ['1117', '1118', '1119'], img: '/models/logo.jpg' },
+  { label: 'GRANTA (2190–2192)', models: ['2190', '2191', '2192'], img: '/models/logo.jpg' },
+  { label: 'PRIORA 2170-21', models: ['2170-21'], img: '/models/logo.jpg' },
+  { label: '2102-04', models: ['2102-04'], img: '/models/logo.jpg' },
+  { label: '2102-21', models: ['2102-21'], img: '/models/logo.jpg' },
+  { label: '2170-71', models: ['2170-71'], img: '/models/logo.jpg' },
+  { label: '2117-21', models: ['2117-21'], img: '/models/logo.jpg' },
+  { label: '1117-11', models: ['1117-11'], img: '/models/logo.jpg' },
+  { label: '1117-18', models: ['1117-18'], img: '/models/logo.jpg' },
 ];
 
 export default function ProductList({ onSearchChange }) {
@@ -75,27 +72,38 @@ export default function ProductList({ onSearchChange }) {
     const type = (p.type || '').toLowerCase();
 
     const matchesText = name.includes(q) || model.includes(q) || type.includes(q);
-    const matchesModel = !selectedModel || p.model_compat === selectedModel;
+
+    const matchesModel =
+      !selectedModel ||
+      (Array.isArray(selectedModel)
+        ? selectedModel.includes(p.model_compat)
+        : p.model_compat === selectedModel);
 
     return matchesText && matchesModel;
   });
 
-  const uniqueModels = [...new Set(products.map((p) => p.model_compat).filter(Boolean))];
-
   return (
     <>
-      {/* Карточки моделей */}
       <div className="model-cards">
-        {(showAllModels ? MODEL_CARDS : MODEL_CARDS.slice(0, 4)).map(({ label, model, img, disabled }) => (
-          <div
-            key={model}
-            className={`model-card ${selectedModel === model ? 'active' : ''} ${disabled ? 'disabled' : ''}`}
-            onClick={() => !disabled && setSelectedModel(model)}
-          >
-            <img src={img} alt={label} />
-            <span>{label}</span>
-          </div>
-        ))}
+        {(showAllModels ? MODEL_CARDS : MODEL_CARDS.slice(0, 4)).map(({ label, models, img }) => {
+          const isActive =
+            selectedModel &&
+            (Array.isArray(selectedModel)
+              ? models.some((m) => selectedModel.includes(m))
+              : models.includes(selectedModel));
+
+          return (
+            <div
+              key={label}
+              className={`model-card ${isActive ? 'active' : ''}`}
+              onClick={() => setSelectedModel(models)}
+            >
+              <img src={img} alt={label} />
+              <span>{label}</span>
+            </div>
+          );
+        })}
+
         {MODEL_CARDS.length > 4 && (
           <button className="toggle-more" onClick={() => setShowAllModels((v) => !v)}>
             {showAllModels ? 'Скрыть' : 'Показать все'}
@@ -103,12 +111,7 @@ export default function ProductList({ onSearchChange }) {
         )}
       </div>
 
-      {/* Результаты */}
-      {loading ? (
-        <p style={{ color: '#fff', textAlign: 'center', marginTop: 32 }}>Загрузка товаров...</p>
-      ) : error ? (
-        <p style={{ color: '#e53935', textAlign: 'center', marginTop: 32 }}>{error}</p>
-      ) : filtered.length === 0 ? (
+      {filtered.length === 0 ? (
         <p style={{ color: '#fff', textAlign: 'center', marginTop: 32 }}>Ничего не найдено</p>
       ) : (
         <div className="product-grid">

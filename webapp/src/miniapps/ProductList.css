@@ -168,12 +168,19 @@
 }
 
 .toggle-more {
-  background: none;
-  color: #61dafb;
+  background: #e53935;
+  color: white;
   border: none;
   font-size: 13px;
   cursor: pointer;
-  margin-top: 8px;
+  margin-top: 12px;
+  padding: 6px 12px;
+  border-radius: 16px;
+  transition: background 0.2s ease;
+}
+
+.toggle-more:hover {
+  background: #d32f2f;
 }
 @media (max-width: 480px) {
   .product-grid {
