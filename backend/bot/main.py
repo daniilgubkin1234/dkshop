@@ -22,7 +22,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# ──────────── Конфигурация ─────────────
+# ───────── Конфигурация ─────────
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 API_URL = os.getenv("API_URL", "http://api:8001")
 FRONT_URL = os.getenv("FRONT_URL", "https://dkshopbot.ru")
@@ -33,12 +33,11 @@ logging.basicConfig(
     level=logging.INFO,
 )
 
-# ──────────── Хэндлеры ─────────────
+# ───────── Команды ─────────
 async def cmd_start(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text(
         "Доброго времени суток! 👋\nВведите интересующий вас запрос."
     )
-
 
 def build_product_message(product: dict) -> tuple[str, InlineKeyboardMarkup]:
     url = f"{FRONT_URL.rstrip('/')}/product/{product['id']}"
@@ -48,7 +47,7 @@ def build_product_message(product: dict) -> tuple[str, InlineKeyboardMarkup]:
     ])
     return text, kb
 
-
+# ───────── Обработка сообщений ─────────
 async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.message.text.strip().lower()
 
@@ -56,14 +55,12 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
         await update.message.reply_text("Напишите, пожалуйста, запрос.")
         return
 
-    # 1. Поиск по модели
+    # 1. Поиск по модели (например: 2101-07)
     model_match = re.search(r"\b\d{4}-\d{2}\b", query)
     if model_match:
         try:
             async with aiohttp.ClientSession(timeout=HTTP_TIMEOUT) as sess:
-                async with sess.get(
-                    f"{API_URL}/products", params={"q": model_match.group(0)}
-                ) as resp:
+                async with sess.get(f"{API_URL}/products", params={"q": model_match.group(0)}) as resp:
                     resp.raise_for_status()
                     products = await resp.json()
         except Exception:
@@ -76,29 +73,19 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
             await update.message.reply_text(txt, reply_markup=kb)
             return
 
-    # 2. Явный вопрос → FAQ
-    faq_keywords = (
-        "как", "что", "почему", "зачем",
-        "сколько", "где", "когда",
-        "можно ли", "нужно ли", "какие", "какое", "изготавливаете",
-        "для чего", "могу ли", "транспортными компаниями", "в чем отличие",
-        "какие сроки", "входят ли", "какого", "оплата", "платеж", "карта",
-        "при получении", "стоимость", "цена", "доставка"
-    )
-    is_faq = any(query.startswith(kw + " ") or f" {kw} " in query for kw in faq_keywords)
-    if is_faq:
-        try:
-            async with aiohttp.ClientSession(timeout=HTTP_TIMEOUT) as sess:
-                async with sess.get(f"{API_URL}/faq", params={"q": query}) as resp:
-                    resp.raise_for_status()
-                    faqs = await resp.json()
-                    if faqs:
-                        await update.message.reply_text(faqs[0]["answer"])
-                        return
-        except Exception:
-            logging.warning("FAQ API not responding")
+    # 2. Прямой запрос в FAQ (до попытки товаров)
+    try:
+        async with aiohttp.ClientSession(timeout=HTTP_TIMEOUT) as sess:
+            async with sess.get(f"{API_URL}/faq", params={"q": query}) as resp:
+                resp.raise_for_status()
+                faqs = await resp.json()
+                if faqs:
+                    await update.message.reply_text(faqs[0]["answer"])
+                    return
+    except Exception:
+        logging.warning("FAQ API not responding")
 
-    # 3. Попытка найти товар по ключевым словам
+    # 3. Поиск по товарам
     try:
         async with aiohttp.ClientSession(timeout=HTTP_TIMEOUT) as sess:
             async with sess.get(f"{API_URL}/products", params={"q": query}) as resp:
@@ -114,19 +101,7 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
         await update.message.reply_text(txt, reply_markup=kb)
         return
 
-    # 4. Fallback: проверка FAQ в любом случае
-    try:
-        async with aiohttp.ClientSession(timeout=HTTP_TIMEOUT) as sess:
-            async with sess.get(f"{API_URL}/faq", params={"q": query}) as resp:
-                resp.raise_for_status()
-                faqs = await resp.json()
-                if faqs:
-                    await update.message.reply_text(faqs[0]["answer"])
-                    return
-    except Exception:
-        logging.warning("FAQ fallback failed")
-
-    # 5. Вообще ничего не нашли → пишем менеджеру
+    # 4. Ничего не найдено — передаём вопрос менеджеру
     await update.message.reply_text("Передаю вопрос менеджеру 👨‍🔧")
     try:
         async with aiohttp.ClientSession(timeout=HTTP_TIMEOUT) as sess:
@@ -137,7 +112,7 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     except Exception:
         logging.warning("Could not send question to API")
 
-# ──────────── Запуск ─────────────
+# ───────── Запуск ─────────
 def main() -> None:
     if not BOT_TOKEN:
         raise RuntimeError("Please set BOT_TOKEN env-var")
@@ -154,7 +129,6 @@ def main() -> None:
 
     logging.info("Bot started")
     app.run_polling(allowed_updates=["message"])
-
 
 if __name__ == "__main__":
     main()
