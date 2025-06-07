@@ -1,4 +1,3 @@
-// webapp/src/components/Header.jsx
 import React, { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import CartLink from './CartLink.jsx';
@@ -7,8 +6,59 @@ import './Header.css';
 const Header = ({ onSearch }) => {
   const [query, setQuery] = useState('');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [infoTitle, setInfoTitle] = useState('');
+  const [infoContent, setInfoContent] = useState('');
   const navigate = useNavigate();
   const isLoggedIn = localStorage.getItem('auth_token') !== null;
+
+  const openInfo = (type) => {
+    let title = '';
+    let content = '';
+    switch (type) {
+      case 'payment':
+        title = 'Оплата заказа';
+        content = `Оплата товара производится на карту Сбербанка.
+
+Также оплата товара производится после оформления корзины в сообществе Вконтакте (при заказе в ВК).`;
+        break;
+      case 'refund':
+        title = 'Возврат';
+        content = `ВОЗВРАТ ИЛИ ОБМЕН ТОВАРА НАДЛЕЖАЩЕГО КАЧЕСТВА:
+
+- Срок возврата или обмена: 14 дней после получения.
+- Условия: товарный вид, целая упаковка.
+- Оплата возврата/обмена: за счёт покупателя.
+- Проверка: до 2 рабочих дней.
+- Деньги — по предоставленным реквизитам.
+
+ВОЗВРАТ ИЛИ ОБМЕН ТОВАРА НЕНАДЛЕЖАЩЕГО КАЧЕСТВА:
+
+- Заводской брак, некомплект, гарантийный случай.
+- Доставка возврата — за счёт продавца.
+- Возврат средств: до 10 рабочих дней.
+
+Важно: повреждение упаковки ТК — не основание для возврата. Покупатель подаёт претензию в ТК.`;
+        break;
+      case 'delivery':
+        title = 'Доставка';
+        content = `Изготовление и отправка товара — до 15 дней!
+
+Доступные ТК:
+- СДЭК: https://www.cdek.ru/calculate
+- Энергия: https://nrg-tk.ru/client/calculator/
+- Деловые Линии: https://www.dellin.ru/`;
+        break;
+      case 'contacts':
+        title = 'Контакты';
+        content = `Технические вопросы: +7(927)705-52-03 (Пн–Пт 9:00–17:00)
+Опт: Telegram/WhatsApp +7(967)485-93-90
+Оформление и консультации: WhatsApp +7(967)483-32-10`;
+        break;
+    }
+    setInfoTitle(title);
+    setInfoContent(content);
+    toggleSidebar();
+  };
 
   useEffect(() => {
     if (window.TelegramWebApp) {
@@ -34,7 +84,7 @@ const Header = ({ onSearch }) => {
   };
 
   const toggleSidebar = () => {
-    setIsSidebarOpen(prev => !prev);
+    setIsSidebarOpen((prev) => !prev);
   };
 
   const handleLogoClick = () => {
@@ -44,28 +94,27 @@ const Header = ({ onSearch }) => {
   return (
     <>
       <header className="header-container">
-        {/* Верхняя строка */}
         <div className="header-top">
           <div className="header-top__left">
-            <span
-              className="header-logo-text"
-              onClick={handleLogoClick}
-              style={{ cursor: 'pointer' }}
-            >
+            <span className="header-logo-text" onClick={handleLogoClick} style={{ cursor: 'pointer' }}>
               DK PROduct
             </span>
           </div>
           <div className="header-top__right">
-            <button className="header-official">
+            <a
+              href="https://vk.com/dk_pro_tuning?from=groups"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="header-official"
+            >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="#fff">
                 <path d="M12 3C7.03 3 3 7.03 3 12s4.03 9 9 9 9-4.03 9-9-4.03-9-9-9zm0 16c-3.87 0-7-3.13-7-7 0-1.93.78-3.68 2.05-4.95L12 11v3h3l3.95 3.95C15.68 18.22 13.93 19 12 19z" />
               </svg>
               <span>Official channel</span>
-            </button>
+            </a>
           </div>
         </div>
 
-        {/* Нижняя строка */}
         <div className="header-bottom">
           <div className="header-bottom__left">
             {window.TelegramWebApp && (
@@ -105,35 +154,38 @@ const Header = ({ onSearch }) => {
         </div>
       </header>
 
-      {/* Sidebar */}
-      <div
-        className={`sidebar-overlay ${isSidebarOpen ? 'visible' : ''}`}
-        onClick={toggleSidebar}
-      ></div>
+      <div className={`sidebar-overlay ${isSidebarOpen ? 'visible' : ''}`} onClick={toggleSidebar}></div>
 
       <aside className={`sidebar ${isSidebarOpen ? 'open' : ''}`}>
         <div className="sidebar-header">
-          <button className="sidebar-close" onClick={toggleSidebar}>
-            ×
-          </button>
+          <button className="sidebar-close" onClick={toggleSidebar}>×</button>
         </div>
         <nav className="sidebar-nav">
           <ul>
-            <li><a href="#payment" onClick={toggleSidebar}>Оплата заказа</a></li>
-            <li><a href="#refund" onClick={toggleSidebar}>Возврат</a></li>
-            <li><a href="#delivery" onClick={toggleSidebar}>Доставка</a></li>
-            <li><a href="#contacts" onClick={toggleSidebar}>Контакты</a></li>
-
+            <li><a href="#!" onClick={() => openInfo('payment')}>Оплата заказа</a></li>
+            <li><a href="#!" onClick={() => openInfo('refund')}>Возврат</a></li>
+            <li><a href="#!" onClick={() => openInfo('delivery')}>Доставка</a></li>
+            <li><a href="#!" onClick={() => openInfo('contacts')}>Контакты</a></li>
             {isLoggedIn && (
               <li>
                 <Link to="/admin/orders" className="admin-link" onClick={toggleSidebar}>
-                  🛠 Админка
+                  🛠 Панель администратора
                 </Link>
               </li>
             )}
           </ul>
         </nav>
       </aside>
+
+      {infoContent && (
+        <div className="info-modal-overlay" onClick={() => setInfoContent('')}>
+          <div className="info-modal" onClick={(e) => e.stopPropagation()}>
+            <h3>{infoTitle}</h3>
+            <pre>{infoContent}</pre>
+            <button onClick={() => setInfoContent('')}>Закрыть</button>
+          </div>
+        </div>
+      )}
     </>
   );
 };

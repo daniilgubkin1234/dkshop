@@ -9,7 +9,7 @@ const MODEL_CARDS = [
   { label: 'SAMARA 2108-21', models: ['2108-21'], img: '/models/2108-15.jpg' },
   { label: 'PRIORA (2110–2170)', models: ['2110-21', '2170-21'], img: '/models/2110-12.jpg' },
   { label: 'КАЛИНА (1117–1119)', models: ['1117', '1118', '1119'], img: '/models/kalina_granta.jpg' },
-  { label: 'GRANTA (2190–2192)', models: ['гранта'], matchByName: true, img: '/models/kalina_granta.jpg.jpg' },
+  { label: 'GRANTA (2190–2192)', models: ['гранта'], matchByName: true, img: '/models/kalina_granta.jpg' },
 ];
 
 export default function ProductList({ onSearchChange }) {
