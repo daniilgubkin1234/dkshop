@@ -95,11 +95,10 @@ const Header = ({ onSearch }) => {
     <>
       <header className="header-container">
         <div className="header-top">
-          <div className="header-top__left">
-            <span className="header-logo-text" onClick={handleLogoClick} style={{ cursor: 'pointer' }}>
-              DK PROduct
-            </span>
-          </div>
+        <div className="header-top__left" onClick={handleLogoClick} style={{ cursor: 'pointer' }}>
+  <img src="/models/dklogo.png" alt="logo" className="header-logo-image" />
+  <span className="header-logo-text">DK PROduct</span>
+</div>
           <div className="header-top__right">
             <a
               href="https://vk.com/dk_pro_tuning?from=groups"
