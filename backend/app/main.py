@@ -161,3 +161,9 @@ def delete_order(order_id: int, creds: HTTPBasicCredentials = Depends(check_admi
         s.delete(order)
         s.commit()
         return {"ok": True}
+    
+@app.get("/orders/by-phone")
+def orders_by_phone(phone: str):
+    with Session(engine) as session:
+        stmt = select(Order).where(Order.phone == phone).order_by(Order.created_at.desc())
+        return session.exec(stmt).all()

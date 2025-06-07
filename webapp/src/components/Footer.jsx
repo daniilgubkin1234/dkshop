@@ -12,33 +12,9 @@ export default function Footer() {
           <h4 className="footer-title">Полезные ссылки</h4>
           <ul className="footer-list">
             <li>
-              <a href="/delivery" className="footer-link">
-                <span className="footer-icon">📦</span>
-                <span className="footer-text">Доставка</span>
-              </a>
-            </li>
-            <li>
-              <a href="/payment" className="footer-link">
-                <span className="footer-icon">💳</span>
-                <span className="footer-text">Оплата</span>
-              </a>
-            </li>
-            <li>
-              <a href="/contacts" className="footer-link">
-                <span className="footer-icon">📞</span>
-                <span className="footer-text">Контакты</span>
-              </a>
-            </li>
-            <li>
               <a href="/reviews" className="footer-link">
                 <span className="footer-icon">⭐</span>
                 <span className="footer-text">Отзывы</span>
-              </a>
-            </li>
-            <li>
-              <a href="/returns" className="footer-link">
-                <span className="footer-icon">↩️</span>
-                <span className="footer-text">Возврат</span>
               </a>
             </li>
             <li>
