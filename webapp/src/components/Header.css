@@ -325,4 +325,20 @@
     color: #7a7a7a;
   }
   */
+  .sidebar-nav .admin-link {
+    display: block;
+    margin-top: 12px;
+    padding: 8px 12px;
+    background-color: #e53935;
+    color: #fff;
+    text-align: center;
+    border-radius: 8px;
+    font-weight: bold;
+    text-decoration: none;
+    transition: background 0.2s ease;
+  }
+  
+  .sidebar-nav .admin-link:hover {
+    background-color: #c62828;
+  }
   

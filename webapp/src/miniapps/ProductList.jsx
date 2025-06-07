@@ -5,12 +5,11 @@ import { useCart } from '../context/CartContext.jsx';
 import './ProductList.css';
 
 const MODEL_CARDS = [
-  { label: 'ВАЗ 2101-07', models: ['2101-07'], img: '/models/logo.jpg' },
-  { label: 'SAMARA 2108-21', models: ['2108-21'], img: '/models/logo.jpg' },
-  { label: 'PRIORA 2110-21', models: ['2110-21'], img: '/models/logo.jpg' },
-  { label: 'КАЛИНА (1117–1119)', models: ['1117', '1118', '1119'], img: '/models/logo.jpg' },
-  { label: 'GRANTA (2190–2192)', models: ['2190', '2191', '2192'], img: '/models/logo.jpg' },
-  { label: 'PRIORA 2170-21', models: ['2170-21'], img: '/models/logo.jpg' },
+  { label: 'ВАЗ 2101-07', models: ['2101-07'], img: '/models/2101-07.jpg' },
+  { label: 'SAMARA 2108-21', models: ['2108-21'], img: '/models/2108-15.jpg' },
+  { label: 'PRIORA (2110–2170)', models: ['2110-21', '2170-21'], img: '/models/2110-12.jpg' },
+  { label: 'КАЛИНА (1117–1119)', models: ['1117', '1118', '1119'], img: '/models/kalina_granta.jpg' },
+  { label: 'GRANTA', models: ['гранта'], matchByName: true, img: '/models/kalina_granta.jpg' },
   { label: '2102-04', models: ['2102-04'], img: '/models/logo.jpg' },
   { label: '2102-21', models: ['2102-21'], img: '/models/logo.jpg' },
   { label: '2170-71', models: ['2170-71'], img: '/models/logo.jpg' },
@@ -23,6 +22,7 @@ export default function ProductList({ onSearchChange }) {
   const [products, setProducts] = useState([]);
   const [filterQuery, setFilterQuery] = useState('');
   const [selectedModel, setSelectedModel] = useState(null);
+  const [selectedMatchByName, setSelectedMatchByName] = useState(false);
   const [showAllModels, setShowAllModels] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -76,8 +76,14 @@ export default function ProductList({ onSearchChange }) {
     const matchesModel =
       !selectedModel ||
       (Array.isArray(selectedModel)
-        ? selectedModel.some((m) => (p.model_compat || '').includes(m))
-        : (p.model_compat || '').includes(selectedModel));
+        ? selectedModel.some((m) =>
+            selectedMatchByName
+              ? name.includes(m.toLowerCase())
+              : model.includes(m)
+          )
+        : selectedMatchByName
+          ? name.includes(selectedModel.toLowerCase())
+          : model.includes(selectedModel));
 
     return matchesText && matchesModel;
   });
@@ -85,7 +91,7 @@ export default function ProductList({ onSearchChange }) {
   return (
     <>
       <div className="model-cards">
-        {(showAllModels ? MODEL_CARDS : MODEL_CARDS.slice(0, 4)).map(({ label, models, img }) => {
+        {(showAllModels ? MODEL_CARDS : MODEL_CARDS.slice(0, 4)).map(({ label, models, img, matchByName }) => {
           const isActive =
             selectedModel &&
             (Array.isArray(selectedModel)
@@ -96,7 +102,10 @@ export default function ProductList({ onSearchChange }) {
             <div
               key={label}
               className={`model-card ${isActive ? 'active' : ''}`}
-              onClick={() => setSelectedModel(models)}
+              onClick={() => {
+                setSelectedModel(models);
+                setSelectedMatchByName(!!matchByName);
+              }}
             >
               <img src={img} alt={label} />
               <span>{label}</span>
@@ -111,7 +120,13 @@ export default function ProductList({ onSearchChange }) {
         )}
 
         {selectedModel && (
-          <button className="reset-filter" onClick={() => setSelectedModel(null)}>
+          <button
+            className="reset-filter"
+            onClick={() => {
+              setSelectedModel(null);
+              setSelectedMatchByName(false);
+            }}
+          >
             Сбросить фильтр
           </button>
         )}
