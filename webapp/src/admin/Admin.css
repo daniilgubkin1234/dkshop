@@ -1,84 +1,87 @@
 /* src/admin/Admin.css */
 
 .admin-container {
-    padding: 24px;
-    color: #fff;
-    font-family: sans-serif;
-  }
-  
-  .admin-container h2 {
-    margin-bottom: 16px;
-  }
-  
-  .admin-login input {
-    padding: 8px;
-    margin-bottom: 10px;
-    width: 220px;
-    font-size: 14px;
-  }
-  
-  .admin-login button {
-    padding: 8px 16px;
-    background: #1a73e8;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    font-weight: 600;
-    cursor: pointer;
-  }
-  
-  .admin-login button:hover {
-    background: #155ec6;
-  }
-  
-  .admin-orders table {
-    width: 100%;
-    border-collapse: collapse;
-    background: #1e1e1e;
-  }
-  
-  .admin-orders th, .admin-orders td {
-    border: 1px solid #444;
-    padding: 8px;
-    text-align: left;
-    font-size: 14px;
-  }
-  
-  .admin-orders th {
-    background: #333;
-  }
-  
-  .admin-orders button {
-    margin-right: 6px;
-    padding: 6px 10px;
-    font-size: 12px;
-    background: #444;
-    color: white;
-    border: none;
-    border-radius: 3px;
-    cursor: pointer;
-  }
-  
-  .admin-orders button:hover {
-    background: #666;
-  }
-  
+  padding: 24px;
+  color: #fff;
+  font-family: sans-serif;
+}
 
-  /* FAQ-таблица */
+.admin-container h2 {
+  margin-bottom: 16px;
+}
+
+/* ──────────── Логин ──────────── */
+.admin-login input {
+  padding: 8px;
+  margin-bottom: 10px;
+  width: 220px;
+  font-size: 14px;
+}
+
+.admin-login button {
+  padding: 8px 16px;
+  background: #1a73e8;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.admin-login button:hover {
+  background: #155ec6;
+}
+
+/* ──────────── Заказы ──────────── */
+.admin-orders table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #1e1e1e;
+}
+
+.admin-orders th,
+.admin-orders td {
+  border: 1px solid #444;
+  padding: 8px;
+  text-align: left;
+  font-size: 14px;
+}
+
+.admin-orders th {
+  background: #333;
+}
+
+.admin-orders button {
+  margin-right: 6px;
+  padding: 6px 10px;
+  font-size: 12px;
+  background: #444;
+  color: white;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.admin-orders button:hover {
+  background: #666;
+}
+
+/* ──────────── FAQ ──────────── */
 .admin-faq table {
   width: 100%;
   border-collapse: collapse;
   background: #1f1f1f;
   margin-top: 20px;
+  table-layout: fixed;
 }
 
 .admin-faq th,
 .admin-faq td {
   border: 1px solid #444;
   padding: 12px;
-  text-align: left;
   font-size: 15px;
-  vertical-align: middle;
+  vertical-align: top;
+  text-align: left;
 }
 
 .admin-faq th {
@@ -86,7 +89,27 @@
   color: #fff;
 }
 
-.admin-faq input {
+/* Колонки по ширине: вопрос / ответ / кнопки */
+.admin-faq th:nth-child(1),
+.admin-faq td:nth-child(1) {
+  width: 30%;
+}
+
+.admin-faq th:nth-child(2),
+.admin-faq td:nth-child(2) {
+  width: 50%;
+}
+
+.admin-faq th:nth-child(3),
+.admin-faq td:nth-child(3) {
+  width: 20%;
+  white-space: nowrap;
+  text-align: center;
+}
+
+/* Поля ввода */
+.admin-faq input,
+.admin-faq textarea {
   width: 100%;
   padding: 8px;
   font-size: 14px;
@@ -96,6 +119,14 @@
   border-radius: 4px;
 }
 
+.admin-faq textarea {
+  resize: none;
+  overflow: hidden;
+  line-height: 1.4;
+  min-height: 60px;
+}
+
+/* Кнопки */
 .admin-faq button {
   padding: 6px 14px;
   font-size: 14px;
@@ -105,7 +136,7 @@
   border: none;
   border-radius: 5px;
   cursor: pointer;
-  margin: 2px 0;
+  margin: 2px 4px;
 }
 
 .admin-faq button:hover {
@@ -120,6 +151,7 @@
   background: #b71c1c;
 }
 
+/* Добавление новой строки */
 .admin-faq .faq-add-row {
   margin-bottom: 20px;
   display: flex;
@@ -134,25 +166,7 @@
   flex-shrink: 0;
 }
 
-
-.admin-faq textarea {
-  width: 100%;
-  padding: 8px;
-  font-size: 14px;
-  background: #2b2b2b;
-  color: #fff;
-  border: 1px solid #555;
-  border-radius: 4px;
-  resize: none;
-  overflow: hidden;
-  line-height: 1.4;
-  min-height: 60px;
-}
-
-.admin-faq td {
-  vertical-align: top;
-}
-
+/* Отступ между строками */
 .admin-faq tbody tr {
   border-bottom: 6px solid #1f1f1f;
 }
