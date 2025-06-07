@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-
+import { API_URL } from '../api.js';
 export default function MyOrders() {
   const [phone, setPhone] = useState("");
   const [orders, setOrders] = useState([]);
@@ -14,7 +14,8 @@ export default function MyOrders() {
     setOrders([]);
 
     try {
-      const res = await fetch(`/orders/by-phone?phone=${encodeURIComponent(phone)}`);
+      const res = await fetch(`${API_URL}/orders/by-phone?phone=${encodeURIComponent(phone)}`);
+
 
       if (!res.ok) {
         const errText = await res.text();
