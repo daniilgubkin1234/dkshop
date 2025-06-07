@@ -138,11 +138,7 @@ const Header = ({ onSearch }) => {
           </div>
 
           <div className="header-bottom__right">
-            <button className="header-filter">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="#fff">
-                <path d="M3 5h18v2H3zM6 11h12v2H6zM10 17h4v2h-4z" />
-              </svg>
-            </button>
+            
             <button className="header-menu" onClick={toggleSidebar}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="#fff">
                 <path d="M3 12h18v2H3zM3 6h18v2H3zM3 18h18v2H3z" />
