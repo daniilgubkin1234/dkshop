@@ -20,7 +20,7 @@ function FAQRow({ faq, onChange, onSave, onDelete }) {
 
   return (
     <tr>
-      <td>
+      <td data-label="Вопрос">
         <textarea
           ref={qRef}
           rows={1}
@@ -28,7 +28,7 @@ function FAQRow({ faq, onChange, onSave, onDelete }) {
           onChange={(e) => onChange(faq.id, "question", e.target.value)}
         />
       </td>
-      <td>
+      <td data-label="Ответ">
         <textarea
           ref={aRef}
           rows={1}
@@ -36,7 +36,7 @@ function FAQRow({ faq, onChange, onSave, onDelete }) {
           onChange={(e) => onChange(faq.id, "answer", e.target.value)}
         />
       </td>
-      <td>
+      <td data-label="Действия">
         <button onClick={() => onSave(faq)}>💾 Сохранить</button>
         <button onClick={() => onDelete(faq.id)}>🗑️ Удалить</button>
       </td>
