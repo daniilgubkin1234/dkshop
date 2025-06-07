@@ -170,3 +170,16 @@ def orders_by_phone(phone: str):
             func.replace(func.replace(Order.phone, ' ', ''), '-', '').ilike(f"%{normalized}%")
         ).order_by(Order.created_at.desc())
         return session.exec(stmt).all()
+    
+@app.patch("/faq/{faq_id}", response_model=FAQ)
+def update_faq(faq_id: int, item: FAQ, creds: HTTPBasicCredentials = Depends(check_admin)):
+    with Session(engine) as session:
+        faq = session.get(FAQ, faq_id)
+        if not faq:
+            raise HTTPException(status_code=404, detail="FAQ not found")
+        faq.question = item.question
+        faq.answer = item.answer
+        session.add(faq)
+        session.commit()
+        session.refresh(faq)
+        return faq
