@@ -9,13 +9,7 @@ const MODEL_CARDS = [
   { label: 'SAMARA 2108-21', models: ['2108-21'], img: '/models/2108-15.jpg' },
   { label: 'PRIORA (2110–2170)', models: ['2110-21', '2170-21'], img: '/models/2110-12.jpg' },
   { label: 'КАЛИНА (1117–1119)', models: ['1117', '1118', '1119'], img: '/models/kalina_granta.jpg' },
-  { label: 'GRANTA', models: ['гранта'], matchByName: true, img: '/models/kalina_granta.jpg' },
-  { label: '2102-04', models: ['2102-04'], img: '/models/logo.jpg' },
-  { label: '2102-21', models: ['2102-21'], img: '/models/logo.jpg' },
-  { label: '2170-71', models: ['2170-71'], img: '/models/logo.jpg' },
-  { label: '2117-21', models: ['2117-21'], img: '/models/logo.jpg' },
-  { label: '1117-11', models: ['1117-11'], img: '/models/logo.jpg' },
-  { label: '1117-18', models: ['1117-18'], img: '/models/logo.jpg' },
+  { label: 'GRANTA (2190–2192)', models: ['гранта'], matchByName: true, img: '/models/kalina_granta.jpg.jpg' },
 ];
 
 export default function ProductList({ onSearchChange }) {
