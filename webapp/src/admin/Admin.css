@@ -63,3 +63,73 @@
     background: #666;
   }
   
+
+  /* FAQ-таблица */
+.admin-faq table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #1f1f1f;
+  margin-top: 20px;
+}
+
+.admin-faq th,
+.admin-faq td {
+  border: 1px solid #444;
+  padding: 12px;
+  text-align: left;
+  font-size: 15px;
+  vertical-align: middle;
+}
+
+.admin-faq th {
+  background: #2a2a2a;
+  color: #fff;
+}
+
+.admin-faq input {
+  width: 100%;
+  padding: 8px;
+  font-size: 14px;
+  background: #2b2b2b;
+  color: #fff;
+  border: 1px solid #555;
+  border-radius: 4px;
+}
+
+.admin-faq button {
+  padding: 6px 14px;
+  font-size: 14px;
+  font-weight: 500;
+  background: #1a73e8;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  margin: 2px 0;
+}
+
+.admin-faq button:hover {
+  background: #135cc0;
+}
+
+.admin-faq button:nth-child(2) {
+  background: #d32f2f;
+}
+
+.admin-faq button:nth-child(2):hover {
+  background: #b71c1c;
+}
+
+.admin-faq .faq-add-row {
+  margin-bottom: 20px;
+  display: flex;
+  gap: 12px;
+}
+
+.admin-faq .faq-add-row input {
+  flex: 1;
+}
+
+.admin-faq .faq-add-row button {
+  flex-shrink: 0;
+}

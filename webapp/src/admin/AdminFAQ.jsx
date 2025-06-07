@@ -74,25 +74,23 @@ export default function AdminFAQ() {
   }, []);
 
   return (
-    <div className="admin-container">
+    <div className="admin-container admin-faq">
       <h2>FAQ – Вопросы и ответы</h2>
-
-      <div style={{ marginBottom: 20 }}>
+  
+      <div className="faq-add-row">
         <input
-          style={{ width: "40%", marginRight: 10 }}
           placeholder="Новый вопрос"
           value={newQuestion}
           onChange={(e) => setNewQuestion(e.target.value)}
         />
         <input
-          style={{ width: "40%", marginRight: 10 }}
           placeholder="Ответ"
           value={newAnswer}
           onChange={(e) => setNewAnswer(e.target.value)}
         />
         <button onClick={handleAdd}>Добавить</button>
       </div>
-
+  
       <table>
         <thead>
           <tr>
@@ -108,21 +106,17 @@ export default function AdminFAQ() {
                 <input
                   value={faq.question}
                   onChange={(e) => handleChange(faq.id, "question", e.target.value)}
-                  style={{ width: "100%" }}
                 />
               </td>
               <td>
                 <input
                   value={faq.answer}
                   onChange={(e) => handleChange(faq.id, "answer", e.target.value)}
-                  style={{ width: "100%" }}
                 />
               </td>
               <td>
                 <button onClick={() => handleEditSave(faq)}>💾 Сохранить</button>
-                <button onClick={() => handleDelete(faq.id)} style={{ marginLeft: 10 }}>
-                  🗑️ Удалить
-                </button>
+                <button onClick={() => handleDelete(faq.id)}>🗑️ Удалить</button>
               </td>
             </tr>
           ))}
