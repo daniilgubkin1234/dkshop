@@ -76,8 +76,8 @@ export default function ProductList({ onSearchChange }) {
     const matchesModel =
       !selectedModel ||
       (Array.isArray(selectedModel)
-        ? selectedModel.includes(p.model_compat)
-        : p.model_compat === selectedModel);
+        ? selectedModel.some((m) => (p.model_compat || '').includes(m))
+        : (p.model_compat || '').includes(selectedModel));
 
     return matchesText && matchesModel;
   });
@@ -107,6 +107,12 @@ export default function ProductList({ onSearchChange }) {
         {MODEL_CARDS.length > 4 && (
           <button className="toggle-more" onClick={() => setShowAllModels((v) => !v)}>
             {showAllModels ? 'Скрыть' : 'Показать все'}
+          </button>
+        )}
+
+        {selectedModel && (
+          <button className="reset-filter" onClick={() => setSelectedModel(null)}>
+            Сбросить фильтр
           </button>
         )}
       </div>
