@@ -1,4 +1,4 @@
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8001';
+export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8001';
 
 export async function fetchProducts() {
   const response = await fetch(`${API_URL}/products`);
