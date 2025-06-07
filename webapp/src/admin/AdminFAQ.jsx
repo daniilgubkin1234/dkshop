@@ -14,6 +14,36 @@ function useAutosizeTextArea(value) {
   return ref;
 }
 
+function FAQRow({ faq, onChange, onSave, onDelete }) {
+  const qRef = useAutosizeTextArea(faq.question);
+  const aRef = useAutosizeTextArea(faq.answer);
+
+  return (
+    <tr>
+      <td>
+        <textarea
+          ref={qRef}
+          rows={1}
+          value={faq.question}
+          onChange={(e) => onChange(faq.id, "question", e.target.value)}
+        />
+      </td>
+      <td>
+        <textarea
+          ref={aRef}
+          rows={1}
+          value={faq.answer}
+          onChange={(e) => onChange(faq.id, "answer", e.target.value)}
+        />
+      </td>
+      <td>
+        <button onClick={() => onSave(faq)}>💾 Сохранить</button>
+        <button onClick={() => onDelete(faq.id)}>🗑️ Удалить</button>
+      </td>
+    </tr>
+  );
+}
+
 export default function AdminFAQ() {
   const [faqList, setFaqList] = useState([]);
   const [newQuestion, setNewQuestion] = useState("");
@@ -112,39 +142,15 @@ export default function AdminFAQ() {
           </tr>
         </thead>
         <tbody>
-          {faqList.map((faq) => {
-            const qRef = useAutosizeTextArea(faq.question);
-            const aRef = useAutosizeTextArea(faq.answer);
-
-            return (
-              <tr key={faq.id}>
-                <td>
-                  <textarea
-                    ref={qRef}
-                    rows={1}
-                    value={faq.question}
-                    onChange={(e) =>
-                      handleChange(faq.id, "question", e.target.value)
-                    }
-                  />
-                </td>
-                <td>
-                  <textarea
-                    ref={aRef}
-                    rows={1}
-                    value={faq.answer}
-                    onChange={(e) =>
-                      handleChange(faq.id, "answer", e.target.value)
-                    }
-                  />
-                </td>
-                <td>
-                  <button onClick={() => handleEditSave(faq)}>💾 Сохранить</button>
-                  <button onClick={() => handleDelete(faq.id)}>🗑️ Удалить</button>
-                </td>
-              </tr>
-            );
-          })}
+          {faqList.map((faq) => (
+            <FAQRow
+              key={faq.id}
+              faq={faq}
+              onChange={handleChange}
+              onSave={handleEditSave}
+              onDelete={handleDelete}
+            />
+          ))}
         </tbody>
       </table>
     </div>
