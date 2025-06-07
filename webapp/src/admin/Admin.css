@@ -133,3 +133,26 @@
 .admin-faq .faq-add-row button {
   flex-shrink: 0;
 }
+
+
+.admin-faq textarea {
+  width: 100%;
+  padding: 8px;
+  font-size: 14px;
+  background: #2b2b2b;
+  color: #fff;
+  border: 1px solid #555;
+  border-radius: 4px;
+  resize: none;
+  overflow: hidden;
+  line-height: 1.4;
+  min-height: 60px;
+}
+
+.admin-faq td {
+  vertical-align: top;
+}
+
+.admin-faq tbody tr {
+  border-bottom: 6px solid #1f1f1f;
+}

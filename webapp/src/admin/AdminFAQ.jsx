@@ -1,6 +1,18 @@
 // src/admin/AdminFAQ.jsx
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import "./Admin.css";
+
+function useAutosizeTextArea(value) {
+  const ref = useRef(null);
+
+  useEffect(() => {
+    if (!ref.current) return;
+    ref.current.style.height = "auto";
+    ref.current.style.height = ref.current.scrollHeight + "px";
+  }, [value]);
+
+  return ref;
+}
 
 export default function AdminFAQ() {
   const [faqList, setFaqList] = useState([]);
@@ -76,7 +88,7 @@ export default function AdminFAQ() {
   return (
     <div className="admin-container admin-faq">
       <h2>FAQ – Вопросы и ответы</h2>
-  
+
       <div className="faq-add-row">
         <input
           placeholder="Новый вопрос"
@@ -90,7 +102,7 @@ export default function AdminFAQ() {
         />
         <button onClick={handleAdd}>Добавить</button>
       </div>
-  
+
       <table>
         <thead>
           <tr>
@@ -100,26 +112,39 @@ export default function AdminFAQ() {
           </tr>
         </thead>
         <tbody>
-          {faqList.map((faq) => (
-            <tr key={faq.id}>
-              <td>
-                <input
-                  value={faq.question}
-                  onChange={(e) => handleChange(faq.id, "question", e.target.value)}
-                />
-              </td>
-              <td>
-                <input
-                  value={faq.answer}
-                  onChange={(e) => handleChange(faq.id, "answer", e.target.value)}
-                />
-              </td>
-              <td>
-                <button onClick={() => handleEditSave(faq)}>💾 Сохранить</button>
-                <button onClick={() => handleDelete(faq.id)}>🗑️ Удалить</button>
-              </td>
-            </tr>
-          ))}
+          {faqList.map((faq) => {
+            const qRef = useAutosizeTextArea(faq.question);
+            const aRef = useAutosizeTextArea(faq.answer);
+
+            return (
+              <tr key={faq.id}>
+                <td>
+                  <textarea
+                    ref={qRef}
+                    rows={1}
+                    value={faq.question}
+                    onChange={(e) =>
+                      handleChange(faq.id, "question", e.target.value)
+                    }
+                  />
+                </td>
+                <td>
+                  <textarea
+                    ref={aRef}
+                    rows={1}
+                    value={faq.answer}
+                    onChange={(e) =>
+                      handleChange(faq.id, "answer", e.target.value)
+                    }
+                  />
+                </td>
+                <td>
+                  <button onClick={() => handleEditSave(faq)}>💾 Сохранить</button>
+                  <button onClick={() => handleDelete(faq.id)}>🗑️ Удалить</button>
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>
