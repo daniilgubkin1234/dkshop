@@ -166,7 +166,7 @@ const Header = ({ onSearch }) => {
             <li><a href="#!" onClick={() => openInfo('delivery')}>Доставка</a></li>
             <li><a href="#!" onClick={() => openInfo('contacts')}>Контакты</a></li>
             <li>
-            <Link to="/my-orders" onClick={toggleSidebar}>🧾 Мои заказы</Link>
+            <Link to="/my-orders" onClick={toggleSidebar}>Мои заказы</Link>
             </li>
 
 

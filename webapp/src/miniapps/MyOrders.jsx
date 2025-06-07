@@ -32,7 +32,7 @@ export default function MyOrders() {
 
   return (
     <div style={{ padding: 20, color: "#fff", maxWidth: 600, margin: "0 auto" }}>
-      <h2 style={{ marginBottom: 16 }}>🧾 Мои заказы</h2>
+      <h2 style={{ marginBottom: 16 }}> Мои заказы</h2>
 
       <input
         type="tel"
