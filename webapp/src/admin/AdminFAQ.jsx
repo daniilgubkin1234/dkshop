@@ -10,7 +10,7 @@ export default function AdminFAQ() {
   const token = localStorage.getItem("auth_token");
 
   const loadFAQs = () => {
-    fetch("https://dkshopbot.ru/faq?q=", {
+    fetch("https://dkshopbot.ru/faq?q=*", {
       headers: { Authorization: `Basic ${token}` },
     })
       .then((r) => r.json())

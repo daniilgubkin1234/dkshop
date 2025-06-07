@@ -7,7 +7,6 @@ from sqlalchemy import or_, func
 from .models import Order 
 import requests
 import os
-from .models import Order
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi import Depends, HTTPException
 import secrets
@@ -98,10 +97,13 @@ def create_order(order: Order):
     return {"status": "ok", "order_id": order.id}
 
 @app.get("/faq")
-def search_faq(q: str = Query(..., min_length=2)):
+def search_faq(q: str = Query("*", min_length=1)):
     with Session(engine) as session:
-        stmt = select(FAQ).where(FAQ.question.ilike(f"%{q}%"))
+        stmt = select(FAQ)
+        if q != "*":
+            stmt = stmt.where(FAQ.question.ilike(f"%{q}%"))
         return session.exec(stmt).all()
+
 
 @app.post("/faq", response_model=FAQ)
 def create_faq(item: FAQ):
