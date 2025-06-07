@@ -9,19 +9,23 @@
   font-family: sans-serif;
 }
 
-/* === Кнопка «← Назад» === */
+/* === Кнопка «← Вернуться на главную» === */
 .product-back {
-  background: none;
+  display: inline-block;
+  margin-bottom: 20px;
+  padding: 10px 16px;
+  font-size: 15px;
+  font-weight: 500;
+  background-color: #1a73e8;
+  color: #fff;
   border: none;
-  color: #ffffff;
-  font-size: 16px;
-  margin-bottom: 16px;
+  border-radius: 6px;
   cursor: pointer;
-  transition: color 0.2s ease;
+  transition: background 0.2s ease;
 }
 
 .product-back:hover {
-  color: #e53935;
+  background-color: #135cc0;
 }
 
 /* === Контейнер для изображения и деталей === */
