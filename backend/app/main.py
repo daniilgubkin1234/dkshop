@@ -164,12 +164,9 @@ def delete_order(order_id: int, creds: HTTPBasicCredentials = Depends(check_admi
     
 @app.get("/orders/by-phone")
 def orders_by_phone(phone: str):
+    normalized = phone.strip().replace(" ", "").replace("-", "").lstrip("+").replace("+7", "8").replace("+", "")
     with Session(engine) as session:
-        phone_variants = [
-            phone.strip(),
-            phone.strip().lstrip('+'),
-            phone.strip().replace('+7', '8') if phone.startswith('+7') else phone
-        ]
-
-        stmt = select(Order).where(Order.phone.in_(phone_variants)).order_by(Order.created_at.desc())
+        stmt = select(Order).where(
+            func.replace(func.replace(Order.phone, ' ', ''), '-', '').ilike(f"%{normalized}%")
+        ).order_by(Order.created_at.desc())
         return session.exec(stmt).all()
