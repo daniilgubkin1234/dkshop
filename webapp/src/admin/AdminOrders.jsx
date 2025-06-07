@@ -1,7 +1,7 @@
 // src/admin/AdminOrders.jsx
 import React, { useEffect, useState } from 'react';
 import './Admin.css';
-
+import AdminHeader from "./AdminHeader";
 export default function AdminOrders() {
   const [orders, setOrders] = useState([]);
 
@@ -41,6 +41,7 @@ export default function AdminOrders() {
 
   return (
     <div className="admin-container admin-orders">
+      <AdminHeader />
       <h2>Заказы</h2>
       <table border="1" cellPadding="8">
         <thead>

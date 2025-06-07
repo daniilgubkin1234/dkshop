@@ -1,7 +1,7 @@
 // src/admin/AdminFAQ.jsx
 import React, { useEffect, useState, useRef } from "react";
 import "./Admin.css";
-
+import AdminHeader from "./AdminHeader";
 function useAutosizeTextArea(value) {
   const ref = useRef(null);
 
@@ -117,6 +117,7 @@ export default function AdminFAQ() {
 
   return (
     <div className="admin-container admin-faq">
+        <AdminHeader />
       <h2>FAQ – Вопросы и ответы</h2>
 
       <div className="faq-add-row">

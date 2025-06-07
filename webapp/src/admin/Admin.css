@@ -171,7 +171,31 @@
   border-bottom: 6px solid #1f1f1f;
 }
 
+.admin-header-nav {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid #444;
+  padding-bottom: 8px;
+}
 
+.admin-header-nav a {
+  color: #ccc;
+  text-decoration: none;
+  font-weight: 500;
+  padding: 6px 12px;
+  border-radius: 6px;
+  transition: background 0.2s ease;
+}
+
+.admin-header-nav a:hover {
+  background: #333;
+}
+
+.admin-header-nav a.active {
+  background: #1a73e8;
+  color: #fff;
+}
 
 @media (max-width: 768px) {
   .admin-faq table,
