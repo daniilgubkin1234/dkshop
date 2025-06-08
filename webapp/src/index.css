@@ -53,7 +53,13 @@ button:focus,
 button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
 }
-
+html, body {
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%; /* особенно важно для iOS */
+}
 @media (prefers-color-scheme: light) {
   :root {
     color: #213547;

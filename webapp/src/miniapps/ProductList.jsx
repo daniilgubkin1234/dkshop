@@ -84,47 +84,29 @@ export default function ProductList({ onSearchChange }) {
 
   return (
     <>
-      <div className="model-cards">
-        {(showAllModels ? MODEL_CARDS : MODEL_CARDS.slice(0, 4)).map(({ label, models, img, matchByName }) => {
-          const isActive =
-            selectedModel &&
-            (Array.isArray(selectedModel)
-              ? models.some((m) => selectedModel.includes(m))
-              : models.includes(selectedModel));
+      <div className="model-scroll">
+  {MODEL_CARDS.map(({ label, models, img, matchByName }) => {
+    const isActive =
+      selectedModel &&
+      (Array.isArray(selectedModel)
+        ? models.some((m) => selectedModel.includes(m))
+        : models.includes(selectedModel));
 
-          return (
-            <div
-              key={label}
-              className={`model-card ${isActive ? 'active' : ''}`}
-              onClick={() => {
-                setSelectedModel(models);
-                setSelectedMatchByName(!!matchByName);
-              }}
-            >
-              <img src={img} alt={label} />
-              <span>{label}</span>
-            </div>
-          );
-        })}
-
-        {MODEL_CARDS.length > 4 && (
-          <button className="toggle-more" onClick={() => setShowAllModels((v) => !v)}>
-            {showAllModels ? 'Скрыть' : 'Показать все'}
-          </button>
-        )}
-
-        {selectedModel && (
-          <button
-            className="reset-filter"
-            onClick={() => {
-              setSelectedModel(null);
-              setSelectedMatchByName(false);
-            }}
-          >
-            Сбросить фильтр
-          </button>
-        )}
+    return (
+      <div
+        key={label}
+        className={`model-card ${isActive ? 'active' : ''}`}
+        onClick={() => {
+          setSelectedModel(models);
+          setSelectedMatchByName(!!matchByName);
+        }}
+      >
+        <img src={img} alt={label} />
+        <span>{label}</span>
       </div>
+    );
+  })}
+</div>
 
       {filtered.length === 0 ? (
         <p style={{ color: '#fff', textAlign: 'center', marginTop: 32 }}>Ничего не найдено</p>
