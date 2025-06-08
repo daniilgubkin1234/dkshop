@@ -1,14 +1,13 @@
 // webapp/src/miniapps/Cart.jsx
 
-import React, { useState, useRef } from "react";
+import React, { useState } from "react";
 import { useCart  } from "../context/CartContext.jsx";
 import { postOrder } from "../api.js";
 import { useNavigate } from "react-router-dom";
-import InputMask from "react-input-mask";
 import "./Cart.css";
 
 export default function Cart() {
-  const phoneRef = useRef(null);
+  
   let ctx;
   try {
     ctx = useCart();
@@ -160,19 +159,20 @@ export default function Cart() {
           }}
           className="checkout-input"
         />
-         <InputMask
-      mask="+7 (999) 999-99-99"
-      value={phone}
-      onChange={(e) => {
-        setPhone(e.target.value);
-        setStatus("");
-      }}
-      ref={phoneRef}                         // ← вот здесь
-      placeholder="Телефон для связи"
-      className="checkout-input"
-      required
-    />
-
+         <input
+  type="tel"
+  inputMode="tel"
+  placeholder="+7 (___) ___-__-__"
+  className="checkout-input"
+  value={phone}
+  onChange={(e) => {
+    setPhone(e.target.value);
+    setStatus("");
+  }}
+  pattern="\+7 \(\d{3}\) \d{3}-\d{2}-\d{2}"
+  title="Номер в формате +7 (123) 456-78-90"
+  required
+/>
         <div className="cart-buttons">
           <button className="btn-clear" onClick={() => clearCart()}>
             Очистить корзину
