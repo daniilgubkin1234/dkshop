@@ -87,6 +87,8 @@
   gap: 8px;
   margin: 16px 0;
   padding: 0 16px 8px;
+  max-width: 100vw; /* ✅ Не даём выйти за границы экрана */
+  box-sizing: border-box;
 }
 
 .model-tab {
