@@ -160,18 +160,18 @@ export default function Cart() {
           }}
           className="checkout-input"
         />
-        <InputMask
-  mask="+7 (999) 999-99-99"
-  value={phone}
-  onChange={(e) => {
-    setPhone(e.target.value);
-    setStatus("");
-  }}
-  inputRef={phoneRef}
-  placeholder="Телефон для связи"
-  className="checkout-input"
-  required
-/>
+         <InputMask
+      mask="+7 (999) 999-99-99"
+      value={phone}
+      onChange={(e) => {
+        setPhone(e.target.value);
+        setStatus("");
+      }}
+      ref={phoneRef}                         // ← вот здесь
+      placeholder="Телефон для связи"
+      className="checkout-input"
+      required
+    />
 
         <div className="cart-buttons">
           <button className="btn-clear" onClick={() => clearCart()}>
