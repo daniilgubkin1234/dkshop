@@ -177,8 +177,7 @@
   }
   
 
-.cart-form input[type="text"],
-.cart-form input[type="tel"] {
+.checkout-input {
   width: 100%;
   padding: 10px;
   margin-bottom: 12px;

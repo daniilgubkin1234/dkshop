@@ -1,13 +1,14 @@
 // webapp/src/miniapps/Cart.jsx
 
-import React, { useState } from "react";
-import { useCart } from "../context/CartContext.jsx";
+import React, { useState, useRef } from "react";
+import { useCart  } from "../context/CartContext.jsx";
 import { postOrder } from "../api.js";
 import { useNavigate } from "react-router-dom";
 import InputMask from "react-input-mask";
 import "./Cart.css";
 
 export default function Cart() {
+  const phoneRef = useRef(null);
   let ctx;
   try {
     ctx = useCart();
@@ -166,11 +167,13 @@ export default function Cart() {
             setPhone(e.target.value);
             setStatus("");
           }}
+          inputRef={phoneRef}
         >
           {(inputProps) => (
             <input
               {...inputProps}
               type="tel"
+              ref={phoneRef}
               placeholder="Телефон для связи"
               required
               className="checkout-input"
