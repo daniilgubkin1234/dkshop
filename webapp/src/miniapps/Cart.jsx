@@ -4,10 +4,10 @@ import React, { useState } from "react";
 import { useCart } from "../context/CartContext.jsx";
 import { postOrder } from "../api.js";
 import { useNavigate } from "react-router-dom";
+import InputMask from "react-input-mask";
 import "./Cart.css";
 
 export default function Cart() {
-  // 1. Достаем корзину из контекста
   let ctx;
   try {
     ctx = useCart();
@@ -16,7 +16,6 @@ export default function Cart() {
     ctx = null;
   }
 
-  // Если корзина недоступна (например, компонент вызывают вне контекста)
   if (!ctx) {
     return (
       <div className="cart-empty">
@@ -34,7 +33,7 @@ export default function Cart() {
   const [status, setStatus] = useState("");
   const navigate = useNavigate();
   const [orderInfo, setOrderInfo] = useState(null);
-  // 2. Отправка заказа на бэкенд
+
   const postOrderRequest = async (data) => {
     try {
       const response = await postOrder(data);
@@ -51,22 +50,20 @@ export default function Cart() {
       setStatus("❌ Не удалось оформить заказ");
     }
   };
-  
-  // 3. Обработчик клика «Оформить заказ»
+
   const handleSubmit = () => {
-    // Проверяем, что ФИО и телефон заполнены
-    if (!name.trim() || !phone.trim()) {
-      setStatus("❗ Заполните ФИО и телефон");
+    const phoneValid = /^\+7 \(\d{3}\) \d{3}-\d{2}-\d{2}$/.test(phone);
+
+    if (!name.trim() || !phoneValid) {
+      setStatus("❗ Введите корректные ФИО и номер телефона");
       return;
     }
 
-    // Проверяем, что в корзине есть товары
     if (!cartItems || cartItems.length === 0) {
       setStatus("❗ Ваша корзина пуста");
       return;
     }
 
-    // Формируем payload: без user_id, только имя, телефон и товары
     const payload = {
       name: name.trim(),
       phone: phone.trim(),
@@ -78,23 +75,23 @@ export default function Cart() {
 
     postOrderRequest(payload);
   };
-// ✅ Успешное оформление — показываем инфо
-if (orderInfo) {
-  return (
-    <div className="cart-empty">
-      <h2>✅ Заказ успешно оформлен!</h2>
-      <p>Номер заказа: <b>#{orderInfo.orderId}</b></p>
-      <p>На имя: <b>{orderInfo.name}</b></p>
-      <p>Телефон: <b>{orderInfo.phone}</b></p>
-      <p>Позиций: {orderInfo.items.length}</p>
-      <p>Сумма: {orderInfo.total.toLocaleString()} ₽</p>
-      <button className="btn-back" onClick={() => navigate("/")}>
-        Вернуться на главную
-      </button>
-    </div>
-  );
-}
-  // 4. Если корзина пуста — показываем сообщение
+
+  if (orderInfo) {
+    return (
+      <div className="cart-empty">
+        <h2>✅ Заказ успешно оформлен!</h2>
+        <p>Номер заказа: <b>#{orderInfo.orderId}</b></p>
+        <p>На имя: <b>{orderInfo.name}</b></p>
+        <p>Телефон: <b>{orderInfo.phone}</b></p>
+        <p>Позиций: {orderInfo.items.length}</p>
+        <p>Сумма: {orderInfo.total.toLocaleString()} ₽</p>
+        <button className="btn-back" onClick={() => navigate("/")}>
+          Вернуться на главную
+        </button>
+      </div>
+    );
+  }
+
   if (!cartItems || cartItems.length === 0) {
     return (
       <div className="cart-empty">
@@ -160,18 +157,27 @@ if (orderInfo) {
             setName(e.target.value);
             setStatus("");
           }}
-          style={{ marginBottom: 12, width: "100%", padding: 8 }}
+          className="checkout-input"
         />
-        <input
-          type="tel"
-          placeholder="Телефон для связи"
+        <InputMask
+          mask="+7 (999) 999-99-99"
           value={phone}
           onChange={(e) => {
             setPhone(e.target.value);
             setStatus("");
           }}
-          style={{ marginBottom: 12, width: "100%", padding: 8 }}
-        />
+        >
+          {(inputProps) => (
+            <input
+              {...inputProps}
+              type="tel"
+              placeholder="Телефон для связи"
+              required
+              className="checkout-input"
+            />
+          )}
+        </InputMask>
+
         <div className="cart-buttons">
           <button className="btn-clear" onClick={() => clearCart()}>
             Очистить корзину
