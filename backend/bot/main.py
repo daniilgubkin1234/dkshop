@@ -35,8 +35,21 @@ logging.basicConfig(
 
 # ───────── Команды ─────────
 async def cmd_start(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
+    # Собираем клавиатуру с веб-приложением
+    keyboard = [
+       [
+           InlineKeyboardButton(
+                text="🚀 Открыть приложение",
+                web_app=WebAppInfo(url=FRONT_URL)  # FRONT_URL из .env, например https://dkshopbot.ru
+            )
+        ]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    # Шлем сообщение с кнопкой
     await update.message.reply_text(
-        "Доброго времени суток! 👋\nВведите интересующий вас запрос."
+        "Доброго времени суток! 👋\nНажмите кнопку, чтобы открыть приложение.",
+       reply_markup=reply_markup
     )
 
 def build_product_message(product: dict) -> tuple[str, InlineKeyboardMarkup]:
