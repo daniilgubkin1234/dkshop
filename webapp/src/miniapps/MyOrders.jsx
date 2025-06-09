@@ -1,5 +1,8 @@
+// src/miniapps/MyOrders.jsx
+
 import React, { useState } from "react";
-import { API_URL } from '../api.js';
+import { API_URL, fetchProductById } from "../api.js";  // ← добавили fetchProductById
+
 export default function MyOrders() {
   const [phone, setPhone] = useState("");
   const [orders, setOrders] = useState([]);
@@ -14,16 +17,31 @@ export default function MyOrders() {
     setOrders([]);
 
     try {
-      const res = await fetch(`${API_URL}/orders/by-phone?phone=${encodeURIComponent(phone)}`);
-
-
+      const res = await fetch(
+        `${API_URL}/orders/by-phone?phone=${encodeURIComponent(phone)}`
+      );
       if (!res.ok) {
         const errText = await res.text();
         throw new Error(errText || "Ошибка загрузки заказов");
       }
 
-      const data = await res.json();
-      setOrders(data);
+      const data = await res.json();  // обычный ответ: массив заказов без имён товаров
+
+      // Обогащаем каждый order.items: подгружаем name через fetchProductById
+      const enriched = await Promise.all(
+        data.map(async (order) => {
+          const itemsWithNames = await Promise.all(
+            order.items.map(async (it) => {
+              // для каждого item: взять product.name
+              const prod = await fetchProductById(it.product_id);
+              return { ...it, name: prod.name };
+            })
+          );
+          return { ...order, items: itemsWithNames };
+        })
+      );
+
+      setOrders(enriched);
     } catch (err) {
       setError(err.message || "Не удалось получить заказы");
     } finally {
@@ -33,7 +51,7 @@ export default function MyOrders() {
 
   return (
     <div style={{ padding: 20, color: "#fff", maxWidth: 600, margin: "0 auto" }}>
-      <h2 style={{ marginBottom: 16 }}> Мои заказы</h2>
+      <h2 style={{ marginBottom: 16 }}>Мои заказы</h2>
 
       <input
         type="tel"
@@ -67,7 +85,9 @@ export default function MyOrders() {
       </button>
 
       {error && (
-        <p style={{ marginTop: 12, color: "tomato", whiteSpace: "pre-wrap" }}>{error}</p>
+        <p style={{ marginTop: 12, color: "tomato", whiteSpace: "pre-wrap" }}>
+          {error}
+        </p>
       )}
 
       {orders.length > 0 && (
@@ -100,6 +120,12 @@ export default function MyOrders() {
               </p>
               <p>
                 <b>Позиций:</b> {order.items.length}
+              </p>
+              <p>
+                <b>Товары:</b>{" "}
+                {order.items
+                  .map((it) => `${it.name} × ${it.quantity}`)
+                  .join("; ")}
               </p>
             </div>
           ))}

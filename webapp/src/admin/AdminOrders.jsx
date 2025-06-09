@@ -73,13 +73,13 @@ export default function AdminOrders() {
               </td>
 
               <td>
-                <button onClick={() => updateStatus(o.id, 'accepted')}>
+                <button onClick={() => updateStatus(o.id, 'Принят')}>
                   Принят
                 </button>
-                <button onClick={() => updateStatus(o.id, 'shipped')}>
+                <button onClick={() => updateStatus(o.id, 'Отгружен')}>
                   Отгружен
                 </button>
-                <button onClick={() => updateStatus(o.id, 'done')}>
+                <button onClick={() => updateStatus(o.id, 'Завершён')}>
                   Завершён
                 </button>
                 <button
