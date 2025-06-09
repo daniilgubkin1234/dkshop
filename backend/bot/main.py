@@ -94,7 +94,7 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
 
     if "пригласить друга" in text_lower:
         await update.message.reply_text(
-            "🙋‍♂️ Приглашайте друзей по ссылке:\nhttps://t.me/share/url?url=https://t.me/your_bot"
+            "🙋‍♂️ Приглашайте друзей по ссылке:\nhttps://t.me/DK_PROduct_bot"
         )
         return
 
