@@ -257,6 +257,20 @@
     gap: 4px;
   }
 
+  .admin-orders table {
+    display: block;                /* превращаем в блочный элемент */
+    width: 100%;
+    overflow-x: auto;              /* включаем горизонтальный скролл */
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .admin-orders th,
+  .admin-orders td {
+    white-space: nowrap;           /* не ломаем текст внутри ячеек */
+    font-size: 12px;               /* компактнее, чтобы влезало больше */
+    padding: 6px 8px;              /* уменьшаем отступы */
+  }
+  
   /* Кнопки подстраиваем под мобилку */
   .admin-orders button {
     flex: 1;
@@ -323,4 +337,18 @@
     margin: 4px 0;
     font-size: 12px;
   }
+
+  /* ─── FAQ: поля и кнопки ─── */
+  .admin-faq td input,
+  .admin-faq td textarea {
+    width: 100%;
+    box-sizing: border-box;       /* чтобы padding не «разъезжал» ширину */
+  }
+
+  .admin-faq td button {
+    white-space: normal;           /* разрешаем переносить текст */
+    padding: 8px;                  /* чуть больше пространства вокруг текста */
+    font-size: 14px;               /* оставляем читаемый размер */
+  }
+
 }
