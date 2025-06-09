@@ -199,156 +199,102 @@
 
 /* ─── Адаптив для страницы Заказы ─── */
 @media (max-width: 768px) {
+  /* 1) Восстанавливаем табличный режим и растягиваем на 100% */
   .admin-orders table,
   .admin-orders thead,
   .admin-orders tbody,
+  .admin-orders tr,
   .admin-orders th,
-  .admin-orders td,
-  .admin-orders tr {
-    display: block;
-    width: 100%;
-  }
-
-  /* Скрываем шапку */
-  .admin-orders thead {
-    display: none;
-  }
-
-  /* Каждый ряд как карточка */
-  .admin-orders tr {
-    margin-bottom: 16px;
-    border-bottom: 2px solid #333;
-    padding-bottom: 8px;
-  }
-
-  /* Ячейка: label → value */
   .admin-orders td {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    display: table !important;
+    width: 100% !important;
+  }
+
+  .admin-orders thead {
+    display: table-header-group !important;
+  }
+
+  .admin-orders tbody {
+    display: table-row-group !important;
+  }
+
+  .admin-orders tr {
+    display: table-row !important;
+    margin: 0 !important;
+    border-bottom: none !important;
+    padding: 0 !important;
+  }
+
+  /* 2) Ячейки — компактный padding, нормальный перенос строк */
+  .admin-orders th,
+  .admin-orders td {
     padding: 6px 8px;
     font-size: 12px;
-    border: none;
-    border-bottom: 1px solid #444;
-    position: relative;
+    white-space: normal;    /* разрешаем перенос внутри ячеек */
   }
 
-  /* Подписи полей через nth-child */
-  .admin-orders td:nth-child(1)::before { content: "ID"; }
-  .admin-orders td:nth-child(2)::before { content: "Имя"; }
-  .admin-orders td:nth-child(3)::before { content: "Телефон"; }
-  .admin-orders td:nth-child(4)::before { content: "Статус"; }
-  .admin-orders td:nth-child(5)::before { content: "Дата"; }
-  .admin-orders td:nth-child(6)::before { content: "Содержимое"; }
-  .admin-orders td:nth-child(7)::before { content: "Действия"; }
-
-  .admin-orders td::before {
-    font-weight: bold;
-    color: #bbb;
-    margin-right: 8px;
-    white-space: nowrap;
-    flex-shrink: 0;
-  }
-
-  /* Последняя ячейка с кнопками — убираем нижнюю границу */
-  .admin-orders td:last-child {
-    border-bottom: none;
-    flex-wrap: wrap;
-    gap: 4px;
-  }
-
-  .admin-orders table {
-    display: block;                /* превращаем в блочный элемент */
-    width: 100%;
-    overflow-x: auto;              /* включаем горизонтальный скролл */
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .admin-orders th,
-  .admin-orders td {
-    white-space: nowrap;           /* не ломаем текст внутри ячеек */
-    font-size: 12px;               /* компактнее, чтобы влезало больше */
-    padding: 6px 8px;              /* уменьшаем отступы */
-  }
-  
-  /* Кнопки подстраиваем под мобилку */
+  /* 3) Кнопки — чуть поменьше, чтобы влезали */
   .admin-orders button {
-    flex: 1;
-    margin: 4px 0;
+    margin-right: 6px;
+    padding: 6px 10px;
     font-size: 12px;
+  }
+
+  /* 4) Отменяем inline max-width в 6-й колонке (“Содержимое”) */
+  .admin-orders td:nth-child(6) {
+    max-width: none !important;
   }
 }
 
 
 /* ─── Адаптив для страницы FAQ ─── */
 @media (max-width: 768px) {
+  /* Прячем заголовок таблицы и делаем карточки */
+  .admin-faq thead { display: none; }
   .admin-faq table,
-  .admin-faq thead,
   .admin-faq tbody,
+  .admin-faq tr,
   .admin-faq th,
-  .admin-faq td,
-  .admin-faq tr {
+  .admin-faq td {
     display: block;
     width: 100%;
   }
-
-  /* Скрываем шапку */
-  .admin-faq thead {
-    display: none;
-  }
-
   .admin-faq tr {
     margin-bottom: 16px;
     border-bottom: 2px solid #333;
     padding-bottom: 8px;
   }
-
   .admin-faq td {
     display: flex;
     flex-direction: column;
     padding: 6px 8px;
+    font-size: 12px;
     border: none;
     border-bottom: 1px solid #444;
     position: relative;
-    font-size: 12px;
   }
-
   .admin-faq td::before {
     content: attr(data-label);
     font-weight: bold;
     color: #bbb;
     margin-bottom: 4px;
   }
-
-  /* Для строк добавления новой FAQ */
-  .admin-faq .faq-add-row {
-    flex-direction: column;
-  }
-
-  .admin-faq .faq-add-row input,
-  .admin-faq .faq-add-row button {
+  /* Поля ввода на всю ширину */
+  .admin-faq input,
+  .admin-faq textarea {
     width: 100%;
-    margin-bottom: 8px;
+    box-sizing: border-box;
   }
-
-  /* Кнопки внутри FAQ-строк делают полноправными блоками */
+  /* Кнопки: разрешаем перенос текста и делаем full-width */
   .admin-faq button {
     width: 100%;
-    margin: 4px 0;
-    font-size: 12px;
+    white-space: normal;
+    margin: 6px 0;
+    padding: 8px;
+    font-size: 14px;
   }
-
-  /* ─── FAQ: поля и кнопки ─── */
-  .admin-faq td input,
-  .admin-faq td textarea {
-    width: 100%;
-    box-sizing: border-box;       /* чтобы padding не «разъезжал» ширину */
+  .admin-faq .faq-add-row {
+    flex-direction: column;
+    gap: 8px;
   }
-
-  .admin-faq td button {
-    white-space: normal;           /* разрешаем переносить текст */
-    padding: 8px;                  /* чуть больше пространства вокруг текста */
-    font-size: 14px;               /* оставляем читаемый размер */
-  }
-
 }
