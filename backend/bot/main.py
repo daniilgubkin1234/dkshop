@@ -37,8 +37,8 @@ HTTP_TIMEOUT = aiohttp.ClientTimeout(total=10)
 # ─── Постоянное меню (persistent keyboard) ───
 MAIN_MENU = ReplyKeyboardMarkup(
     keyboard=[
-        ["🛍 Открыть магазин", "🛒 Мои заказы"],
-        ["ℹ️ О компании",       "📣 Наш канал"],
+        ["🛍 Открыть магазин",],
+        ["ℹ️ О компании", "📣 Группа Вконтакте"],
         ["🙋‍♂️ Пригласить друга"]
     ],
     resize_keyboard=True,
@@ -66,25 +66,29 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     text_lower = update.message.text.strip().lower()
 
     # 0) Перехватываем нажатия из persistent-меню
-    if text_lower == "открыть магазин":
+    if "открыть магазин" in text_lower:
         await update.message.reply_text(
             "🚀 Перейдите в магазин:",
             reply_markup=InlineKeyboardMarkup([[
-                InlineKeyboardButton("Открыть магазин", web_app=WebAppInfo(url=FRONT_URL))
+                InlineKeyboardButton("🛍Открыть магазин", web_app=WebAppInfo(url=FRONT_URL))
             ]])
         )
         return
 
 
-    if text_lower == "о компании":
+    if "о компании" in text_lower:
         await update.message.reply_text(
-            "ℹ️ DK PROduct — это ваш надёжный партнёр по запчастям и аксессуарам."
+            "ℹ️ DK PROduct — это ваш надёжный партнёр по запчастям и аксессуарам.",
+            reply_markup=CLEAR_INLINE
         )
         return
 
-    if text_lower.startswith("группа вконтакте"):
+
+
+    if "группа вконтакте" in text_lower:
         await update.message.reply_text(
-            "📣 Наша группа: https://vk.com/dk_pro_tuning?from=groups"
+            "📣 Наша группа: https://vk.com/dk_pro_tuning?from=groups",
+            reply_markup=CLEAR_INLINE
         )
         return
 
