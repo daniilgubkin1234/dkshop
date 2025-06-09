@@ -67,9 +67,8 @@ def extract_images(item: dict) -> List[str]:
       1) thumb_photo (если есть)
       2) из "photos", который может быть:
          a) dict с ключом "items" (список словарей),
-         b) или просто список (например, list из словарей или строк).
-    Для каждого элемента либо берём sizes с type=='x', либо последнее.
-    Убираем дубли, возвращаем только уникальные URL.
+         b) или просто список.
+    Для каждого элемента берём sizes с type=='x' либо последний, убираем дубли.
     """
     imgs: List[str] = []
 
@@ -80,39 +79,28 @@ def extract_images(item: dict) -> List[str]:
 
     # 2) обрабатываем поле "photos"
     photos_field = item.get("photos")
-    items_list: List[Union[dict, Any]] = []
-
-    if isinstance(photos_field, dict):
-        # Ожидаем, что есть ключ "items"
-        items_list = photos_field.get("items", [])
+    items_list: List[Union[dict, str]] = []
+    if isinstance(photos_field, dict) and "items" in photos_field:
+        items_list = photos_field["items"]
     elif isinstance(photos_field, list):
-        # Иногда VK отдаёт сразу список (без обёртки "items")
         items_list = photos_field
-    else:
-        # Если вовсе нет фото, оставляем пустой список
-        items_list = []
 
-    # Проходим по каждому ph в полученном списке
-    for ph in items_list:
-        if not isinstance(ph, dict):
-            # Если элемент списка – не словарь, пропускаем
-            continue
+    for entry in items_list:
+        if isinstance(entry, dict):
+            sizes = entry.get("sizes", [])
+            url = None
+            for size in sizes:
+                if size.get("type") == "x":
+                    url = size.get("url")
+                    break
+            if not url and sizes:
+                url = sizes[-1].get("url")
+            if url:
+                imgs.append(url)
+        elif isinstance(entry, str):
+            imgs.append(entry)
 
-        sizes = ph.get("sizes", [])
-        # Ищем тип 'x', иначе берём последний url
-        url = None
-        for s in sizes:
-            if s.get("type") == "x" and s.get("url"):
-                url = s["url"]
-                break
-        if not url and sizes:
-            # Если не нашли type 'x', берём url последнего размера
-            url = sizes[-1].get("url")
-
-        if url:
-            imgs.append(url)
-
-    # Убираем дубли, сохраняя порядок вставки
+    # убираем дубли
     return list(dict.fromkeys(imgs))
 
 
@@ -131,7 +119,7 @@ def clean_description(text: str) -> str:
 def fetch_items() -> List[Dict[str, Any]]:
     """
     Получаем все товары из VK Market, по 200 штук за раз (batch).
-    Используем extended=1, чтобы сразу взять поле description, если оно заполнено.
+    Используем extended=1, чтобы сразу взять поле description.
     """
     all_items: List[Dict[str, Any]] = []
     offset = 0
@@ -156,8 +144,7 @@ def fetch_items() -> List[Dict[str, Any]]:
 
 def ensure_description(item: dict) -> None:
     """
-    Если у item['description'] пусто / None / пустая строка — дозапрашиваем
-    через market.getById, чтобы гарантированно получить текст.
+    Если у item['description'] пусто / None — дозапрашиваем market.getById.
     """
     desc = item.get("description")
     if desc:
@@ -172,10 +159,10 @@ def ensure_description(item: dict) -> None:
         item["description"] = arr[0].get("description", "")
 
 
-def push_to_backend(item: dict) -> None:
+def push_to_backend(item: dict) -> bool:
     """
     Собирает обязательный payload из полей item и выполняет POST в BACKEND_URL.
-    Если статус-код >= 300, печатает ошибку.
+    Возвращает True при успехе, False при ошибке.
     """
     payload = {
         "name":         (item.get("title") or "").strip(),
@@ -185,9 +172,15 @@ def push_to_backend(item: dict) -> None:
         "images":       extract_images(item),
         "description":  clean_description(item.get("description", "")),
     }
-    resp = requests.post(BACKEND_URL, json=payload, timeout=10)
-    if resp.status_code >= 300:
-        print(f"⛔ Ошибка {resp.status_code} при пуше товара id={item.get('id')}: {resp.text}")
+    try:
+        resp = requests.post(BACKEND_URL, json=payload, timeout=10)
+        if resp.status_code >= 300:
+            print(f"⛔ Ошибка {resp.status_code} при пуше товара id={item.get('id')}: {resp.text}")
+            return False
+        return True
+    except Exception as e:
+        print(f"⛔ Ошибка при пуше товара id={item.get('id')}: {e}")
+        return False
 
 
 def main() -> None:
@@ -200,16 +193,24 @@ def main() -> None:
     print(f"✅ Получено из VK: {len(goods)} товаров")
 
     reloaded = 0
+    success = 0
+    failed = 0
+
     for item in goods:
-        # Если description пустой, дозапрашиваем
         if not item.get("description"):
             ensure_description(item)
             if item.get("description"):
                 reloaded += 1
 
-        push_to_backend(item)
+        if push_to_backend(item):
+            success += 1
+        else:
+            failed += 1
 
     print(f"✅ Импорт завершён. Описание догружено для {reloaded} товаров.")
+    print(f"✅ Успешно загружено {success} товаров.")
+    if failed:
+        print(f"⚠️ Не удалось загрузить {failed} товаров.")
 
 
 if __name__ == "__main__":

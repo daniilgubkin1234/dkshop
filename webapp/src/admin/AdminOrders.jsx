@@ -1,20 +1,23 @@
 // src/admin/AdminOrders.jsx
 import React, { useEffect, useState } from 'react';
 import './Admin.css';
-import AdminHeader from "./AdminHeader";
+import AdminHeader from './AdminHeader';
+
 export default function AdminOrders() {
   const [orders, setOrders] = useState([]);
 
+  // Загрузить список заказов из бэкенда
   const loadOrders = () => {
     const token = localStorage.getItem('auth_token');
     fetch('https://dkshopbot.ru/admin/orders', {
       headers: { Authorization: `Basic ${token}` }
     })
-      .then(r => r.json())
+      .then(res => res.json())
       .then(setOrders)
-      .catch(console.error);
+      .catch(err => console.error('Ошибка загрузки заказов:', err));
   };
 
+  // Обновить статус заказа
   const updateStatus = (id, newStatus) => {
     const token = localStorage.getItem('auth_token');
     fetch(`https://dkshopbot.ru/admin/orders/${id}?new_status=${newStatus}`, {
@@ -22,28 +25,30 @@ export default function AdminOrders() {
       headers: { Authorization: `Basic ${token}` }
     })
       .then(loadOrders)
-      .catch(console.error);
+      .catch(err => console.error(`Ошибка при обновлении заказа ${id}:`, err));
   };
 
+  // Удалить заказ
   const deleteOrder = (id) => {
-    const token = localStorage.getItem('auth_token');
     if (!window.confirm(`Удалить заказ #${id}?`)) return;
-
+    const token = localStorage.getItem('auth_token');
     fetch(`https://dkshopbot.ru/admin/orders/${id}`, {
       method: 'DELETE',
       headers: { Authorization: `Basic ${token}` }
     })
       .then(loadOrders)
-      .catch(console.error);
+      .catch(err => console.error(`Ошибка при удалении заказа ${id}:`, err));
   };
 
-  useEffect(() => { loadOrders(); }, []);
+  useEffect(() => {
+    loadOrders();
+  }, []);
 
   return (
     <div className="admin-container admin-orders">
       <AdminHeader />
       <h2>Заказы</h2>
-      <table border="1" cellPadding="8">
+      <table className="admin-table" cellPadding="8">
         <thead>
           <tr>
             <th>ID</th>
@@ -51,7 +56,8 @@ export default function AdminOrders() {
             <th>Телефон</th>
             <th>Статус</th>
             <th>Дата</th>
-            <th>Изменить</th>
+            <th>Содержимое</th>
+            <th>Действия</th>
           </tr>
         </thead>
         <tbody>
@@ -62,10 +68,22 @@ export default function AdminOrders() {
               <td>{o.phone}</td>
               <td>{o.status}</td>
               <td>{new Date(o.created_at).toLocaleString()}</td>
+              <td style={{ whiteSpace: 'pre-wrap', maxWidth: 300 }}>
+                {o.items && o.items.length
+                  ? o.items.map(it => `${it.name} × ${it.quantity}`).join('\n')
+                  : '-'
+                }
+              </td>
               <td>
-                <button onClick={() => updateStatus(o.id, 'accepted')}>Принят</button>
-                <button onClick={() => updateStatus(o.id, 'shipped')}>Отгружен</button>
-                <button onClick={() => updateStatus(o.id, 'done')}>Завершён</button>
+                <button onClick={() => updateStatus(o.id, 'accepted')}>
+                  Принят
+                </button>
+                <button onClick={() => updateStatus(o.id, 'shipped')}>
+                  Отгружен
+                </button>
+                <button onClick={() => updateStatus(o.id, 'done')}>
+                  Завершён
+                </button>
                 <button
                   onClick={() => deleteOrder(o.id)}
                   style={{ marginLeft: 8, background: '#e53935', color: '#fff' }}
