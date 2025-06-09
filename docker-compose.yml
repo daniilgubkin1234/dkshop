@@ -7,6 +7,8 @@ services:
       POSTGRES_USER: shop
       POSTGRES_PASSWORD: shop
       POSTGRES_DB: shopdb
+    volumes:
+      - pgdata:/var/lib/postgresql/data
     ports: ["5432:5432"]
 
   api:
