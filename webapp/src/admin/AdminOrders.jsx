@@ -69,11 +69,9 @@ export default function AdminOrders() {
               <td>{o.status}</td>
               <td>{new Date(o.created_at).toLocaleString()}</td>
               <td style={{ whiteSpace: 'pre-wrap', maxWidth: 300 }}>
-                {o.items && o.items.length
-                  ? o.items.map(it => `${it.name} × ${it.quantity}`).join('\n')
-                  : '-'
-                }
+                {o.items.map(it => `${it.name} × ${it.quantity}`).join('\n')}
               </td>
+
               <td>
                 <button onClick={() => updateStatus(o.id, 'accepted')}>
                   Принят

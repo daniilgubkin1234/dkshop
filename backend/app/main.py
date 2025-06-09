@@ -141,7 +141,31 @@ def check_admin(credentials: HTTPBasicCredentials = Depends(security)):
 @app.get("/admin/orders")
 def get_orders(creds: HTTPBasicCredentials = Depends(check_admin)):
     with Session(engine) as s:
-        return s.exec(select(Order).order_by(Order.created_at.desc())).all()
+        orders = s.exec(
+            select(Order).order_by(Order.created_at.desc())
+        ).all()
+        # Собираем все product_id из всех заказов
+        all_ids = {item["product_id"] for o in orders for item in o.items}
+        # Загружаем соответствующие продукты сразу одним запросом
+        prods = s.exec(select(Product).where(Product.id.in_(all_ids))).all()
+        prod_map = {p.id: p.name for p in prods}
+
+        # Формируем новый список заказов с именами товаров внутри items
+        enriched = []
+        for o in orders:
+            enriched_items = []
+            for it in o.items:
+                enriched_items.append({
+                    "product_id": it["product_id"],
+                    "quantity":   it["quantity"],
+                    "name":       prod_map.get(it["product_id"], f"#{it['product_id']}")
+                })
+            od = o.dict()
+            od["items"] = enriched_items
+            enriched.append(od)
+
+        return enriched
+
 
 @app.patch("/admin/orders/{order_id}")
 def update_order_status(order_id: int, new_status: str, creds: HTTPBasicCredentials = Depends(check_admin)):
