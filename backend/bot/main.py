@@ -79,7 +79,7 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     if "о компании" in text_lower:
         await update.message.reply_text(
             "ℹ️ DK PROduct — это ваш надёжный партнёр по запчастям и аксессуарам.",
-            reply_markup=CLEAR_INLINE
+            
         )
         return
 
@@ -88,7 +88,7 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     if "группа вконтакте" in text_lower:
         await update.message.reply_text(
             "📣 Наша группа: https://vk.com/dk_pro_tuning?from=groups",
-            reply_markup=CLEAR_INLINE
+            
         )
         return
 
