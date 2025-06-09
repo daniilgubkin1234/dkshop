@@ -52,7 +52,7 @@ export default function Cart() {
   };
 
   const handleSubmit = () => {
-    const phoneValid = /^\+7 \(\d{3}\) \d{3}-\d{2}-\d{2}$/.test(phone);
+    const phoneValid = /^(?:\+7|8)(?: ?\d){10}$/.test(phone);
 
     if (!name.trim() || !phoneValid) {
       setStatus("❗ Введите корректные ФИО и номер телефона");
@@ -162,15 +162,15 @@ export default function Cart() {
          <input
   type="tel"
   inputMode="tel"
-  placeholder="+7 (___) ___-__-__"
+  placeholder="+7 XXX XXX XXXX или 8 XXX XXX XXXX"
   className="checkout-input"
   value={phone}
-  onChange={(e) => {
+  onChange={e => {
     setPhone(e.target.value);
     setStatus("");
   }}
-  pattern="\+7 \(\d{3}\) \d{3}-\d{2}-\d{2}"
-  title="Номер в формате +7 (123) 456-78-90"
+  pattern="^(?:\+7|8)(?: ?\d){10}$"
+  title="Номер в формате +7 900 900 9192 или 8 900 900 9192 (допускаются пробелы)"
   required
 />
         <div className="cart-buttons">
