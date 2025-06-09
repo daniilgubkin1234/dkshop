@@ -9,6 +9,7 @@ from telegram import (
     InlineKeyboardMarkup,
     WebAppInfo,
     constants,
+    ReplyKeyboardMarkup
 )
 from telegram.ext import (
     ApplicationBuilder,
@@ -33,6 +34,17 @@ logging.basicConfig(
     level=logging.INFO,
 )
 
+# где-то вверху файла
+MAIN_MENU = ReplyKeyboardMarkup(
+    keyboard=[
+        [" Открыть магазин", " Мои заказы"],
+        [" О компании",     " Наш канал"],
+        ["🙋‍♂️ Пригласить друга"]
+    ],
+    resize_keyboard=True,    # подгоняет размер под экран
+    one_time_keyboard=False  # НЕ скрывать после нажатия
+)
+
 # ───────── Команды ─────────
 async def cmd_start(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     # Собираем клавиатуру с веб-приложением
@@ -48,8 +60,9 @@ async def cmd_start(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
 
     # Шлем сообщение с кнопкой
     await update.message.reply_text(
-        "Доброго времени суток! 👋\nНажмите кнопку, чтобы открыть приложение.",
-       reply_markup=reply_markup
+    "Доброго времени суток! 👋\nНажмите кнопку, чтобы открыть приложение.",
+       
+    reply_markup=MAIN_MENU
     )
 
 def build_product_message(product: dict) -> tuple[str, InlineKeyboardMarkup]:
