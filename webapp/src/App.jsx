@@ -11,6 +11,7 @@ import AdminLogin from './admin/AdminLogin.jsx';
 import AdminOrders from './admin/AdminOrders.jsx';
 import MyOrders from './miniapps/MyOrders.jsx';
 import AdminFAQ from './admin/AdminFAQ.jsx';
+import AdminProduct from "./admin/AdminProduct.jsx";
 
 export default function App() {
   const handleSearch = useRef(null); // ← стабильная ссылка
@@ -31,6 +32,7 @@ export default function App() {
           <Route path="/admin/orders" element={<AdminOrders />} />
           <Route path="/admin/faq" element={<AdminFAQ />} />
           <Route path="/my-orders" element={<MyOrders />} />
+          <Route path="/admin/products" element={<AdminProduct />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
