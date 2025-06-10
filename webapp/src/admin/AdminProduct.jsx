@@ -129,22 +129,19 @@ export default function AdminProduct() {
           </thead>
           <tbody>
             {products.map((p) => (
-              <tr key={p.id}>
-                <td>{p.id}</td>
-                <td>{p.name}</td>
-                <td>{p.price}</td>
-                <td>{p.model_compat}</td>
-                <td>{p.type}</td>
-                <td>{p.stock}</td>
-                <td style={{ maxWidth: 120, wordBreak: "break-all" }}>
-                  {(p.images || []).join(", ")}
-                </td>
-                {/* <td>
-                  <button onClick={() => handleDelete(p.id)}>Удалить</button>
-                </td> */}
-              </tr>
+            <tr key={p.id}>
+            <td data-label="id">{p.id}</td>
+            <td data-label="Название">{p.name}</td>
+            <td data-label="Цена">{p.price}</td>
+            <td data-label="Совместимость">{p.model_compat}</td>
+            <td data-label="Тип">{p.type}</td>
+            <td data-label="Остаток">{p.stock}</td>
+            <td data-label="Картинки" style={{ maxWidth: 120, wordBreak: "break-all" }}>
+            {(p.images || []).join(", ")}
+            </td>
+            </tr>
             ))}
-          </tbody>
+            </tbody>
         </table>
       )}
     </div>

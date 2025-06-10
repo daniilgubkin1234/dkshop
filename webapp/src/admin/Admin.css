@@ -197,6 +197,64 @@
   color: #fff;
 }
 
+/* Управление товарами (AdminProduct.jsx) */
+.admin-products table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #20222b;
+  margin-top: 16px;
+}
+
+.admin-products th, .admin-products td {
+  border: 1px solid #373737;
+  padding: 10px;
+  text-align: left;
+  font-size: 15px;
+}
+
+.admin-products th {
+  background: #232752;
+  color: #fff;
+}
+
+.admin-products .product-add-row {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.admin-products .product-add-row input {
+  flex: 1 0 140px;
+  min-width: 110px;
+  background: #23242c;
+  color: #fff;
+  border: 1px solid #454575;
+  border-radius: 4px;
+  padding: 7px;
+  font-size: 14px;
+  margin-bottom: 0;
+}
+
+.admin-products .product-add-row button {
+  background: #1a73e8;
+  color: #fff;
+  font-weight: 500;
+  border: none;
+  border-radius: 5px;
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.admin-products .product-add-row button:hover {
+  background: #155ec6;
+}
+
+
+
+
+
 /* ─── Адаптив для страницы Заказы ─── */
 @media (max-width: 768px) {
   /* 1) Восстанавливаем табличный режим и растягиваем на 100% */
@@ -296,5 +354,69 @@
   .admin-faq .faq-add-row {
     flex-direction: column;
     gap: 8px;
+  }
+}
+/* ──────────── Мобильный адаптив для страницы товаров ──────────── */
+@media (max-width: 768px) {
+  .admin-products .product-add-row {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .admin-products .product-add-row input {
+    min-width: 0;
+    width: 100%;
+    font-size: 15px;
+    padding: 10px;
+  }
+
+  .admin-products .product-add-row button {
+    width: 100%;
+    margin-top: 6px;
+    font-size: 16px;
+    padding: 12px 0;
+  }
+
+  .admin-products table,
+  .admin-products thead,
+  .admin-products tbody,
+  .admin-products tr,
+  .admin-products th,
+  .admin-products td {
+    display: block;
+    width: 100%;
+  }
+
+  .admin-products thead {
+    display: none;
+  }
+
+  .admin-products tr {
+    margin-bottom: 20px;
+    border-bottom: 2px solid #303050;
+    background: #20222b;
+    border-radius: 7px;
+    overflow: hidden;
+  }
+
+  .admin-products td {
+    padding: 10px 8px;
+    font-size: 14px;
+    border: none;
+    border-bottom: 1px solid #34345c;
+    position: relative;
+    word-break: break-word;
+  }
+
+  .admin-products td::before {
+    content: attr(data-label);
+    font-weight: bold;
+    color: #88aaff;
+    margin-bottom: 4px;
+    display: block;
+  }
+
+  .admin-products td:last-child {
+    border-bottom: none;
   }
 }

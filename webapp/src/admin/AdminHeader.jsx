@@ -20,6 +20,12 @@ export default function AdminHeader() {
       >
         FAQ
       </Link>
+      <Link
+        to="/admin/products"
+        className={location.pathname.includes("/products") ? "active" : ""}
+      >
+        Товары
+      </Link>
     </div>
   );
 }
