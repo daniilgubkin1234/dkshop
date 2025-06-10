@@ -42,9 +42,7 @@ export default function AdminProduct() {
       const data = await res.json();
       setNewProduct((p) => ({
         ...p,
-        images: p.images
-          ? p.images + ", " + data.url
-          : data.url,
+        images: p.images ? p.images + ", " + data.url : data.url,
       }));
     }
   };
@@ -62,13 +60,12 @@ export default function AdminProduct() {
       const data = await res.json();
       setEditProduct((p) => ({
         ...p,
-        images: p.images
-          ? p.images + ", " + data.url
-          : data.url,
+        images: p.images ? p.images + ", " + data.url : data.url,
       }));
     }
   };
 
+  // --- Добавление товара ---
   const handleAdd = () => {
     const body = {
       ...newProduct,
@@ -88,14 +85,16 @@ export default function AdminProduct() {
       },
       body: JSON.stringify(body),
     })
-      .then((r) => {
+      .then(async (r) => {
         if (!r.ok) throw new Error("Ошибка добавления товара");
+        const createdProduct = await r.json();
+        setProducts((prev) => [...prev, createdProduct]);
         setNewProduct(emptyProduct);
-        loadProducts();
       })
       .catch((e) => alert(e.message));
   };
 
+  // --- Удаление товара ---
   const handleDelete = (id) => {
     if (!window.confirm("Удалить этот товар?")) return;
     fetch(`https://dkshopbot.ru/products/${id}`, {
@@ -106,11 +105,13 @@ export default function AdminProduct() {
     })
       .then((r) => {
         if (!r.ok) throw new Error("Ошибка удаления");
-        loadProducts();
+        // Удаляем товар локально из products
+        setProducts((prev) => prev.filter((p) => p.id !== id));
       })
       .catch((e) => alert(e.message));
   };
 
+  // --- Начать редактирование товара ---
   const handleEdit = (p) => {
     setEditId(p.id);
     setEditProduct({
@@ -119,6 +120,7 @@ export default function AdminProduct() {
     });
   };
 
+  // --- Сохранить изменения ---
   const handleEditSave = () => {
     const body = {
       ...editProduct,
@@ -138,11 +140,17 @@ export default function AdminProduct() {
       },
       body: JSON.stringify(body),
     })
-      .then((r) => {
+      .then(async (r) => {
         if (!r.ok) throw new Error("Ошибка сохранения");
+        const updatedProduct = await r.json();
+        // Обновляем товар локально в products
+        setProducts((prev) =>
+          prev.map((item) =>
+            item.id === updatedProduct.id ? updatedProduct : item
+          )
+        );
         setEditId(null);
         setEditProduct(emptyProduct);
-        loadProducts();
       })
       .catch((e) => alert(e.message));
   };
