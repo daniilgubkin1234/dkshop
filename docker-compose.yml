@@ -18,6 +18,7 @@ services:
       sh -c "pip install fastapi[all] sqlmodel psycopg2-binary requests&&
              uvicorn app.main:app --host 0.0.0.0 --port 8001 --reload"
     volumes:
+      - ./backend/app/static:/code/app/static
       - ./backend/app:/code/app
     depends_on: [db]
     env_file: .env.production
