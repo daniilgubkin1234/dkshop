@@ -1,139 +1,121 @@
-// src/admin/AdminFAQ.jsx
-import React, { useEffect, useState, useRef } from "react";
-import "./Admin.css";
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import AdminHeader from "./AdminHeader";
-function useAutosizeTextArea(value) {
-  const ref = useRef(null);
+import "./Admin.css";
 
-  useEffect(() => {
-    if (!ref.current) return;
-    ref.current.style.height = "auto";
-    ref.current.style.height = ref.current.scrollHeight + "px";
-  }, [value]);
-
-  return ref;
-}
-
-function FAQRow({ faq, onChange, onSave, onDelete }) {
-  const qRef = useAutosizeTextArea(faq.question);
-  const aRef = useAutosizeTextArea(faq.answer);
-
-  return (
-    <tr>
-      <td data-label="Вопрос">
-        <textarea
-          ref={qRef}
-          rows={1}
-          value={faq.question}
-          onChange={(e) => onChange(faq.id, "question", e.target.value)}
-        />
-      </td>
-      <td data-label="Ответ">
-        <textarea
-          ref={aRef}
-          rows={1}
-          value={faq.answer}
-          onChange={(e) => onChange(faq.id, "answer", e.target.value)}
-        />
-      </td>
-      <td data-label="Действия">
-        <button onClick={() => onSave(faq)}>Сохранить</button>
-        <button onClick={() => onDelete(faq.id)}>Удалить</button>
-      </td>
-    </tr>
-  );
-}
+const empty = { question: "", answer: "" };
 
 export default function AdminFAQ() {
-  const [faqList, setFaqList] = useState([]);
-  const [newQuestion, setNewQuestion] = useState("");
-  const [newAnswer, setNewAnswer] = useState("");
+  const [faq, setFaq] = useState([]);
+  const [newQ, setNewQ] = useState(empty);
+  const [editId, setEditId] = useState(null);
+  const [editQ, setEditQ] = useState(empty);
+  const navigate = useNavigate();
 
-  const token = localStorage.getItem("auth_token");
-
-  const loadFAQs = () => {
-    fetch("https://dkshopbot.ru/faq?q=*", {
-      headers: { Authorization: `Basic ${token}` },
+  const loadFAQ = () => {
+    const token = localStorage.getItem("auth_token");
+    if (!token) {
+      navigate("/admin/login");
+      return;
+    }
+    fetch("/faq", {
+      headers: { Authorization: `Basic ${token}` }
     })
-      .then((r) => r.json())
-      .then(setFaqList)
-      .catch(console.error);
+      .then(async r => {
+        if (r.status === 401) {
+          localStorage.removeItem("auth_token");
+          navigate("/admin/login");
+          return [];
+        }
+        return r.json();
+      })
+      .then(setFaq)
+      .catch(() => {
+        localStorage.removeItem("auth_token");
+        navigate("/admin/login");
+      });
   };
 
   const handleAdd = () => {
-    fetch("https://dkshopbot.ru/faq", {
+    const token = localStorage.getItem("auth_token");
+    fetch("/faq", {
       method: "POST",
       headers: {
-        Authorization: `Basic ${token}`,
         "Content-Type": "application/json",
+        Authorization: `Basic ${token}`,
       },
-      body: JSON.stringify({ question: newQuestion, answer: newAnswer }),
+      body: JSON.stringify(newQ),
     })
-      .then(() => {
-        setNewQuestion("");
-        setNewAnswer("");
-        loadFAQs();
+      .then(async r => {
+        if (!r.ok) throw new Error("Ошибка добавления");
+        const created = await r.json();
+        setFaq(prev => [...prev, created]);
+        setNewQ(empty);
       })
-      .catch(console.error);
+      .catch(e => alert(e.message));
   };
 
-  const handleDelete = (id) => {
-    if (!window.confirm("Удалить этот FAQ?")) return;
-    fetch(`https://dkshopbot.ru/faq/${id}`, {
+  const handleDelete = id => {
+    if (!window.confirm("Удалить FAQ?")) return;
+    const token = localStorage.getItem("auth_token");
+    fetch(`/faq/${id}`, {
       method: "DELETE",
-      headers: { Authorization: `Basic ${token}` },
+      headers: { Authorization: `Basic ${token}` }
     })
-      .then(loadFAQs)
-      .catch(console.error);
+      .then(r => {
+        if (!r.ok) throw new Error("Ошибка удаления");
+        setFaq(prev => prev.filter(f => f.id !== id));
+      })
+      .catch(e => alert(e.message));
   };
 
-  const handleEditSave = (faq) => {
-    fetch(`https://dkshopbot.ru/faq/${faq.id}`, {
+  const handleEdit = row => {
+    setEditId(row.id);
+    setEditQ(row);
+  };
+
+  const handleEditSave = () => {
+    const token = localStorage.getItem("auth_token");
+    fetch(`/faq/${editId}`, {
       method: "PATCH",
       headers: {
-        Authorization: `Basic ${token}`,
         "Content-Type": "application/json",
+        Authorization: `Basic ${token}`,
       },
-      body: JSON.stringify({
-        question: faq.question,
-        answer: faq.answer,
-      }),
+      body: JSON.stringify(editQ),
     })
-      .then(loadFAQs)
-      .catch(console.error);
-  };
-
-  const handleChange = (id, field, value) => {
-    setFaqList((prev) =>
-      prev.map((faq) =>
-        faq.id === id ? { ...faq, [field]: value } : faq
-      )
-    );
+      .then(async r => {
+        if (!r.ok) throw new Error("Ошибка обновления");
+        const updated = await r.json();
+        setFaq(prev => prev.map(f => (f.id === updated.id ? updated : f)));
+        setEditId(null);
+        setEditQ(empty);
+      })
+      .catch(e => alert(e.message));
   };
 
   useEffect(() => {
-    loadFAQs();
+    loadFAQ();
+    // eslint-disable-next-line
   }, []);
 
   return (
     <div className="admin-container admin-faq">
-        <AdminHeader />
-      <h2>FAQ – Вопросы и ответы</h2>
-
+      <AdminHeader />
+      <h2>FAQ — частые вопросы</h2>
       <div className="faq-add-row">
         <input
-          placeholder="Новый вопрос"
-          value={newQuestion}
-          onChange={(e) => setNewQuestion(e.target.value)}
+          placeholder="Вопрос"
+          value={newQ.question}
+          onChange={e => setNewQ(q => ({ ...q, question: e.target.value }))}
         />
         <input
           placeholder="Ответ"
-          value={newAnswer}
-          onChange={(e) => setNewAnswer(e.target.value)}
+          value={newQ.answer}
+          onChange={e => setNewQ(q => ({ ...q, answer: e.target.value }))}
         />
         <button onClick={handleAdd}>Добавить</button>
       </div>
-
       <table>
         <thead>
           <tr>
@@ -143,15 +125,37 @@ export default function AdminFAQ() {
           </tr>
         </thead>
         <tbody>
-          {faqList.map((faq) => (
-            <FAQRow
-              key={faq.id}
-              faq={faq}
-              onChange={handleChange}
-              onSave={handleEditSave}
-              onDelete={handleDelete}
-            />
-          ))}
+          {faq.map(row =>
+            editId === row.id ? (
+              <tr key={row.id}>
+                <td>
+                  <input
+                    value={editQ.question}
+                    onChange={e => setEditQ(q => ({ ...q, question: e.target.value }))}
+                  />
+                </td>
+                <td>
+                  <input
+                    value={editQ.answer}
+                    onChange={e => setEditQ(q => ({ ...q, answer: e.target.value }))}
+                  />
+                </td>
+                <td>
+                  <button onClick={handleEditSave}>Сохранить</button>
+                  <button onClick={() => setEditId(null)}>Отмена</button>
+                </td>
+              </tr>
+            ) : (
+              <tr key={row.id}>
+                <td>{row.question}</td>
+                <td>{row.answer}</td>
+                <td>
+                  <button onClick={() => handleEdit(row)}>Редактировать</button>
+                  <button onClick={() => handleDelete(row.id)}>Удалить</button>
+                </td>
+              </tr>
+            )
+          )}
         </tbody>
       </table>
     </div>

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import "./Admin.css";
 import AdminHeader from "./AdminHeader";
 
@@ -18,18 +19,34 @@ export default function AdminProduct() {
   const [loading, setLoading] = useState(false);
   const [editId, setEditId] = useState(null);
   const [editProduct, setEditProduct] = useState(emptyProduct);
-  const token = localStorage.getItem("auth_token");
+  const navigate = useNavigate();
 
   const loadProducts = () => {
+    const token = localStorage.getItem("auth_token");
+    if (!token) {
+      navigate("/admin/login");
+      return;
+    }
     setLoading(true);
-    fetch("https://dkshopbot.ru/products")
-      .then((r) => r.json())
+    fetch("https://dkshopbot.ru/products", {
+      headers: { Authorization: `Basic ${token}` }
+    })
+      .then(async r => {
+        if (r.status === 401) {
+          localStorage.removeItem("auth_token");
+          navigate("/admin/login");
+          return [];
+        }
+        return r.json();
+      })
       .then(setProducts)
-      .catch(console.error)
+      .catch(() => {
+        localStorage.removeItem("auth_token");
+        navigate("/admin/login");
+      })
       .finally(() => setLoading(false));
   };
 
-  // --- Загрузка файлов с ПК для нового товара ---
   const handleFileUpload = async (e) => {
     const files = Array.from(e.target.files);
     for (const file of files) {
@@ -47,7 +64,6 @@ export default function AdminProduct() {
     }
   };
 
-  // --- Загрузка файлов для редактируемого товара ---
   const handleEditFileUpload = async (e) => {
     const files = Array.from(e.target.files);
     for (const file of files) {
@@ -65,8 +81,8 @@ export default function AdminProduct() {
     }
   };
 
-  // --- Добавление товара ---
   const handleAdd = () => {
+    const token = localStorage.getItem("auth_token");
     const body = {
       ...newProduct,
       price: Number(newProduct.price),
@@ -76,12 +92,11 @@ export default function AdminProduct() {
         .map((s) => s.trim())
         .filter(Boolean),
     };
-
     fetch("https://dkshopbot.ru/products", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        ...(token ? { Authorization: `Basic ${token}` } : {}),
+        Authorization: `Basic ${token}`,
       },
       body: JSON.stringify(body),
     })
@@ -94,24 +109,22 @@ export default function AdminProduct() {
       .catch((e) => alert(e.message));
   };
 
-  // --- Удаление товара ---
   const handleDelete = (id) => {
+    const token = localStorage.getItem("auth_token");
     if (!window.confirm("Удалить этот товар?")) return;
     fetch(`https://dkshopbot.ru/products/${id}`, {
       method: "DELETE",
       headers: {
-        ...(token ? { Authorization: `Basic ${token}` } : {}),
+        Authorization: `Basic ${token}`,
       },
     })
       .then((r) => {
         if (!r.ok) throw new Error("Ошибка удаления");
-        // Удаляем товар локально из products
         setProducts((prev) => prev.filter((p) => p.id !== id));
       })
       .catch((e) => alert(e.message));
   };
 
-  // --- Начать редактирование товара ---
   const handleEdit = (p) => {
     setEditId(p.id);
     setEditProduct({
@@ -120,8 +133,8 @@ export default function AdminProduct() {
     });
   };
 
-  // --- Сохранить изменения ---
   const handleEditSave = () => {
+    const token = localStorage.getItem("auth_token");
     const body = {
       ...editProduct,
       price: Number(editProduct.price),
@@ -131,19 +144,17 @@ export default function AdminProduct() {
         .map((s) => s.trim())
         .filter(Boolean),
     };
-
     fetch(`https://dkshopbot.ru/products/${editId}`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
-        ...(token ? { Authorization: `Basic ${token}` } : {}),
+        Authorization: `Basic ${token}`,
       },
       body: JSON.stringify(body),
     })
       .then(async (r) => {
         if (!r.ok) throw new Error("Ошибка сохранения");
         const updatedProduct = await r.json();
-        // Обновляем товар локально в products
         setProducts((prev) =>
           prev.map((item) =>
             item.id === updatedProduct.id ? updatedProduct : item
@@ -157,9 +168,9 @@ export default function AdminProduct() {
 
   useEffect(() => {
     loadProducts();
+    // eslint-disable-next-line
   }, []);
 
-  // --- Функция превью для картинок ---
   function renderImages(urls) {
     return urls
       .split(",")
@@ -185,7 +196,6 @@ export default function AdminProduct() {
     <div className="admin-container admin-products">
       <AdminHeader />
       <h2>Товары — управление</h2>
-
       <div className="product-add-row" style={{ marginBottom: 24 }}>
         <input
           placeholder="Название"
@@ -233,14 +243,11 @@ export default function AdminProduct() {
         />
         <button onClick={handleAdd}>Добавить товар</button>
       </div>
-
-      {/* Превью картинок для нового товара */}
       {newProduct.images && (
         <div style={{ display: "flex", gap: 8, margin: "8px 0" }}>
           {renderImages(newProduct.images)}
         </div>
       )}
-
       {loading ? (
         <p>Загрузка товаров…</p>
       ) : (
@@ -261,59 +268,106 @@ export default function AdminProduct() {
             {products.map((p) =>
               editId === p.id ? (
                 <tr key={p.id}>
-                  <td data-label="id">{p.id}</td>
-                  <td data-label="Название">
-                    <input value={editProduct.name} onChange={e => setEditProduct(ep => ({ ...ep, name: e.target.value }))} />
+                  <td>{p.id}</td>
+                  <td>
+                    <input
+                      value={editProduct.name}
+                      onChange={(e) =>
+                        setEditProduct((v) => ({ ...v, name: e.target.value }))
+                      }
+                    />
                   </td>
-                  <td data-label="Цена">
-                    <input value={editProduct.price} type="number" onChange={e => setEditProduct(ep => ({ ...ep, price: e.target.value }))} />
+                  <td>
+                    <input
+                      value={editProduct.price}
+                      type="number"
+                      onChange={(e) =>
+                        setEditProduct((v) => ({ ...v, price: e.target.value }))
+                      }
+                    />
                   </td>
-                  <td data-label="Совместимость">
-                    <input value={editProduct.model_compat} onChange={e => setEditProduct(ep => ({ ...ep, model_compat: e.target.value }))} />
+                  <td>
+                    <input
+                      value={editProduct.model_compat}
+                      onChange={(e) =>
+                        setEditProduct((v) => ({
+                          ...v,
+                          model_compat: e.target.value,
+                        }))
+                      }
+                    />
                   </td>
-                  <td data-label="Тип">
-                    <input value={editProduct.type} onChange={e => setEditProduct(ep => ({ ...ep, type: e.target.value }))} />
+                  <td>
+                    <input
+                      value={editProduct.type}
+                      onChange={(e) =>
+                        setEditProduct((v) => ({ ...v, type: e.target.value }))
+                      }
+                    />
                   </td>
-                  <td data-label="Остаток">
-                    <input value={editProduct.stock} type="number" onChange={e => setEditProduct(ep => ({ ...ep, stock: e.target.value }))} />
+                  <td>
+                    <input
+                      value={editProduct.stock}
+                      type="number"
+                      onChange={(e) =>
+                        setEditProduct((v) => ({ ...v, stock: e.target.value }))
+                      }
+                    />
                   </td>
-                  <td data-label="Картинки">
-                    <input value={editProduct.images} onChange={e => setEditProduct(ep => ({ ...ep, images: e.target.value }))} />
+                  <td>
+                    <input
+                      value={editProduct.images}
+                      onChange={(e) =>
+                        setEditProduct((v) => ({
+                          ...v,
+                          images: e.target.value,
+                        }))
+                      }
+                    />
                     <input
                       type="file"
                       accept="image/*"
                       multiple
                       onChange={handleEditFileUpload}
-                      style={{ minWidth: 80, marginTop: 4 }}
+                      style={{ marginTop: 6 }}
                     />
-                    {/* Превью картинок при редактировании */}
                     {editProduct.images && (
-                      <div style={{ display: "flex", gap: 6, margin: "4px 0" }}>
+                      <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
                         {renderImages(editProduct.images)}
                       </div>
                     )}
                   </td>
-                  <td data-label="Действия">
+                  <td>
                     <button onClick={handleEditSave}>Сохранить</button>
-                    <button onClick={() => setEditId(null)}>Отмена</button>
+                    <button
+                      style={{ background: "#c32", color: "#fff" }}
+                      onClick={() => setEditId(null)}
+                    >
+                      Отмена
+                    </button>
                   </td>
                 </tr>
               ) : (
                 <tr key={p.id}>
-                  <td data-label="id">{p.id}</td>
-                  <td data-label="Название">{p.name}</td>
-                  <td data-label="Цена">{p.price}</td>
-                  <td data-label="Совместимость">{p.model_compat}</td>
-                  <td data-label="Тип">{p.type}</td>
-                  <td data-label="Остаток">{p.stock}</td>
-                  <td data-label="Картинки" style={{ maxWidth: 120, wordBreak: "break-all" }}>
-                    {(p.images || []).map
-                      ? renderImages(p.images.join(","))
-                      : renderImages(p.images)}
+                  <td>{p.id}</td>
+                  <td>{p.name}</td>
+                  <td>{p.price}</td>
+                  <td>{p.model_compat}</td>
+                  <td>{p.type}</td>
+                  <td>{p.stock}</td>
+                  <td>
+                    {p.images && p.images.length > 0
+                      ? renderImages((Array.isArray(p.images) ? p.images : [p.images]).join(","))
+                      : ""}
                   </td>
-                  <td data-label="Действия">
+                  <td>
                     <button onClick={() => handleEdit(p)}>Редактировать</button>
-                    <button onClick={() => handleDelete(p.id)}>Удалить</button>
+                    <button
+                      style={{ background: "#e53935", color: "#fff" }}
+                      onClick={() => handleDelete(p.id)}
+                    >
+                      Удалить
+                    </button>
                   </td>
                 </tr>
               )

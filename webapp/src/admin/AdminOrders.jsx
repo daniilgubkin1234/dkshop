@@ -1,47 +1,69 @@
-// src/admin/AdminOrders.jsx
-import React, { useEffect, useState } from 'react';
-import './Admin.css';
-import AdminHeader from './AdminHeader';
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import "./Admin.css";
+import AdminHeader from "./AdminHeader";
 
 export default function AdminOrders() {
   const [orders, setOrders] = useState([]);
+  const navigate = useNavigate();
 
-  // Загрузить список заказов из бэкенда
+  // Проверка токена и загрузка заказов
   const loadOrders = () => {
-    const token = localStorage.getItem('auth_token');
-    fetch('https://dkshopbot.ru/admin/orders', {
+    const token = localStorage.getItem("auth_token");
+    if (!token) {
+      navigate("/admin/login");
+      return;
+    }
+    fetch("https://dkshopbot.ru/admin/orders", {
       headers: { Authorization: `Basic ${token}` }
     })
-      .then(res => res.json())
+      .then(async res => {
+        if (res.status === 401) {
+          localStorage.removeItem("auth_token");
+          navigate("/admin/login");
+          return [];
+        }
+        return res.json();
+      })
       .then(setOrders)
-      .catch(err => console.error('Ошибка загрузки заказов:', err));
+      .catch(() => {
+        localStorage.removeItem("auth_token");
+        navigate("/admin/login");
+      });
   };
 
   // Обновить статус заказа
   const updateStatus = (id, newStatus) => {
-    const token = localStorage.getItem('auth_token');
+    const token = localStorage.getItem("auth_token");
     fetch(`https://dkshopbot.ru/admin/orders/${id}?new_status=${newStatus}`, {
-      method: 'PATCH',
+      method: "PATCH",
       headers: { Authorization: `Basic ${token}` }
     })
       .then(loadOrders)
-      .catch(err => console.error(`Ошибка при обновлении заказа ${id}:`, err));
+      .catch(() => {
+        localStorage.removeItem("auth_token");
+        navigate("/admin/login");
+      });
   };
 
   // Удалить заказ
   const deleteOrder = (id) => {
     if (!window.confirm(`Удалить заказ #${id}?`)) return;
-    const token = localStorage.getItem('auth_token');
+    const token = localStorage.getItem("auth_token");
     fetch(`https://dkshopbot.ru/admin/orders/${id}`, {
-      method: 'DELETE',
+      method: "DELETE",
       headers: { Authorization: `Basic ${token}` }
     })
       .then(loadOrders)
-      .catch(err => console.error(`Ошибка при удалении заказа ${id}:`, err));
+      .catch(() => {
+        localStorage.removeItem("auth_token");
+        navigate("/admin/login");
+      });
   };
 
   useEffect(() => {
     loadOrders();
+    // eslint-disable-next-line
   }, []);
 
   return (
@@ -68,23 +90,16 @@ export default function AdminOrders() {
               <td>{o.phone}</td>
               <td>{o.status}</td>
               <td>{new Date(o.created_at).toLocaleString()}</td>
-              <td style={{ whiteSpace: 'pre-wrap', maxWidth: 300 }}>
-                {o.items.map(it => `${it.name} × ${it.quantity}`).join('\n')}
+              <td style={{ whiteSpace: "pre-wrap", maxWidth: 300 }}>
+                {o.items.map(it => `${it.name} × ${it.quantity}`).join("\n")}
               </td>
-
               <td>
-                <button onClick={() => updateStatus(o.id, 'Принят')}>
-                  Принят
-                </button>
-                <button onClick={() => updateStatus(o.id, 'Отгружен')}>
-                  Отгружен
-                </button>
-                <button onClick={() => updateStatus(o.id, 'Завершён')}>
-                  Завершён
-                </button>
+                <button onClick={() => updateStatus(o.id, "Принят")}>Принят</button>
+                <button onClick={() => updateStatus(o.id, "В доставке")}>В доставке</button>
+                <button onClick={() => updateStatus(o.id, "Завершён")}>Завершён</button>
                 <button
                   onClick={() => deleteOrder(o.id)}
-                  style={{ marginLeft: 8, background: '#e53935', color: '#fff' }}
+                  style={{ marginLeft: 8, background: "#e53935", color: "#fff" }}
                 >
                   Удалить
                 </button>

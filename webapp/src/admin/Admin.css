@@ -251,6 +251,122 @@
   background: #155ec6;
 }
 
+/* ──────────── Полезные ссылки (Footer) ──────────── */
+.admin-footer {
+  margin: 32px auto 0 auto;
+  max-width: 900px;
+  color: #fff;
+}
+
+.admin-footer h2 {
+  font-size: 2rem;
+  margin-bottom: 18px;
+  font-weight: 600;
+}
+
+.admin-footer .footer-add-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+
+.admin-footer .footer-add-row input {
+  padding: 7px 10px;
+  font-size: 1rem;
+  background: #23232a;
+  border: 1px solid #222c3d;
+  border-radius: 7px;
+  color: #fff;
+  width: 180px;
+  outline: none;
+  transition: border 0.2s;
+}
+.admin-footer .footer-add-row input:focus {
+  border-color: #1a73e8;
+}
+
+.admin-footer .footer-add-row button {
+  padding: 7px 22px;
+  background: #1a73e8;
+  color: #fff;
+  border: none;
+  border-radius: 7px;
+  font-weight: 500;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.18s;
+}
+.admin-footer .footer-add-row button:hover {
+  background: #155ec6;
+}
+
+.admin-footer table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+  background: #1e1e1e;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px #0002;
+}
+
+.admin-footer th,
+.admin-footer td {
+  padding: 12px 8px;
+  text-align: left;
+  font-size: 15px;
+}
+
+.admin-footer th {
+  background: #23232a;
+  color: #fff;
+  font-size: 1.07rem;
+}
+
+.admin-footer tr:nth-child(odd) {
+  background: #23232a;
+}
+.admin-footer tr:nth-child(even) {
+  background: #18181d;
+}
+
+.admin-footer td button {
+  margin-right: 8px;
+  padding: 6px 14px;
+  font-size: 0.97rem;
+  border-radius: 6px;
+  border: none;
+  background: #292946;
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.18s;
+}
+.admin-footer td button:hover {
+  background: #1a73e8;
+}
+
+.admin-footer input[type="text"],
+.admin-footer input[type="url"] {
+  width: 150px;
+  background: #21212b;
+  color: #fff;
+  border: 1px solid #444;
+  border-radius: 4px;
+  padding: 6px 8px;
+}
+
+.admin-footer .footer-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.admin-footer .footer-actions button:last-child {
+  background: #d32f2f;
+}
+.admin-footer .footer-actions button:last-child:hover {
+  background: #b71c1c;
+}
 
 
 
@@ -418,5 +534,79 @@
 
   .admin-products td:last-child {
     border-bottom: none;
+  }
+}
+
+
+/* ──────────── Адаптив для страницы "Полезные ссылки" ──────────── */
+@media (max-width: 768px) {
+  .admin-footer {
+    max-width: 99vw;
+    margin: 10px 0;
+  }
+
+  .admin-footer h2 {
+    font-size: 1.15rem;
+    margin-bottom: 10px;
+  }
+
+  .admin-footer .footer-add-row {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .admin-footer .footer-add-row input,
+  .admin-footer .footer-add-row button {
+    width: 100% !important;
+    margin-bottom: 7px;
+    font-size: 1rem;
+  }
+
+  .admin-footer table,
+  .admin-footer thead,
+  .admin-footer tbody,
+  .admin-footer tr,
+  .admin-footer th,
+  .admin-footer td {
+    display: block;
+    width: 100%;
+  }
+
+  .admin-footer thead {
+    display: none;
+  }
+
+  .admin-footer tr {
+    margin-bottom: 16px;
+    border-bottom: 2px solid #303050;
+    background: #20222b;
+    border-radius: 7px;
+    overflow: hidden;
+  }
+
+  .admin-footer td {
+    padding: 10px 8px;
+    font-size: 14px;
+    border: none;
+    border-bottom: 1px solid #34345c;
+    position: relative;
+    word-break: break-word;
+  }
+
+  .admin-footer td::before {
+    content: attr(data-label);
+    font-weight: bold;
+    color: #88aaff;
+    margin-bottom: 4px;
+    display: block;
+  }
+
+  .admin-footer td:last-child {
+    border-bottom: none;
+  }
+
+  .admin-footer .footer-actions {
+    flex-direction: column;
+    gap: 6px;
   }
 }
