@@ -114,11 +114,12 @@ export default function ProductList({ onSearchChange }) {
         <div className="product-grid">
           {filtered.map((p) => (
             <div key={p.id} className="product-card" onClick={() => handleClick(p.id)}>
-              {p.images?.[0] ? (
-                <img src={p.images[0]} alt={p.name} className="product-image" />
-              ) : (
-                <div className="product-image--placeholder" />
-              )}
+              <img
+                src={p.images?.[0] ? p.images[0] : '/static/no-image.png'}
+                alt={p.name}
+                className="product-image"
+                onError={e => { e.target.onerror = null; e.target.src='/static/no-image.png'; }}
+              />
 
               <div className="product-info">
                 <h3 className="product-title">{p.name}</h3>

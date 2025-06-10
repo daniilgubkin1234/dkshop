@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { fetchProductById } from '../api.js';
-import { useCart } from '../context/CartContext.jsx';  // ← хук корзины
+import { useCart } from '../context/CartContext.jsx';
 import './Product.css';
 
 export default function Product() {
@@ -12,7 +12,6 @@ export default function Product() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  // Функция из контекста корзины
   const { addToCart } = useCart();
 
   useEffect(() => {
@@ -61,25 +60,21 @@ export default function Product() {
 
   return (
     <div className="product-page">
-      {/* Кнопка «← Назад» */}
       <button className="product-back" onClick={() => navigate("/")}>
-      ← Вернуться на главную
+        ← Вернуться на главную
       </button>
 
       <div className="product-content">
-        {/* Блок с изображением */}
         <div className="product-page__image">
-          {item.images && item.images.length > 0 ? (
-            <img src={item.images[0]} alt={item.name} />
-          ) : (
-            <div className="product-placeholder" />
-          )}
+          <img
+            src={item.images && item.images.length > 0 ? item.images[0] : '/static/no-image.png'}
+            alt={item.name}
+            onError={e => { e.target.onerror = null; e.target.src='/static/no-image.png'; }}
+          />
         </div>
 
-        {/* Блок с деталями товара */}
         <div className="product-page__info">
           <h2 className="product-page__title">{item.name}</h2>
-
           {item.model_compat && (
             <p className="product-page__subtitle">
               Совместимость: {item.model_compat}
@@ -103,7 +98,6 @@ export default function Product() {
             </div>
           )}
 
-          {/* Кнопка «В корзину» */}
           <button
             className="btn-add-cart-single"
             onClick={() => addToCart(item)}
@@ -111,7 +105,6 @@ export default function Product() {
             В корзину
           </button>
 
-          {/* Кнопка «Открыть в боте» (если Telegram-WebApp) */}
           {window.TelegramWebApp && (
             <button
               className="product-cta"
