@@ -42,3 +42,10 @@ class Order(SQLModel, table=True):
     phone: str
     created_at: datetime = Field(default_factory=datetime.utcnow)
     status: str = "pending"
+
+
+class FooterLink(SQLModel, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+    href: str
+    icon: str
+    text: str

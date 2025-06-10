@@ -26,6 +26,12 @@ export default function AdminHeader() {
       >
         Товары
       </Link>
+      <Link
+        to="/admin/footer"
+        className={location.pathname.includes("/footer") ? "active" : ""}
+      >
+      Полезные ссылки
+      </Link>
     </div>
   );
 }

@@ -2,7 +2,7 @@ from fastapi import FastAPI, status, Query, Path, UploadFile, File, HTTPExceptio
 from sqlmodel import SQLModel, Session, select
 from fastapi.middleware.cors import CORSMiddleware
 from .db import engine
-from .models import Product, FAQ, Question, Order
+from .models import Product, FAQ, Question, Order, FooterLink
 from sqlalchemy import or_, func
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -254,3 +254,45 @@ def update_faq(faq_id: int, item: FAQ, creds: HTTPBasicCredentials = Depends(che
         session.commit()
         session.refresh(faq)
         return faq
+
+
+
+# Получить все ссылки футера
+@app.get("/footer_links")
+def list_footer_links():
+    with Session(engine) as session:
+        return session.exec(select(FooterLink)).all()
+
+# Добавить новую ссылку
+@app.post("/footer_links", response_model=FooterLink)
+def create_footer_link(link: FooterLink, creds: HTTPBasicCredentials = Depends(check_admin)):
+    with Session(engine) as session:
+        session.add(link)
+        session.commit()
+        session.refresh(link)
+        return link
+
+# Изменить ссылку
+@app.patch("/footer_links/{link_id}", response_model=FooterLink)
+def update_footer_link(link_id: int, link: FooterLink, creds: HTTPBasicCredentials = Depends(check_admin)):
+    with Session(engine) as session:
+        db_link = session.get(FooterLink, link_id)
+        if not db_link:
+            raise HTTPException(status_code=404, detail="FooterLink not found")
+        for key, value in link.dict(exclude_unset=True).items():
+            setattr(db_link, key, value)
+        session.add(db_link)
+        session.commit()
+        session.refresh(db_link)
+        return db_link
+
+# Удалить ссылку
+@app.delete("/footer_links/{link_id}")
+def delete_footer_link(link_id: int, creds: HTTPBasicCredentials = Depends(check_admin)):
+    with Session(engine) as session:
+        db_link = session.get(FooterLink, link_id)
+        if not db_link:
+            raise HTTPException(status_code=404, detail="FooterLink not found")
+        session.delete(db_link)
+        session.commit()
+        return {"ok": True}

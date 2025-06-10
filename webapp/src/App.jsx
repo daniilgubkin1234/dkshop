@@ -12,6 +12,7 @@ import AdminOrders from './admin/AdminOrders.jsx';
 import MyOrders from './miniapps/MyOrders.jsx';
 import AdminFAQ from './admin/AdminFAQ.jsx';
 import AdminProduct from "./admin/AdminProduct.jsx";
+import AdminFooter from "./admin/AdminFooter.jsx";
 
 export default function App() {
   const handleSearch = useRef(null); // ← стабильная ссылка
@@ -33,7 +34,10 @@ export default function App() {
           <Route path="/admin/faq" element={<AdminFAQ />} />
           <Route path="/my-orders" element={<MyOrders />} />
           <Route path="/admin/products" element={<AdminProduct />} />
+          <Route path="/admin/footer" element={<AdminFooter />} />
+
           <Route path="*" element={<Navigate to="/" replace />} />
+          
         </Routes>
       </main>
 
