@@ -286,7 +286,7 @@ export default function AdminProduct() {
                     )}
                   </td>
                   <td data-label="Действия">
-                    <button onClick={handleEditSave}>💾 Сохранить</button>
+                    <button onClick={handleEditSave}>Сохранить</button>
                     <button onClick={() => setEditId(null)}>Отмена</button>
                   </td>
                 </tr>

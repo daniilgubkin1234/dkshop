@@ -1,52 +1,45 @@
-from fastapi import FastAPI, status, Query
+from fastapi import FastAPI, status, Query, Path, UploadFile, File, HTTPException, Depends
 from sqlmodel import SQLModel, Session, select
 from fastapi.middleware.cors import CORSMiddleware
 from .db import engine
-from .models import Product, FAQ, Question
+from .models import Product, FAQ, Question, Order
 from sqlalchemy import or_, func
-from .models import Order 
-import requests
-import os
-from fastapi.security import HTTPBasic, HTTPBasicCredentials
-from fastapi import Depends, HTTPException
-import secrets
-app = FastAPI(title="DK API")
-from fastapi import UploadFile, File
 from fastapi.responses import JSONResponse
-
 from fastapi.staticfiles import StaticFiles
-
+from fastapi.security import HTTPBasic, HTTPBasicCredentials
+import secrets
 import shutil, uuid, os
-# CORS
+import requests
 
+app = FastAPI(title="DK API")
 
+# --- CORS ---
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173",
+    allow_origins=[
+        "http://localhost:5173",
         "https://dkshopbot.ru",
-        "https://t.me" ,
-        ],
+        "https://t.me",
+    ],
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-
 security = HTTPBasic()
+
+# --- Static files ---
 app.mount("/static", StaticFiles(directory="static"), name="static")
 UPLOAD_DIR = "static/uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
+# --- Upload endpoint ---
 @app.post("/upload")
 async def upload_image(file: UploadFile = File(...)):
     ext = file.filename.split(".")[-1]
     new_name = f"{uuid.uuid4()}.{ext}"
     out_path = os.path.join(UPLOAD_DIR, new_name)
-
-    # Сохраняем файл
     with open(out_path, "wb") as out_file:
         shutil.copyfileobj(file.file, out_file)
-
-    # Формируем URL для фронта (учти путь к статикам!)
     url = f"https://dkshopbot.ru/static/uploads/{new_name}"
     return JSONResponse({"url": url})
 
@@ -58,7 +51,9 @@ def on_startup() -> None:
 def health():
     return {"status": "ok"}
 
-# 1) Список продуктов (с поиском по q)
+# --- Products CRUD ---
+
+# Список продуктов (GET)
 @app.get("/products")
 def list_products(q: str | None = None):
     with Session(engine) as session:
@@ -79,7 +74,16 @@ def list_products(q: str | None = None):
             )
         return session.exec(stmt).all()
 
-# 2) Создание продукта
+# Получить один товар по id (GET)
+@app.get("/products/{product_id}", response_model=Product)
+def get_product(product_id: int = Path(...)):
+    with Session(engine) as session:
+        product = session.get(Product, product_id)
+        if not product:
+            raise HTTPException(status_code=404, detail="Product not found")
+        return product
+
+# Создание продукта (POST)
 @app.post("/products", response_model=Product, status_code=status.HTTP_201_CREATED)
 def create_product(item: Product):
     with Session(engine) as session:
@@ -88,7 +92,34 @@ def create_product(item: Product):
         session.refresh(item)
         return item
 
-# ваши существующие вопросы и FAQ...
+# Редактирование продукта (PATCH)
+@app.patch("/products/{product_id}", response_model=Product)
+def update_product(product_id: int, item: Product):
+    with Session(engine) as session:
+        product = session.get(Product, product_id)
+        if not product:
+            raise HTTPException(status_code=404, detail="Product not found")
+        update_data = item.dict(exclude_unset=True)
+        for key, value in update_data.items():
+            setattr(product, key, value)
+        session.add(product)
+        session.commit()
+        session.refresh(product)
+        return product
+
+# Удаление продукта (DELETE)
+@app.delete("/products/{product_id}")
+def delete_product(product_id: int):
+    with Session(engine) as session:
+        product = session.get(Product, product_id)
+        if not product:
+            raise HTTPException(status_code=404, detail="Product not found")
+        session.delete(product)
+        session.commit()
+        return {"ok": True}
+
+# --- Остальные эндпоинты (без изменений) ---
+
 @app.post("/orders")
 def create_order(order: Order):
     with Session(engine) as session:
@@ -96,7 +127,6 @@ def create_order(order: Order):
         session.commit()
         session.refresh(order)
 
-    # Уведомление в Telegram
     bot_token = os.getenv("BOT_TOKEN")
     if bot_token:
         try:
@@ -128,7 +158,6 @@ def search_faq(q: str = Query("*", min_length=1)):
             stmt = stmt.where(FAQ.question.ilike(f"%{q}%"))
         return session.exec(stmt).all()
 
-
 @app.post("/faq", response_model=FAQ)
 def create_faq(item: FAQ):
     with Session(engine) as session:
@@ -145,21 +174,16 @@ def delete_faq(faq_id: int):
             session.delete(faq)
             session.commit()
         return {"ok": True}
-    
+
 def check_admin(credentials: HTTPBasicCredentials = Depends(security)):
-    # Берём имя пользователя и пароль из окружения, или "" (пустую строку), если переменных нет:
     admin_user = os.getenv("ADMIN_USER", "")
     admin_pass = os.getenv("ADMIN_PASSWORD", "")
-
-    # Сравниваем введённое с тем, что в окружении
     correct_user = secrets.compare_digest(credentials.username, admin_user)
     correct_pass = secrets.compare_digest(credentials.password, admin_pass)
-
     if not (correct_user and correct_pass):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Unauthorized",
-            
         )
 
 @app.get("/admin/orders")
@@ -168,28 +192,22 @@ def get_orders(creds: HTTPBasicCredentials = Depends(check_admin)):
         orders = s.exec(
             select(Order).order_by(Order.created_at.desc())
         ).all()
-        # Собираем все product_id из всех заказов
         all_ids = {item["product_id"] for o in orders for item in o.items}
-        # Загружаем соответствующие продукты сразу одним запросом
         prods = s.exec(select(Product).where(Product.id.in_(all_ids))).all()
         prod_map = {p.id: p.name for p in prods}
-
-        # Формируем новый список заказов с именами товаров внутри items
         enriched = []
         for o in orders:
             enriched_items = []
             for it in o.items:
                 enriched_items.append({
                     "product_id": it["product_id"],
-                    "quantity":   it["quantity"],
-                    "name":       prod_map.get(it["product_id"], f"#{it['product_id']}")
+                    "quantity": it["quantity"],
+                    "name": prod_map.get(it["product_id"], f"#{it['product_id']}")
                 })
             od = o.dict()
             od["items"] = enriched_items
             enriched.append(od)
-
         return enriched
-
 
 @app.patch("/admin/orders/{order_id}")
 def update_order_status(order_id: int, new_status: str, creds: HTTPBasicCredentials = Depends(check_admin)):
@@ -211,7 +229,7 @@ def delete_order(order_id: int, creds: HTTPBasicCredentials = Depends(check_admi
         s.delete(order)
         s.commit()
         return {"ok": True}
-    
+
 @app.get("/orders/by-phone")
 def orders_by_phone(phone: str):
     normalized = phone.strip().replace(" ", "").replace("-", "").lstrip("+").replace("+7", "8").replace("+", "")
@@ -220,7 +238,7 @@ def orders_by_phone(phone: str):
             func.replace(func.replace(Order.phone, ' ', ''), '-', '').ilike(f"%{normalized}%")
         ).order_by(Order.created_at.desc())
         return session.exec(stmt).all()
-    
+
 @app.patch("/faq/{faq_id}", response_model=FAQ)
 def update_faq(faq_id: int, item: FAQ, creds: HTTPBasicCredentials = Depends(check_admin)):
     with Session(engine) as session:
