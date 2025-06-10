@@ -29,6 +29,46 @@ export default function AdminProduct() {
       .finally(() => setLoading(false));
   };
 
+  // --- Загрузка файлов с ПК для нового товара ---
+  const handleFileUpload = async (e) => {
+    const files = Array.from(e.target.files);
+    for (const file of files) {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("https://dkshopbot.ru/upload", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+      setNewProduct((p) => ({
+        ...p,
+        images: p.images
+          ? p.images + ", " + data.url
+          : data.url,
+      }));
+    }
+  };
+
+  // --- Загрузка файлов для редактируемого товара ---
+  const handleEditFileUpload = async (e) => {
+    const files = Array.from(e.target.files);
+    for (const file of files) {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("https://dkshopbot.ru/upload", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+      setEditProduct((p) => ({
+        ...p,
+        images: p.images
+          ? p.images + ", " + data.url
+          : data.url,
+      }));
+    }
+  };
+
   const handleAdd = () => {
     const body = {
       ...newProduct,
@@ -56,7 +96,6 @@ export default function AdminProduct() {
       .catch((e) => alert(e.message));
   };
 
-  // Удалить товар
   const handleDelete = (id) => {
     if (!window.confirm("Удалить этот товар?")) return;
     fetch(`https://dkshopbot.ru/products/${id}`, {
@@ -72,7 +111,6 @@ export default function AdminProduct() {
       .catch((e) => alert(e.message));
   };
 
-  // Начать редактирование товара
   const handleEdit = (p) => {
     setEditId(p.id);
     setEditProduct({
@@ -81,7 +119,6 @@ export default function AdminProduct() {
     });
   };
 
-  // Сохранить отредактированный товар
   const handleEditSave = () => {
     const body = {
       ...editProduct,
@@ -113,6 +150,28 @@ export default function AdminProduct() {
   useEffect(() => {
     loadProducts();
   }, []);
+
+  // --- Функция превью для картинок ---
+  function renderImages(urls) {
+    return urls
+      .split(",")
+      .map((url) => url.trim())
+      .filter(Boolean)
+      .map((url, i) => (
+        <img
+          key={i}
+          src={url}
+          alt="img"
+          style={{
+            height: 40,
+            borderRadius: 4,
+            marginRight: 4,
+            background: "#fff",
+            border: "1px solid #aaa",
+          }}
+        />
+      ));
+  }
 
   return (
     <div className="admin-container admin-products">
@@ -157,8 +216,22 @@ export default function AdminProduct() {
           value={newProduct.description}
           onChange={(e) => setNewProduct((p) => ({ ...p, description: e.target.value }))}
         />
+        <input
+          type="file"
+          accept="image/*"
+          multiple
+          onChange={handleFileUpload}
+          style={{ minWidth: 120 }}
+        />
         <button onClick={handleAdd}>Добавить товар</button>
       </div>
+
+      {/* Превью картинок для нового товара */}
+      {newProduct.images && (
+        <div style={{ display: "flex", gap: 8, margin: "8px 0" }}>
+          {renderImages(newProduct.images)}
+        </div>
+      )}
 
       {loading ? (
         <p>Загрузка товаров…</p>
@@ -198,6 +271,19 @@ export default function AdminProduct() {
                   </td>
                   <td data-label="Картинки">
                     <input value={editProduct.images} onChange={e => setEditProduct(ep => ({ ...ep, images: e.target.value }))} />
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={handleEditFileUpload}
+                      style={{ minWidth: 80, marginTop: 4 }}
+                    />
+                    {/* Превью картинок при редактировании */}
+                    {editProduct.images && (
+                      <div style={{ display: "flex", gap: 6, margin: "4px 0" }}>
+                        {renderImages(editProduct.images)}
+                      </div>
+                    )}
                   </td>
                   <td data-label="Действия">
                     <button onClick={handleEditSave}>💾 Сохранить</button>
@@ -213,11 +299,13 @@ export default function AdminProduct() {
                   <td data-label="Тип">{p.type}</td>
                   <td data-label="Остаток">{p.stock}</td>
                   <td data-label="Картинки" style={{ maxWidth: 120, wordBreak: "break-all" }}>
-                    {(p.images || []).join(", ")}
+                    {(p.images || []).map
+                      ? renderImages(p.images.join(","))
+                      : renderImages(p.images)}
                   </td>
                   <td data-label="Действия">
-                    <button onClick={() => handleEdit(p)}> Редактировать</button>
-                    <button onClick={() => handleDelete(p.id)}> Удалить</button>
+                    <button onClick={() => handleEdit(p)}>Редактировать</button>
+                    <button onClick={() => handleDelete(p.id)}>Удалить</button>
                   </td>
                 </tr>
               )

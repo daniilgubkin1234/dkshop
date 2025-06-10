@@ -37,8 +37,8 @@ function FAQRow({ faq, onChange, onSave, onDelete }) {
         />
       </td>
       <td data-label="Действия">
-        <button onClick={() => onSave(faq)}>💾 Сохранить</button>
-        <button onClick={() => onDelete(faq.id)}>🗑️ Удалить</button>
+        <button onClick={() => onSave(faq)}>Сохранить</button>
+        <button onClick={() => onDelete(faq.id)}>Удалить</button>
       </td>
     </tr>
   );

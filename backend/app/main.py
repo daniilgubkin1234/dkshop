@@ -11,8 +11,15 @@ from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi import Depends, HTTPException
 import secrets
 app = FastAPI(title="DK API")
+from fastapi import UploadFile, File
+from fastapi.responses import JSONResponse
 
+from fastapi.staticfiles import StaticFiles
+
+import shutil, uuid, os
 # CORS
+
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173",
@@ -25,6 +32,23 @@ app.add_middleware(
 
 
 security = HTTPBasic()
+app.mount("/static", StaticFiles(directory="static"), name="static")
+UPLOAD_DIR = "static/uploads"
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+@app.post("/upload")
+async def upload_image(file: UploadFile = File(...)):
+    ext = file.filename.split(".")[-1]
+    new_name = f"{uuid.uuid4()}.{ext}"
+    out_path = os.path.join(UPLOAD_DIR, new_name)
+
+    # Сохраняем файл
+    with open(out_path, "wb") as out_file:
+        shutil.copyfileobj(file.file, out_file)
+
+    # Формируем URL для фронта (учти путь к статикам!)
+    url = f"https://dkshopbot.ru/static/uploads/{new_name}"
+    return JSONResponse({"url": url})
 
 @app.on_event("startup")
 def on_startup() -> None:
