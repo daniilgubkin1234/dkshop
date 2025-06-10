@@ -33,9 +33,8 @@ app.mount(
     StaticFiles(directory=os.path.join(os.path.dirname(__file__), "static")),
     name="static"
 )
-UPLOAD_DIR = "static/uploads"
+UPLOAD_DIR = os.path.join(os.path.dirname(__file__), "static", "uploads")
 os.makedirs(UPLOAD_DIR, exist_ok=True)
-
 # --- Upload endpoint ---
 @app.post("/upload")
 async def upload_image(file: UploadFile = File(...)):
