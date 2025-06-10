@@ -1,8 +1,15 @@
 import os
 import requests
+from urllib.parse import urlparse
 
-API_URL = "https://dkshopbot.ru/products"   # локальный адрес API для быстроты
+API_URL = "https://dkshopbot.ru/products"
 UPLOADS_DIR = "/var/dkshop/backend/app/static/uploads"
+
+def get_filename_from_url(img_url):
+    # Получаем только имя файла, без query-части
+    path = urlparse(img_url).path
+    fname = os.path.basename(path)
+    return fname
 
 def patch_images(product_id, new_images):
     url = f"{API_URL}/{product_id}"
@@ -22,9 +29,9 @@ def main():
         images = product.get("images", [])
         filtered = []
         for img in images:
-            # Получаем только имя файла из URL (после последнего '/')
-            fname = os.path.basename(img)
-            if os.path.exists(os.path.join(UPLOADS_DIR, fname)):
+            fname = get_filename_from_url(img)
+            fpath = os.path.join(UPLOADS_DIR, fname)
+            if os.path.isfile(fpath):
                 filtered.append(img)
         if filtered != images:
             patch_images(product["id"], filtered)
