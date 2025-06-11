@@ -32,7 +32,7 @@ const AdminFooter = () => {
     }
     try {
       const response = await fetch("/footer", {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Basic ${token}` }
       });
       if (response.status === 401) {
         localStorage.removeItem("auth_token");
@@ -60,7 +60,7 @@ const AdminFooter = () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
+          Authorization: `Basic ${token}`
         },
         body: JSON.stringify({ title: newTitle, url: newUrl })
       });
@@ -87,7 +87,7 @@ const AdminFooter = () => {
     try {
       const response = await fetch(`/footer/${id}`, {
         method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Basic ${token}` }
       });
       if (response.status === 401) {
         localStorage.removeItem("auth_token");
@@ -119,7 +119,7 @@ const AdminFooter = () => {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
+          Authorization: `Basic ${token}`
         },
         body: JSON.stringify({ title: editTitle, url: editUrl })
       });
