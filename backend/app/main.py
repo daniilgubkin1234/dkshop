@@ -12,7 +12,7 @@ import shutil, uuid, os
 import requests
 
 from .models import FooterLink
-from .database import get_db
+from .db import get_db
 from pydantic import BaseModel
 
 app = FastAPI(title="DK API")
