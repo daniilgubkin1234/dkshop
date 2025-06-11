@@ -12,7 +12,7 @@ const AdminFooter = () => {
 
   // Устойчивая проверка токена при маунте
   useEffect(() => {
-    const token = localStorage.getItem("admin_token");
+    const token = localStorage.getItem("auth_token");
     if (!token) {
       navigate("/admin/login", { replace: true });
     }
