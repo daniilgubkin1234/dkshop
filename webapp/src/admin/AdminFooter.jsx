@@ -138,7 +138,7 @@ const AdminFooter = () => {
   return (
     <div className="admin-footer admin-container">
       <AdminHeader />
-      <h2>Полезные ссылки в подвале</h2>
+      <h2>Полезные ссылки</h2>
       <form onSubmit={handleAdd} className="footer-add-row" style={{ marginBottom: 24, display: "flex", gap: 12 }}>
         <input
           type="text"

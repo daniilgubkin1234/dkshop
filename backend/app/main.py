@@ -11,6 +11,10 @@ import secrets
 import shutil, uuid, os
 import requests
 
+from .models import FooterLink
+from .database import get_db
+from pydantic import BaseModel
+
 app = FastAPI(title="DK API")
 
 # --- CORS ---
@@ -256,43 +260,66 @@ def update_faq(faq_id: int, item: FAQ, creds: HTTPBasicCredentials = Depends(che
         return faq
 
 
+# Pydantic схема для создания/редактирования футер-ссылки
+class FooterLinkCreate(BaseModel):
+    title: str
+    url: str
 
-# Получить все ссылки футера
-@app.get("/footer_links")
-def list_footer_links():
-    with Session(engine) as session:
-        return session.exec(select(FooterLink)).all()
+class FooterLinkRead(BaseModel):
+    id: int
+    title: str
+    url: str
+    class Config:
+        orm_mode = True
 
-# Добавить новую ссылку
-@app.post("/footer_links", response_model=FooterLink)
-def create_footer_link(link: FooterLink, creds: HTTPBasicCredentials = Depends(check_admin)):
-    with Session(engine) as session:
-        session.add(link)
-        session.commit()
-        session.refresh(link)
-        return link
+# Получить все ссылки (GET)
+@app.get("/footer", response_model=list[FooterLinkRead])
+def get_footer_links(
+    db: Session = Depends(get_db),
+    credentials: HTTPBasicCredentials = Depends(check_admin)
+):
+    return db.query(FooterLink).all()
 
-# Изменить ссылку
-@app.patch("/footer_links/{link_id}", response_model=FooterLink)
-def update_footer_link(link_id: int, link: FooterLink, creds: HTTPBasicCredentials = Depends(check_admin)):
-    with Session(engine) as session:
-        db_link = session.get(FooterLink, link_id)
-        if not db_link:
-            raise HTTPException(status_code=404, detail="FooterLink not found")
-        for key, value in link.dict(exclude_unset=True).items():
-            setattr(db_link, key, value)
-        session.add(db_link)
-        session.commit()
-        session.refresh(db_link)
-        return db_link
+# Добавить новую ссылку (POST)
+@app.post("/footer", response_model=FooterLinkRead)
+def add_footer_link(
+    link: FooterLinkCreate,
+    db: Session = Depends(get_db),
+    credentials: HTTPBasicCredentials = Depends(check_admin)
+):
+    new_link = FooterLink(title=link.title, url=link.url)
+    db.add(new_link)
+    db.commit()
+    db.refresh(new_link)
+    return new_link
 
-# Удалить ссылку
-@app.delete("/footer_links/{link_id}")
-def delete_footer_link(link_id: int, creds: HTTPBasicCredentials = Depends(check_admin)):
-    with Session(engine) as session:
-        db_link = session.get(FooterLink, link_id)
-        if not db_link:
-            raise HTTPException(status_code=404, detail="FooterLink not found")
-        session.delete(db_link)
-        session.commit()
-        return {"ok": True}
+# Изменить ссылку (PATCH)
+@app.patch("/footer/{id}", response_model=FooterLinkRead)
+def update_footer_link(
+    id: int,
+    link: FooterLinkCreate,
+    db: Session = Depends(get_db),
+    credentials: HTTPBasicCredentials = Depends(check_admin)
+):
+    db_link = db.query(FooterLink).filter(FooterLink.id == id).first()
+    if not db_link:
+        raise HTTPException(status_code=404, detail="Ссылка не найдена")
+    db_link.title = link.title
+    db_link.url = link.url
+    db.commit()
+    db.refresh(db_link)
+    return db_link
+
+# Удалить ссылку (DELETE)
+@app.delete("/footer/{id}", status_code=204)
+def delete_footer_link(
+    id: int,
+    db: Session = Depends(get_db),
+    credentials: HTTPBasicCredentials = Depends(check_admin)
+):
+    db_link = db.query(FooterLink).filter(FooterLink.id == id).first()
+    if not db_link:
+        raise HTTPException(status_code=404, detail="Ссылка не найдена")
+    db.delete(db_link)
+    db.commit()
+    return
