@@ -260,19 +260,23 @@ def update_faq(faq_id: int, item: FAQ, creds: HTTPBasicCredentials = Depends(che
         return faq
 
 
-# Pydantic схема для создания/редактирования футер-ссылки
+# ---------------- Pydantic схемы -----------------------------------------
 class FooterLinkCreate(BaseModel):
     title: str
     url: str
+    icon: str | None = None
+
 
 class FooterLinkRead(BaseModel):
     id: int
     title: str
     url: str
+    icon: str | None = None
+
     class Config:
         orm_mode = True
 
-# Получить все ссылки (GET)
+# ---------------- CRUD для футера ---------------------------------------
 @app.get("/footer", response_model=list[FooterLinkRead])
 def get_footer_links(
     db: Session = Depends(get_db),
@@ -280,20 +284,20 @@ def get_footer_links(
 ):
     return db.query(FooterLink).all()
 
-# Добавить новую ссылку (POST)
-@app.post("/footer", response_model=FooterLinkRead)
+
+@app.post("/footer", response_model=FooterLinkRead, status_code=201)
 def add_footer_link(
     link: FooterLinkCreate,
     db: Session = Depends(get_db),
     credentials: HTTPBasicCredentials = Depends(check_admin)
 ):
-    new_link = FooterLink(title=link.title, url=link.url)
+    new_link = FooterLink(title=link.title, url=link.url, icon=link.icon)
     db.add(new_link)
     db.commit()
     db.refresh(new_link)
     return new_link
 
-# Изменить ссылку (PATCH)
+
 @app.patch("/footer/{id}", response_model=FooterLinkRead)
 def update_footer_link(
     id: int,
@@ -304,22 +308,10 @@ def update_footer_link(
     db_link = db.query(FooterLink).filter(FooterLink.id == id).first()
     if not db_link:
         raise HTTPException(status_code=404, detail="Ссылка не найдена")
+
     db_link.title = link.title
-    db_link.url = link.url
+    db_link.url   = link.url
+    db_link.icon  = link.icon
     db.commit()
     db.refresh(db_link)
     return db_link
-
-# Удалить ссылку (DELETE)
-@app.delete("/footer/{id}", status_code=204)
-def delete_footer_link(
-    id: int,
-    db: Session = Depends(get_db),
-    credentials: HTTPBasicCredentials = Depends(check_admin)
-):
-    db_link = db.query(FooterLink).filter(FooterLink.id == id).first()
-    if not db_link:
-        raise HTTPException(status_code=404, detail="Ссылка не найдена")
-    db.delete(db_link)
-    db.commit()
-    return
