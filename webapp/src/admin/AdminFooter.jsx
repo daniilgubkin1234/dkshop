@@ -24,7 +24,7 @@ const AdminFooter = () => {
 
   // Грузим полезные ссылки
   const fetchLinks = async () => {
-    const token = localStorage.getItem("admin_token");
+    const token = localStorage.getItem("auth_token");
     if (!token) {
       navigate("/admin/login", { replace: true });
       return;
@@ -34,7 +34,7 @@ const AdminFooter = () => {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (response.status === 401) {
-        localStorage.removeItem("admin_token");
+        localStorage.removeItem("auth_token");
         navigate("/admin/login", { replace: true });
         return;
       }
@@ -49,7 +49,7 @@ const AdminFooter = () => {
   // Добавление новой ссылки
   const handleAdd = async e => {
     e.preventDefault();
-    const token = localStorage.getItem("admin_token");
+    const token = localStorage.getItem("auth_token");
     if (!token) {
       navigate("/admin/login", { replace: true });
       return;
@@ -64,7 +64,7 @@ const AdminFooter = () => {
         body: JSON.stringify({ title: newTitle, url: newUrl })
       });
       if (response.status === 401) {
-        localStorage.removeItem("admin_token");
+        localStorage.removeItem("auth_token");
         navigate("/admin/login", { replace: true });
         return;
       }
@@ -78,7 +78,7 @@ const AdminFooter = () => {
 
   // Удаление ссылки
   const handleDelete = async id => {
-    const token = localStorage.getItem("admin_token");
+    const token = localStorage.getItem("auth_token");
     if (!token) {
       navigate("/admin/login", { replace: true });
       return;
@@ -89,7 +89,7 @@ const AdminFooter = () => {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (response.status === 401) {
-        localStorage.removeItem("admin_token");
+        localStorage.removeItem("auth_token");
         navigate("/admin/login", { replace: true });
         return;
       }
@@ -108,7 +108,7 @@ const AdminFooter = () => {
 
   // Сохранить изменения
   const handleSave = async id => {
-    const token = localStorage.getItem("admin_token");
+    const token = localStorage.getItem("auth_token");
     if (!token) {
       navigate("/admin/login", { replace: true });
       return;
@@ -123,7 +123,7 @@ const AdminFooter = () => {
         body: JSON.stringify({ title: editTitle, url: editUrl })
       });
       if (response.status === 401) {
-        localStorage.removeItem("admin_token");
+        localStorage.removeItem("auth_token");
         navigate("/admin/login", { replace: true });
         return;
       }
