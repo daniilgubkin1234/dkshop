@@ -278,8 +278,11 @@ class FooterLinkRead(BaseModel):
 
 # ---------------- CRUD для футера ---------------------------------------
 @app.get("/footer", response_model=list[FooterLinkRead])
-def get_footer_links(db: Session = Depends(get_db)):
-     return db.query(FooterLink).all()
+def get_footer_links(
+    db: Session = Depends(get_db),
+    credentials: HTTPBasicCredentials = Depends(check_admin)
+):
+    return db.query(FooterLink).all()
 
 
 @app.post("/footer", response_model=FooterLinkRead, status_code=201)
