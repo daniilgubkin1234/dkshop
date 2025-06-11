@@ -277,41 +277,59 @@ class FooterLinkRead(BaseModel):
         orm_mode = True
 
 # ---------------- CRUD для футера ---------------------------------------
+# ───── Публичный GET (витрина) ─────────────────────────────────────────
 @app.get("/footer", response_model=list[FooterLinkRead])
-def get_footer_links(
+def public_footer(db: Session = Depends(get_db)):
+    return db.query(FooterLink).all()
+
+
+# ───── Админ-CRUD (Basic auth) ─────────────────────────────────────────
+@app.get("/admin/footer", response_model=list[FooterLinkRead])
+def admin_footer(
     db: Session = Depends(get_db),
-    credentials: HTTPBasicCredentials = Depends(check_admin)
+    creds: HTTPBasicCredentials = Depends(check_admin)
 ):
     return db.query(FooterLink).all()
 
 
-@app.post("/footer", response_model=FooterLinkRead, status_code=201)
-def add_footer_link(
+@app.post("/admin/footer", response_model=FooterLinkRead, status_code=201)
+def create_footer_link(
     link: FooterLinkCreate,
     db: Session = Depends(get_db),
-    credentials: HTTPBasicCredentials = Depends(check_admin)
+    creds: HTTPBasicCredentials = Depends(check_admin)
 ):
-    new_link = FooterLink(title=link.title, url=link.url, icon=link.icon)
-    db.add(new_link)
+    obj = FooterLink(**link.dict())
+    db.add(obj)
     db.commit()
-    db.refresh(new_link)
-    return new_link
+    db.refresh(obj)
+    return obj
 
 
-@app.patch("/footer/{id}", response_model=FooterLinkRead)
+@app.patch("/admin/footer/{link_id}", response_model=FooterLinkRead)
 def update_footer_link(
-    id: int,
+    link_id: int,
     link: FooterLinkCreate,
     db: Session = Depends(get_db),
-    credentials: HTTPBasicCredentials = Depends(check_admin)
+    creds: HTTPBasicCredentials = Depends(check_admin)
 ):
-    db_link = db.query(FooterLink).filter(FooterLink.id == id).first()
+    db_link = db.get(FooterLink, link_id)
     if not db_link:
-        raise HTTPException(status_code=404, detail="Ссылка не найдена")
+        raise HTTPException(status_code=404, detail="Not found")
 
-    db_link.title = link.title
-    db_link.url   = link.url
-    db_link.icon  = link.icon
+    for k, v in link.dict().items():
+        setattr(db_link, k, v)
     db.commit()
     db.refresh(db_link)
     return db_link
+
+
+@app.delete("/admin/footer/{link_id}", status_code=204)
+def delete_footer_link(
+    link_id: int,
+    db: Session = Depends(get_db),
+    creds: HTTPBasicCredentials = Depends(check_admin)
+):
+    db_link = db.get(FooterLink, link_id)
+    if db_link:
+        db.delete(db_link)
+        db.commit()
