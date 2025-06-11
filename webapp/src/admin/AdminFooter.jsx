@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import AdminHeader from "./AdminHeader";
 
 const AdminFooter = () => {
   const [links, setLinks] = useState([]);
@@ -136,6 +137,7 @@ const AdminFooter = () => {
 
   return (
     <div className="admin-footer admin-container">
+      <AdminHeader />
       <h2>Полезные ссылки в подвале</h2>
       <form onSubmit={handleAdd} className="footer-add-row" style={{ marginBottom: 24, display: "flex", gap: 12 }}>
         <input
