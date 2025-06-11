@@ -45,7 +45,13 @@ class Order(SQLModel, table=True):
 
 
 class FooterLink(SQLModel, table=True):
-    id: int | None = Field(default=None, primary_key=True)
-    href: str
-    icon: str
-    text: str
+    id: Optional[int] = Field(default=None, primary_key=True)
+
+    # то, что выводим в таблице
+    title: str
+
+    # куда ведёт ссылка
+    url: str
+
+    # код / имя иконки (можно None)
+    icon: Optional[str] = None
