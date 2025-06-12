@@ -86,3 +86,36 @@ export const deleteModelCard = (id, token) =>
   }).then(r => {
     if (!r.ok) throw new Error("Не удалось удалить карточку");
   });
+
+
+
+  const authFetch = (url, opts = {}) => {
+    const token = localStorage.getItem("token");
+    const headers = { "Content-Type": "application/json", ...opts.headers };
+    if (token) headers.Authorization = `Bearer ${token}`;
+    return fetch(BASE + url, { ...opts, headers })
+      .then(r => r.ok ? r.json() : Promise.reject(r));
+  };
+  
+  // ---------- auth ----------
+  export const loginApi = (phone, password) =>
+    fetch(BASE + "/auth/login", {
+      method: "POST",
+      headers: { Authorization: "Basic " + btoa(`${phone}:${password}`) },
+    }).then(r => r.json());
+  
+  export const registerApi = body =>
+    authFetch("/auth/register", {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+  
+  export const meApi = token =>
+    fetch(BASE + "/auth/me", {
+      headers: { Authorization: `Bearer ${token}` },
+    }).then(r => r.json());
+  
+  // ---------- orders ----------
+  export const myOrdersApi = () => authFetch("/orders/me");
+  export const createOrderApi = body =>
+    authFetch("/orders", { method: "POST", body: JSON.stringify(body) });

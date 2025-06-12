@@ -1,28 +1,34 @@
-import React, { useEffect, useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import CartLink from './CartLink.jsx';
-import './Header.css';
+import React, { useEffect, useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
+import CartLink from "./CartLink.jsx";
+import { useAuth } from "../context/AuthContext.jsx";
+import "./Header.css";
 
 const Header = ({ onSearch }) => {
-  const [query, setQuery] = useState('');
+  // ── состояние ────────────────────────────────────────────────────
+  const [query, setQuery] = useState("");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [infoTitle, setInfoTitle] = useState('');
-  const [infoContent, setInfoContent] = useState('');
+  const [infoTitle, setInfoTitle] = useState("");
+  const [infoContent, setInfoContent] = useState("");
   const navigate = useNavigate();
-  const isLoggedIn = localStorage.getItem('auth_token') !== null;
 
+  // авторизация
+  const { user } = useAuth();                              // токен user_token
+  const isAdmin = localStorage.getItem("auth_token") !== null; // токен админки
+
+  // ── информационные блоки ─────────────────────────────────────────
   const openInfo = (type) => {
-    let title = '';
-    let content = '';
+    let title = "";
+    let content = "";
     switch (type) {
-      case 'payment':
-        title = 'Оплата заказа';
+      case "payment":
+        title = "Оплата заказа";
         content = `Оплата товара производится на карту Сбербанка.
 
 Также оплата товара производится после оформления корзины в сообществе Вконтакте (при заказе в ВК).`;
         break;
-      case 'refund':
-        title = 'Возврат';
+      case "refund":
+        title = "Возврат";
         content = `ВОЗВРАТ ИЛИ ОБМЕН ТОВАРА НАДЛЕЖАЩЕГО КАЧЕСТВА:
 
 - Срок возврата или обмена: 14 дней после получения.
@@ -39,8 +45,8 @@ const Header = ({ onSearch }) => {
 
 Важно: повреждение упаковки ТК — не основание для возврата. Покупатель подаёт претензию в ТК.`;
         break;
-      case 'delivery':
-        title = 'Доставка';
+      case "delivery":
+        title = "Доставка";
         content = `Изготовление и отправка товара — до 15 дней!
 
 Доступные ТК:
@@ -48,8 +54,8 @@ const Header = ({ onSearch }) => {
 - Энергия: https://nrg-tk.ru/client/calculator/
 - Деловые Линии: https://www.dellin.ru/`;
         break;
-      case 'contacts':
-        title = 'Контакты';
+      case "contacts":
+        title = "Контакты";
         content = `Технические вопросы: +7(927)705-52-03 (Пн–Пт 9:00–17:00)
 Опт: Telegram/WhatsApp +7(967)485-93-90
 Оформление и консультации: WhatsApp +7(967)483-32-10`;
@@ -60,6 +66,7 @@ const Header = ({ onSearch }) => {
     toggleSidebar();
   };
 
+  // ── Telegram WebApp back-button ──────────────────────────────────
   useEffect(() => {
     if (window.TelegramWebApp) {
       window.TelegramWebApp.ready();
@@ -75,30 +82,36 @@ const Header = ({ onSearch }) => {
     }
   };
 
+  // ── поиск ────────────────────────────────────────────────────────
   const handleSearchChange = (e) => {
     const value = e.target.value;
     setQuery(value);
-    if (onSearch) {
-      onSearch(value);
-    }
+    onSearch?.(value);
   };
 
-  const toggleSidebar = () => {
-    setIsSidebarOpen((prev) => !prev);
-  };
+  // ── навигация ────────────────────────────────────────────────────
+  const toggleSidebar = () => setIsSidebarOpen((prev) => !prev);
+  const handleLogoClick = () => navigate("/");
 
-  const handleLogoClick = () => {
-    navigate('/');
-  };
-
+  // ── рендер ───────────────────────────────────────────────────────
   return (
     <>
       <header className="header-container">
+        {/* -------- верх шапки -------- */}
         <div className="header-top">
-        <div className="header-top__left" onClick={handleLogoClick} style={{ cursor: 'pointer' }}>
-  <img src="/models/dklogo.png" alt="logo" className="header-logo-image" />
-  <span className="header-logo-text">DK PROduct</span>
-</div>
+          <div
+            className="header-top__left"
+            onClick={handleLogoClick}
+            style={{ cursor: "pointer" }}
+          >
+            <img
+              src="/models/dklogo.png"
+              alt="logo"
+              className="header-logo-image"
+            />
+            <span className="header-logo-text">DK PROduct</span>
+          </div>
+
           <div className="header-top__right">
             <a
               href="https://vk.com/dk_pro_tuning?from=groups"
@@ -114,6 +127,7 @@ const Header = ({ onSearch }) => {
           </div>
         </div>
 
+        {/* -------- низ шапки -------- */}
         <div className="header-bottom">
           <div className="header-bottom__left">
             {window.TelegramWebApp && (
@@ -138,37 +152,82 @@ const Header = ({ onSearch }) => {
           </div>
 
           <div className="header-bottom__right">
-            
+            {/* ссылка Войти / ЛК */}
+            {user ? (
+              <Link to="/profile" className="header-profile">
+                Личный&nbsp;кабинет
+              </Link>
+            ) : (
+              <Link to="/login" className="header-profile">
+                Войти
+              </Link>
+            )}
+
+            {/* бургер-меню */}
             <button className="header-menu" onClick={toggleSidebar}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="#fff">
                 <path d="M3 12h18v2H3zM3 6h18v2H3zM3 18h18v2H3z" />
               </svg>
             </button>
+
+            {/* корзина */}
             <CartLink />
           </div>
         </div>
       </header>
 
-      <div className={`sidebar-overlay ${isSidebarOpen ? 'visible' : ''}`} onClick={toggleSidebar}></div>
+      {/* -------- сайдбар -------- */}
+      <div
+        className={`sidebar-overlay ${isSidebarOpen ? "visible" : ""}`}
+        onClick={toggleSidebar}
+      ></div>
 
-      <aside className={`sidebar ${isSidebarOpen ? 'open' : ''}`}>
+      <aside className={`sidebar ${isSidebarOpen ? "open" : ""}`}>
         <div className="sidebar-header">
-          <button className="sidebar-close" onClick={toggleSidebar}>×</button>
+          <button className="sidebar-close" onClick={toggleSidebar}>
+            ×
+          </button>
         </div>
         <nav className="sidebar-nav">
           <ul>
-            <li><a href="#!" onClick={() => openInfo('payment')}>Оплата заказа</a></li>
-            <li><a href="#!" onClick={() => openInfo('refund')}>Возврат</a></li>
-            <li><a href="#!" onClick={() => openInfo('delivery')}>Доставка</a></li>
-            <li><a href="#!" onClick={() => openInfo('contacts')}>Контакты</a></li>
             <li>
-            <Link to="/my-orders" onClick={toggleSidebar}>Мои заказы</Link>
+              <a href="#!" onClick={() => openInfo("payment")}>
+                Оплата заказа
+              </a>
+            </li>
+            <li>
+              <a href="#!" onClick={() => openInfo("refund")}>
+                Возврат
+              </a>
+            </li>
+            <li>
+              <a href="#!" onClick={() => openInfo("delivery")}>
+                Доставка
+              </a>
+            </li>
+            <li>
+              <a href="#!" onClick={() => openInfo("contacts")}>
+                Контакты
+              </a>
             </li>
 
-
-            {isLoggedIn && (
+            {/* «Мои заказы» — только когда user_token есть */}
+            {user && (
               <li>
-                <Link to="/admin/orders" className="admin-link" onClick={toggleSidebar}>
+                <Link to="/my-orders" onClick={toggleSidebar}>
+                  Мои заказы
+                </Link>
+              </li>
+            )}
+
+            {/* админ-панель по прежнему токену auth_token */}
+            {isAdmin && (
+              <li>
+                <Link
+                  to="/admin/orders"
+                  className="admin-link"
+                  onClick={toggleSidebar}
+                >
                   🛠 Панель администратора
                 </Link>
               </li>
@@ -177,12 +236,19 @@ const Header = ({ onSearch }) => {
         </nav>
       </aside>
 
+      {/* -------- модальное окно информации -------- */}
       {infoContent && (
-        <div className="info-modal-overlay" onClick={() => setInfoContent('')}>
-          <div className="info-modal" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="info-modal-overlay"
+          onClick={() => setInfoContent("")}
+        >
+          <div
+            className="info-modal"
+            onClick={(e) => e.stopPropagation()}
+          >
             <h3>{infoTitle}</h3>
             <pre>{infoContent}</pre>
-            <button onClick={() => setInfoContent('')}>Закрыть</button>
+            <button onClick={() => setInfoContent("")}>Закрыть</button>
           </div>
         </div>
       )}
