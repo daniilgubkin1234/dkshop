@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./Admin.css";
 import AdminHeader from "./AdminHeader";
-
+const API = "/admin/model_cards";
 const empty = { label: "", models: "", img: "", match_by_name: true };
 
 export default function AdminModelCards() {
