@@ -1,10 +1,7 @@
 # backend/Dockerfile
 FROM python:3.11-slim
 
-# ── 0. build-инструменты (bcrypt, psycopg2) ─────────────────────────
-RUN apt-get update && apt-get install -y --no-install-recommends \
-        gcc build-essential libffi-dev libpq-dev libssl-dev \
- && rm -rf /var/lib/apt/lists/*
+
 
 # ── 1. Путь сборки ──────────────────────────────────────────────────
 WORKDIR /code
