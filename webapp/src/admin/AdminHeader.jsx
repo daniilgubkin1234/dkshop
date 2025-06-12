@@ -32,6 +32,13 @@ export default function AdminHeader() {
       >
       Полезные ссылки
       </Link>
+
+      <Link
+      to="/admin/modelcards"
+      className={location.pathname.includes("/modelcards") ? "active" : ""}
+      >
+      Карточки каталога
+      </Link>
     </div>
   );
 }

@@ -55,3 +55,15 @@ class FooterLink(SQLModel, table=True):
 
     # код / имя иконки (можно None)
     icon: Optional[str] = None
+
+
+class ModelCard(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+
+    label: str                     # видимый заголовок карточки
+    models: List[str] = Field(     # список «масок» моделей (2101-07 и т.д.)
+    sa_column=Column(JSON),
+    default_factory=list
+    )
+    img: str                       # URL картинки
+    match_by_name: bool = True    # искать подстроку в названии товара?

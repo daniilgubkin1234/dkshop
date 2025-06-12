@@ -2,7 +2,7 @@ from fastapi import FastAPI, status, Query, Path, UploadFile, File, HTTPExceptio
 from sqlmodel import SQLModel, Session, select
 from fastapi.middleware.cors import CORSMiddleware
 from .db import engine
-from .models import Product, FAQ, Question, Order, FooterLink
+from .models import Product, FAQ, Question, Order, FooterLink, ModelCard
 from sqlalchemy import or_, func
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -11,7 +11,6 @@ import secrets
 import shutil, uuid, os
 import requests
 
-from .models import FooterLink
 from .db import get_db
 from pydantic import BaseModel
 
@@ -332,4 +331,81 @@ def delete_footer_link(
     db_link = db.get(FooterLink, link_id)
     if db_link:
         db.delete(db_link)
+        db.commit()
+
+
+# ---------- Схемы для ModelCard ----------
+class ModelCardCreate(BaseModel):
+    label: str
+    models: list[str] = []
+    img: str
+    match_by_name: bool = True   # ← по умолчанию ищем и по имени тоже
+
+
+class ModelCardRead(ModelCardCreate):
+    id: int
+
+    class Config:
+        orm_mode = True
+
+
+
+# ---------- PUBLIC: ModelCard -------------------------------------------
+
+@app.get("/model_cards", response_model=list[ModelCardRead])
+def public_model_cards(db: Session = Depends(get_db)):
+    return db.query(ModelCard).all()
+
+# ---------- ADMIN: ModelCard -------------------------------------------
+@app.get("/admin/model_cards", response_model=list[ModelCardRead])
+def admin_model_cards(
+    db: Session = Depends(get_db),
+    creds: HTTPBasicCredentials = Depends(check_admin)
+):
+    return db.query(ModelCard).all()
+
+
+@app.post(
+    "/admin/model_cards",
+    response_model=ModelCardRead,
+    status_code=status.HTTP_201_CREATED
+)
+def create_model_card(
+    card: ModelCardCreate,
+    db: Session = Depends(get_db),
+    creds: HTTPBasicCredentials = Depends(check_admin)
+):
+    obj = ModelCard(**card.dict())
+    db.add(obj)
+    db.commit()
+    db.refresh(obj)
+    return obj
+
+
+@app.patch("/admin/model_cards/{card_id}", response_model=ModelCardRead)
+def update_model_card(
+    card_id: int,
+    card: ModelCardCreate,
+    db: Session = Depends(get_db),
+    creds: HTTPBasicCredentials = Depends(check_admin)
+):
+    db_card = db.get(ModelCard, card_id)
+    if not db_card:
+        raise HTTPException(status_code=404, detail="Not found")
+    for k, v in card.dict(exclude_unset=True).items():
+        setattr(db_card, k, v)
+    db.commit()
+    db.refresh(db_card)
+    return db_card
+
+
+@app.delete("/admin/model_cards/{card_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_model_card(
+    card_id: int,
+    db: Session = Depends(get_db),
+    creds: HTTPBasicCredentials = Depends(check_admin)
+):
+    db_card = db.get(ModelCard, card_id)
+    if db_card:
+        db.delete(db_card)
         db.commit()
