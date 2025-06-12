@@ -14,7 +14,7 @@ services:
   #  API  (FastAPI + Alembic + все зависимости из backend/Dockerfile)
   # ────────────────────────────────────────────────────────────────
   api:
-    build:                       # ← вместо image: python:3.12-slim
+    build:    
       context: ./backend         # папка, где лежит ваш Dockerfile
       dockerfile: Dockerfile     # (имя по-умолчанию; можно опустить)
     working_dir: /app            # задано в Dockerfile, но не мешает
