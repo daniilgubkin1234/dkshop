@@ -4,14 +4,13 @@ import { useNavigate } from 'react-router-dom';
 import { fetchProducts } from '../api.js';
 import { useCart } from '../context/CartContext.jsx';
 import './ProductList.css';
-import ModelScroll from '../components/ModelScroll.jsx';   // ← динамический скролл
+import ModelScroll from '../components/ModelScroll.jsx';
 
 export default function ProductList({ onSearchChange }) {
   const [products, setProducts] = useState([]);
   const [filterQuery, setFilterQuery] = useState('');
-  const [selectedModel, setSelectedModel] = useState(null);
+  const [selectedModel, setSelectedModel] = useState(null);    // array | string | null
   const [selectedMatchByName, setSelectedMatchByName] = useState(false);
-  const [showAllModels, setShowAllModels] = useState(false);  // пока не используется, оставил как было
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -20,42 +19,39 @@ export default function ProductList({ onSearchChange }) {
 
   /* ---------- загрузка товаров ---------- */
   useEffect(() => {
-    if (window.Telegram?.WebApp?.expand) {
-      window.Telegram.WebApp.expand();
-    }
+    if (window.Telegram?.WebApp?.expand) window.Telegram.WebApp.expand();
 
-    async function load() {
+    (async () => {
       try {
         setLoading(true);
-        const list = await fetchProducts();
-        setProducts(list);
+        setProducts(await fetchProducts());
       } catch (e) {
         console.error(e);
         setError('Не удалось загрузить список товаров');
       } finally {
         setLoading(false);
       }
-    }
-    load();
+    })();
   }, []);
 
   /* ---------- поиск из SearchBar ---------- */
   useEffect(() => {
     if (onSearchChange) {
       onSearchChange((q) => setFilterQuery(q));
+      return () => onSearchChange(null);                 // сброс ref в App.jsx
     }
   }, [onSearchChange]);
 
   /* ---------- навигация и корзина ---------- */
-  const handleClick       = (id)          => navigate(`/product/${id}`);
-  const handleAddToCart   = (e, product)  => { e.stopPropagation(); addToCart(product); };
+  const handleClick     = (id)           => navigate(`/product/${id}`);
+  const handleAddToCart = (e, product)   => { e.stopPropagation(); addToCart(product); };
 
   /* ---------- фильтрация ---------- */
   const filtered = products.filter((p) => {
-    const q     = (filterQuery || '').toLowerCase();
-    const name  = (p.name         || '').toLowerCase();
-    const model = (p.model_compat || '').toLowerCase();
-    const type  = (p.type         || '').toLowerCase();
+    const q      = (filterQuery || '').toLowerCase();
+    const name   = (p.name         || '').toLowerCase();
+    const model  = (p.model_compat || '').toLowerCase();
+    const type   = (p.type         || '').toLowerCase();
 
     const matchesText =
       name.includes(q) || model.includes(q) || type.includes(q);
@@ -64,13 +60,11 @@ export default function ProductList({ onSearchChange }) {
       !selectedModel ||
       (Array.isArray(selectedModel)
         ? selectedModel.some((m) =>
-            selectedMatchByName
-              ? name.includes(m.toLowerCase())
-              : model.includes(m)
+            selectedMatchByName ? name.includes(m) : model.includes(m)
           )
         : selectedMatchByName
-          ? name.includes(selectedModel.toLowerCase())
-          : model.includes(selectedModel));
+          ? name.includes(String(selectedModel).toLowerCase())
+          : model.includes(String(selectedModel).toLowerCase()));
 
     return matchesText && matchesModel;
   });
@@ -79,18 +73,22 @@ export default function ProductList({ onSearchChange }) {
     <>
       {/* ---------- динамический скролл моделей ---------- */}
       <ModelScroll
-        onSelect={(models, byName) => {
-          setSelectedModel(models);
+        onSelect={(modelsLowerCase, byName) => {
+          setSelectedModel(modelsLowerCase);      // уже в lowerCase
           setSelectedMatchByName(!!byName);
         }}
       />
 
       {/* ---------- список товаров ---------- */}
       {loading && (
-        <p style={{ color: '#fff', textAlign: 'center', marginTop: 32 }}>Загрузка…</p>
+        <p style={{ color: '#fff', textAlign: 'center', marginTop: 32 }}>
+          Загрузка…
+        </p>
       )}
       {error && (
-        <p style={{ color: '#fff', textAlign: 'center', marginTop: 32 }}>{error}</p>
+        <p style={{ color: '#fff', textAlign: 'center', marginTop: 32 }}>
+          {error}
+        </p>
       )}
       {!loading && filtered.length === 0 && (
         <p style={{ color: '#fff', textAlign: 'center', marginTop: 32 }}>
@@ -107,7 +105,7 @@ export default function ProductList({ onSearchChange }) {
               onClick={() => handleClick(p.id)}
             >
               <img
-                src={p.images?.[0] ? p.images[0] : '/static/no-image.png'}
+                src={p.images?.[0] || '/static/no-image.png'}
                 alt={p.name}
                 className="product-image"
                 onError={(e) => {
@@ -118,7 +116,9 @@ export default function ProductList({ onSearchChange }) {
 
               <div className="product-info">
                 <h3 className="product-title">{p.name}</h3>
-                <p className="product-price">{p.price.toLocaleString()} ₽</p>
+                <p className="product-price">
+                  {p.price.toLocaleString()} ₽
+                </p>
               </div>
 
               <button
