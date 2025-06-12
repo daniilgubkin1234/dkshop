@@ -26,6 +26,12 @@ export default function Login() {
              onChange={e=>setPass(e.target.value)} required />
       {error && <div className="err">{error}</div>}
       <button>Войти</button>
+      <div style={{ marginTop: "8px", fontSize: "14px" }}>
++        Нет аккаунта?{" "}
++        <Link to="/signup" style={{ color: "#4ea4ff" }}>
++          Зарегистрироваться
++        </Link>
++      </div>
     </form>
   );
 }

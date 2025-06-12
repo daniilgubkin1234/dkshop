@@ -219,6 +219,10 @@ const Header = ({ onSearch }) => {
                 </Link>
               </li>
             )}
+            
+            {!user && (
+  <li><Link to="/signup" onClick={toggleSidebar}>Регистрация</Link></li>
+)}
 
             {/* админ-панель по прежнему токену auth_token */}
             {isAdmin && (
