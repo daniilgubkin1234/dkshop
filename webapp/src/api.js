@@ -89,33 +89,41 @@ export const deleteModelCard = (id, token) =>
 
 
 
-  const authFetch = (url, opts = {}) => {
-    const token = localStorage.getItem("token");
-    const headers = { "Content-Type": "application/json", ...opts.headers };
-    if (token) headers.Authorization = `Bearer ${token}`;
-    return fetch(BASE + url, { ...opts, headers })
-      .then(r => r.ok ? r.json() : Promise.reject(r));
-  };
-  
-  // ---------- auth ----------
-  export const loginApi = (phone, password) =>
-    fetch(BASE + "/auth/login", {
-      method: "POST",
-      headers: { Authorization: "Basic " + btoa(`${phone}:${password}`) },
-    }).then(r => r.json());
-  
-  export const registerApi = body =>
-    authFetch("/auth/register", {
-      method: "POST",
-      body: JSON.stringify(body),
-    });
-  
-  export const meApi = token =>
-    fetch(BASE + "/auth/me", {
-      headers: { Authorization: `Bearer ${token}` },
-    }).then(r => r.json());
-  
-  // ---------- orders ----------
-  export const myOrdersApi = () => authFetch("/orders/me");
-  export const createOrderApi = body =>
-    authFetch("/orders", { method: "POST", body: JSON.stringify(body) });
+  /* ================================================================== */
+/*               БЛОК ЛИЧНОГО КАБИНЕТА (НОВОЕ)                        */
+/* ================================================================== */
+
+/* ---------- универсальный fetch с user_token ---------------------- */
+const authFetch = (url, opts = {}) => {
+  const token = localStorage.getItem("user_token");      // ← новый ключ!
+  const headers = { "Content-Type": "application/json", ...opts.headers };
+  if (token) headers.Authorization = `Bearer ${token}`;
+  return fetch(API_URL + url, { ...opts, headers }).then((r) =>
+    r.ok ? r.json() : Promise.reject(r)
+  );
+};
+
+/* ---------- auth -------------------------------------------------- */
+export const loginApi = (phone, password) =>
+  fetch(API_URL + "/auth/login", {
+    method: "POST",
+    headers: { Authorization: "Basic " + btoa(`${phone}:${password}`) },
+  }).then((r) => r.json());
+
+export const registerApi = (body) =>
+  fetch(API_URL + "/auth/register", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  }).then((r) => r.json());
+
+export const meApi = (token) =>
+  fetch(API_URL + "/auth/me", {
+    headers: { Authorization: `Bearer ${token}` },
+  }).then((r) => r.json());
+
+/* ---------- orders (личный кабинет) ------------------------------- */
+export const myOrdersApi = () => authFetch("/orders/me");
+
+export const createOrderApi = (body) =>
+  authFetch("/orders", { method: "POST", body: JSON.stringify(body) });
