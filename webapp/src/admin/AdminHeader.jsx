@@ -34,7 +34,7 @@ export default function AdminHeader() {
       </Link>
 
       <Link
-      to="/admin/modelcards"
+      to="/admin/model_cards"
       className={location.pathname.includes("/model_cards") ? "active" : ""}
       >
       Карточки каталога
