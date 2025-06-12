@@ -10,12 +10,12 @@ from fastapi.security import HTTPBasic, HTTPBasicCredentials
 import secrets
 import shutil, uuid, os
 import requests
-
+from .routers import auth
 from .db import get_db
 from pydantic import BaseModel
 
 app = FastAPI(title="DK API")
-
+app.include_router(auth.router)
 # --- CORS ---
 app.add_middleware(
     CORSMiddleware,
