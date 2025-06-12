@@ -5,7 +5,7 @@ FROM python:3.11-slim
 # ── 1. ставим зависимости ───────────────────────────────────────────
 WORKDIR /code
 
-COPY backend/app/requirements.txt /tmp/requirements.txt
+COPY /app/requirements.txt /tmp/requirements.txt
 RUN pip install --no-cache-dir \
         --default-timeout=120 \
         --retries 20 \
@@ -14,7 +14,7 @@ RUN pip install --no-cache-dir \
         -r /tmp/requirements.txt
 
 # ── 2. копируем исходники ───────────────────────────────────────────
-COPY backend/app /app
+COPY /app /app
 WORKDIR /app
 
 # ── 3. запускаем: миграция Alembic + Uvicorn ────────────────────────
