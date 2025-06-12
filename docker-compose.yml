@@ -22,7 +22,7 @@ services:
       - ./backend/app/static:/app/static        # оставить, если нужна «живая» статика
       - ./backend/app:/app                      # горячий reload кода
     env_file:
-      - backend/.env.production                 # JWT_SECRET и др.
+      - webapp/.env.production                 # JWT_SECRET и др.
     depends_on: [db]
     ports: ["8001:8001"]
 
