@@ -35,7 +35,7 @@ export default function App() {
           <Route path="/my-orders" element={<MyOrders />} />
           <Route path="/admin/products" element={<AdminProduct />} />
           <Route path="/admin/footer" element={<AdminFooter />} />
-          <Route path="/admin/models" element={<AdminModelCards />} />
+          <Route path="/admin/model_cards" element={<AdminModelCards />} />
           <Route path="*" element={<Navigate to="/" replace />} />
           
         </Routes>
