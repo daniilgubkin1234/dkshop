@@ -18,7 +18,11 @@ import AdminModelCards from './admin/AdminModelCards.jsx';
 
 export default function App() {
   const handleSearch = useRef(null);
-
+ /* ---------- обнуляем ref при смене маршрута ---------- */
+ const location = useLocation();
+ useEffect(() => {
+   handleSearch.current = null;         // предотвращает вызов «старой» функции
+ }, [location.pathname]);
   return (
     <>
       {/* --- Header с безопасной проверкой функции --- */}
