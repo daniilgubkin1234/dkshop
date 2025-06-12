@@ -1,6 +1,6 @@
 // webapp/src/App.jsx
-import React, { useRef } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import React, { useRef, useEffect } from 'react';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 
 import Header          from './components/Header.jsx';
 import Footer          from './components/Footer.jsx';
