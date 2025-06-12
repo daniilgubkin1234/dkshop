@@ -1,3 +1,4 @@
+// webapp/src/admin/AdminModelCards.jsx
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./Admin.css";
@@ -7,105 +8,136 @@ const empty = { label: "", models: "", img: "", match_by_name: true };
 
 export default function AdminModelCards() {
   /* ---------- state ---------- */
-  const [cards, setCards]       = useState([]);
-  const [newCard, setNewCard]   = useState(empty);
-  const [editId, setEditId]     = useState(null);
-  const [editCard, setEditCard] = useState(empty);
+  const [cards, setCards]         = useState([]);
+  const [newCard, setNewCard]     = useState(empty);
+  const [editId, setEditId]       = useState(null);
+  const [editCard, setEditCard]   = useState(empty);
 
   const navigate = useNavigate();
-  const token    = localStorage.getItem("auth_token");
-  const headers  = {
-    "Content-Type": "application/json",
-    Authorization: `Basic ${token}`,
-  };
 
   /* ---------- helpers ---------- */
-  const authOrRedirect = () => {
-    if (!token) {
-      navigate("/admin/login", { replace: true });
-      return false;
-    }
-    return true;
-  };
-
-  const loadCards = async () => {
-    if (!authOrRedirect()) return;
-    const r = await fetch("/admin/model_cards", { headers });
-    if (r.status === 401) {
-      localStorage.removeItem("auth_token");
-      navigate("/admin/login", { replace: true });
-      return;
-    }
-    setCards(await r.json());
-  };
-
-  useEffect(loadCards, []);                   // eslint-disable-line
-
-  /* ---------- upload ---------- */
   const uploadFile = async file => {
     const fd = new FormData();
     fd.append("file", file);
-    const r = await fetch("/upload", { method: "POST", body: fd });
-    const data = await r.json();
+    const res  = await fetch("/upload", { method: "POST", body: fd });
+    const data = await res.json();
     return data.url;
   };
 
-  /* ---------- handlers ---------- */
-  const handleAdd = async e => {
-    e.preventDefault();
-    if (!authOrRedirect()) return;
+  /* ---------- загрузка списка ---------- */
+  const loadCards = () => {
+    const token = localStorage.getItem("auth_token");
+    if (!token) {
+      navigate("/admin/login");
+      return;
+    }
+    fetch("/admin/model_cards", {
+      headers: { Authorization: `Basic ${token}` }
+    })
+      .then(async r => {
+        if (r.status === 401) {
+          localStorage.removeItem("auth_token");
+          navigate("/admin/login");
+          return [];
+        }
+        return r.json();
+      })
+      .then(setCards)
+      .catch(() => {
+        localStorage.removeItem("auth_token");
+        navigate("/admin/login");
+      });
+  };
+
+  /* ---------- CRUD ---------- */
+  const handleAdd = () => {
+    const token = localStorage.getItem("auth_token");
+    if (!token) return navigate("/admin/login");
+
     const body = {
       ...newCard,
       models: newCard.models.split(",").map(s => s.trim()).filter(Boolean),
     };
-    const r = await fetch("/admin/model_cards", {
+
+    fetch("/admin/model_cards", {
       method: "POST",
-      headers,
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Basic ${token}`,
+      },
       body: JSON.stringify(body),
+    })
+      .then(async r => {
+        if (!r.ok) throw new Error("Ошибка создания");
+        const created = await r.json();
+        setCards(prev => [...prev, created]);
+        setNewCard(empty);
+      })
+      .catch(e => alert(e.message));
+  };
+
+  const handleDelete = id => {
+    if (!window.confirm("Удалить карточку?")) return;
+    const token = localStorage.getItem("auth_token");
+    fetch(`/admin/model_cards/${id}`, {
+      method: "DELETE",
+      headers: { Authorization: `Basic ${token}` },
+    })
+      .then(r => {
+        if (!r.ok) throw new Error("Ошибка удаления");
+        setCards(prev => prev.filter(c => c.id !== id));
+      })
+      .catch(e => alert(e.message));
+  };
+
+  const handleEdit = row => {
+    setEditId(row.id);
+    setEditCard({
+      ...row,
+      models: (row.models || []).join(", "),
     });
-    if (!r.ok) return alert("Не удалось создать карточку");
-    setNewCard(empty);
-    loadCards();
   };
 
-  const handleDelete = id =>
-    authOrRedirect() &&
-    window.confirm("Удалить карточку?") &&
-    fetch(`/admin/model_cards/${id}`, { method: "DELETE", headers }).then(loadCards);
-
-  const handleEdit = c => {
-    setEditId(c.id);
-    setEditCard({ ...c, models: (c.models || []).join(", ") });
-  };
-
-  const handleEditSave = async () => {
-    if (!authOrRedirect()) return;
+  const handleEditSave = () => {
+    const token = localStorage.getItem("auth_token");
     const body = {
       ...editCard,
       models: editCard.models.split(",").map(s => s.trim()).filter(Boolean),
     };
-    const r = await fetch(`/admin/model_cards/${editId}`, {
+    fetch(`/admin/model_cards/${editId}`, {
       method: "PATCH",
-      headers,
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Basic ${token}`,
+      },
       body: JSON.stringify(body),
-    });
-    if (!r.ok) return alert("Ошибка обновления");
-    setEditId(null);
-    setEditCard(empty);
-    loadCards();
+    })
+      .then(async r => {
+        if (!r.ok) throw new Error("Ошибка сохранения");
+        const updated = await r.json();
+        setCards(prev => prev.map(c => (c.id === updated.id ? updated : c)));
+        setEditId(null);
+        setEditCard(empty);
+      })
+      .catch(e => alert(e.message));
   };
 
-  /* ---------- JSX ---------- */
+  /* ---------- первый рендер ---------- */
+  useEffect(() => {
+    loadCards();
+    // eslint-disable-next-line
+  }, []);
+
+  /* ---------- UI ---------- */
   return (
     <div className="admin-container admin-modelcards">
       <AdminHeader />
-      <h2>Карточки каталога</h2>
+      <h2>Карточки моделей</h2>
 
-      {/* форма добавления */}
-      <form className="modelcard-add-row" onSubmit={handleAdd}>
+      {/* --- добавление --- */}
+      <div className="modelcard-add-row">
         <input
           placeholder="Заголовок"
-          required
           value={newCard.label}
           onChange={e => setNewCard(v => ({ ...v, label: e.target.value }))}
         />
@@ -118,15 +150,15 @@ export default function AdminModelCards() {
           placeholder="URL картинки"
           value={newCard.img}
           onChange={e => setNewCard(v => ({ ...v, img: e.target.value }))}
-          style={{ minWidth: 200 }}
+          style={{ minWidth: 180 }}
         />
         <input
           type="file"
           accept="image/*"
           onChange={async e => {
-            const file = e.target.files?.[0];
-            if (file) {
-              const url = await uploadFile(file);
+            const f = e.target.files?.[0];
+            if (f) {
+              const url = await uploadFile(f);
               setNewCard(v => ({ ...v, img: url }));
             }
           }}
@@ -137,24 +169,24 @@ export default function AdminModelCards() {
             checked={newCard.match_by_name}
             onChange={e => setNewCard(v => ({ ...v, match_by_name: e.target.checked }))}
           />
-          по названию
+          по&nbsp;названию
         </label>
-        <button type="submit">Добавить</button>
-      </form>
+        <button onClick={handleAdd}>Добавить</button>
+      </div>
 
-      {/* таблица */}
+      {/* --- таблица --- */}
       <table className="admin-table" cellPadding="8">
         <thead>
           <tr>
-            <th>ID</th><th>Заголовок</th><th>Модели</th><th>Картинка</th><th>by Name</th><th>Действия</th>
+            <th>ID</th><th>Заголовок</th><th>Модели</th><th>Картинка</th><th>by&nbsp;Name</th><th>Действия</th>
           </tr>
         </thead>
         <tbody>
-          {cards.map(c =>
-            editId === c.id ? (
-              /* режим редактирования */
-              <tr key={c.id}>
-                <td>{c.id}</td>
+          {cards.map(row =>
+            editId === row.id ? (
+              /* ===== режим редактирования ===== */
+              <tr key={row.id}>
+                <td>{row.id}</td>
                 <td>
                   <input
                     value={editCard.label}
@@ -186,7 +218,7 @@ export default function AdminModelCards() {
                   />
                   {editCard.img && <img src={editCard.img} alt="" style={{ height: 40 }} />}
                 </td>
-                <td>
+                <td style={{ textAlign: "center" }}>
                   <input
                     type="checkbox"
                     checked={editCard.match_by_name}
@@ -194,25 +226,33 @@ export default function AdminModelCards() {
                   />
                 </td>
                 <td>
-                  <button onClick={handleEditSave}>Сохранить</button>{" "}
+                  <button onClick={handleEditSave}>Сохранить</button>
                   <button onClick={() => setEditId(null)}>Отмена</button>
                 </td>
               </tr>
             ) : (
-              /* режим просмотра */
-              <tr key={c.id}>
-                <td>{c.id}</td>
-                <td>{c.label}</td>
-                <td style={{ whiteSpace: "pre-wrap", maxWidth: 200 }}>{(c.models || []).join(", ")}</td>
-                <td>
-                  {c.img && <img src={c.img} alt="" style={{ height: 40, borderRadius: 4 }} />}
+              /* ===== режим просмотра ===== */
+              <tr key={row.id}>
+                <td>{row.id}</td>
+                <td>{row.label}</td>
+                <td style={{ whiteSpace: "pre-wrap", maxWidth: 240 }}>
+                  {(row.models || []).join(", ")}
                 </td>
-                <td style={{ textAlign: "center" }}>{c.match_by_name ? "✓" : ""}</td>
                 <td>
-                  <button onClick={() => handleEdit(c)}>Ред.</button>{" "}
+                  {row.img && (
+                    <img
+                      src={row.img}
+                      alt=""
+                      style={{ height: 40, borderRadius: 4, background: "#fff" }}
+                    />
+                  )}
+                </td>
+                <td style={{ textAlign: "center" }}>{row.match_by_name ? "✓" : ""}</td>
+                <td>
+                  <button onClick={() => handleEdit(row)}>Ред.</button>
                   <button
-                    onClick={() => handleDelete(c.id)}
                     style={{ background: "#e53935", color: "#fff" }}
+                    onClick={() => handleDelete(row.id)}
                   >
                     Удалить
                   </button>
