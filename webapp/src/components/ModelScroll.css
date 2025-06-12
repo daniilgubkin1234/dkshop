@@ -1,0 +1,57 @@
+.model-cards {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 0 16px 12px;
+    margin-top: 12px;
+    align-items: flex-start;
+  }
+  
+  .model-card {
+    width: 72px;
+    flex-shrink: 0;
+    text-align: center;
+    cursor: pointer;
+    color: #fff;
+    font-size: 11px;
+    line-height: 1.2;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #1c1c1e;
+    border: 1px solid #333;
+    transition: all 0.2s ease;
+  }
+  
+  .model-card img {
+    width: 100%;
+    height: 60px;
+    object-fit: cover;
+    border-bottom: 1px solid #333;
+  }
+  
+  .model-card span {
+    display: block;
+    padding: 4px;
+  }
+  
+  .model-card:hover {
+    background: #2a2a2a;
+  }
+  
+  .model-card.active {
+    border: 2px solid #e53935;
+  }
+  
+  .model-card.disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+  .model-scroll {
+    display: flex;
+    overflow-x: auto;
+    gap: 8px;
+    margin: 16px 0;
+    padding: 0 16px 8px;
+    max-width: 100vw; /* ✅ Не даём выйти за границы экрана */
+    box-sizing: border-box;
+  }

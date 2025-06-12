@@ -1,28 +1,24 @@
+// webapp/src/miniapps/ProductList.jsx
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { fetchProducts } from '../api.js';
 import { useCart } from '../context/CartContext.jsx';
 import './ProductList.css';
-
-const MODEL_CARDS = [
-  { label: 'ВАЗ 2101-07', models: ['2101-07'], img: '/models/2101-07.jpg' },
-  { label: 'SAMARA 2108-21', models: ['2108-21'], img: '/models/2108-15.jpg' },
-  { label: 'PRIORA (2110–2170)', models: ['2110-21', '2170-21'], img: '/models/2110-12.jpg' },
-  { label: 'KALINA (1117–1119)', models: ['1117', '1118', '1119'], img: '/models/kalina_granta.jpg' },
-  { label: 'GRANTA (2190–2192)', models: ['гранта'], matchByName: true, img: '/models/kalina_granta.jpg' },
-];
+import ModelScroll from '../components/ModelScroll.jsx';   // ← динамический скролл
 
 export default function ProductList({ onSearchChange }) {
   const [products, setProducts] = useState([]);
   const [filterQuery, setFilterQuery] = useState('');
   const [selectedModel, setSelectedModel] = useState(null);
   const [selectedMatchByName, setSelectedMatchByName] = useState(false);
-  const [showAllModels, setShowAllModels] = useState(false);
+  const [showAllModels, setShowAllModels] = useState(false);  // пока не используется, оставил как было
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
   const navigate = useNavigate();
   const { addToCart } = useCart();
 
+  /* ---------- загрузка товаров ---------- */
   useEffect(() => {
     if (window.Telegram?.WebApp?.expand) {
       window.Telegram.WebApp.expand();
@@ -40,32 +36,29 @@ export default function ProductList({ onSearchChange }) {
         setLoading(false);
       }
     }
-
     load();
   }, []);
 
+  /* ---------- поиск из SearchBar ---------- */
   useEffect(() => {
     if (onSearchChange) {
-      onSearchChange((query) => setFilterQuery(query));
+      onSearchChange((q) => setFilterQuery(q));
     }
   }, [onSearchChange]);
 
-  const handleClick = (id) => {
-    navigate(`/product/${id}`);
-  };
+  /* ---------- навигация и корзина ---------- */
+  const handleClick       = (id)          => navigate(`/product/${id}`);
+  const handleAddToCart   = (e, product)  => { e.stopPropagation(); addToCart(product); };
 
-  const handleAddToCart = (e, product) => {
-    e.stopPropagation();
-    addToCart(product);
-  };
-
+  /* ---------- фильтрация ---------- */
   const filtered = products.filter((p) => {
-    const q = (filterQuery || '').toLowerCase();
-    const name = (p.name || '').toLowerCase();
+    const q     = (filterQuery || '').toLowerCase();
+    const name  = (p.name         || '').toLowerCase();
     const model = (p.model_compat || '').toLowerCase();
-    const type = (p.type || '').toLowerCase();
+    const type  = (p.type         || '').toLowerCase();
 
-    const matchesText = name.includes(q) || model.includes(q) || type.includes(q);
+    const matchesText =
+      name.includes(q) || model.includes(q) || type.includes(q);
 
     const matchesModel =
       !selectedModel ||
@@ -84,41 +77,43 @@ export default function ProductList({ onSearchChange }) {
 
   return (
     <>
-      <div className="model-scroll">
-  {MODEL_CARDS.map(({ label, models, img, matchByName }) => {
-    const isActive =
-      selectedModel &&
-      (Array.isArray(selectedModel)
-        ? models.some((m) => selectedModel.includes(m))
-        : models.includes(selectedModel));
-
-    return (
-      <div
-        key={label}
-        className={`model-card ${isActive ? 'active' : ''}`}
-        onClick={() => {
+      {/* ---------- динамический скролл моделей ---------- */}
+      <ModelScroll
+        onSelect={(models, byName) => {
           setSelectedModel(models);
-          setSelectedMatchByName(!!matchByName);
+          setSelectedMatchByName(!!byName);
         }}
-      >
-        <img src={img} alt={label} />
-        <span>{label}</span>
-      </div>
-    );
-  })}
-</div>
+      />
 
-      {filtered.length === 0 ? (
-        <p style={{ color: '#fff', textAlign: 'center', marginTop: 32 }}>Ничего не найдено</p>
-      ) : (
+      {/* ---------- список товаров ---------- */}
+      {loading && (
+        <p style={{ color: '#fff', textAlign: 'center', marginTop: 32 }}>Загрузка…</p>
+      )}
+      {error && (
+        <p style={{ color: '#fff', textAlign: 'center', marginTop: 32 }}>{error}</p>
+      )}
+      {!loading && filtered.length === 0 && (
+        <p style={{ color: '#fff', textAlign: 'center', marginTop: 32 }}>
+          Ничего не найдено
+        </p>
+      )}
+
+      {!loading && filtered.length > 0 && (
         <div className="product-grid">
           {filtered.map((p) => (
-            <div key={p.id} className="product-card" onClick={() => handleClick(p.id)}>
+            <div
+              key={p.id}
+              className="product-card"
+              onClick={() => handleClick(p.id)}
+            >
               <img
                 src={p.images?.[0] ? p.images[0] : '/static/no-image.png'}
                 alt={p.name}
                 className="product-image"
-                onError={e => { e.target.onerror = null; e.target.src='/static/no-image.png'; }}
+                onError={(e) => {
+                  e.target.onerror = null;
+                  e.target.src = '/static/no-image.png';
+                }}
               />
 
               <div className="product-info">
@@ -126,7 +121,10 @@ export default function ProductList({ onSearchChange }) {
                 <p className="product-price">{p.price.toLocaleString()} ₽</p>
               </div>
 
-              <button className="btn-add-cart" onClick={(e) => handleAddToCart(e, p)}>
+              <button
+                className="btn-add-cart"
+                onClick={(e) => handleAddToCart(e, p)}
+              >
                 В корзину
               </button>
             </div>
