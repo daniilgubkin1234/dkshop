@@ -369,6 +369,78 @@
 }
 
 
+/* --- Страница карточек моделей ------------------------------------ */
+.admin-modelcards h2 {
+  margin: 12px 0 20px;
+  font-size: 24px;
+}
+
+.modelcard-add-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+.modelcard-add-row input[type="text"],
+.modelcard-add-row input[type="file"] {
+  padding: 6px 10px;
+  background: #1e1e1e;
+  border: 1px solid #444;
+  border-radius: 6px;
+  color: #fff;
+  font-size: 14px;
+  min-width: 160px;
+}
+.modelcard-add-row input[type="checkbox"] {
+  transform: scale(1.2);
+}
+.modelcard-add-row button {
+  padding: 8px 14px;
+  background: #00897b;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.modelcard-add-row button:hover { background: #009f8c; }
+
+/* таблица */
+.admin-modelcards table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.admin-modelcards th,
+.admin-modelcards td {
+  border: 1px solid #333;
+  padding: 8px;
+  text-align: left;
+}
+.admin-modelcards th {
+  background: #222;
+}
+.admin-modelcards tr:nth-child(odd) td {
+  background: #161616;
+}
+
+.admin-modelcards img {
+  height: 40px;
+  border-radius: 4px;
+  background: #fff;
+}
+
+.admin-modelcards button {
+  padding: 6px 10px;
+  margin-right: 4px;
+  background: #424242;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+}
+.admin-modelcards button:hover { background: #555; }
+.admin-modelcards button[style*="background: #e53935"] { background: #e53935 !important; }
+.admin-modelcards button[style*="background: #e53935"]:hover { background: #f05545 !important; }
 
 
 /* ─── Адаптив для страницы Заказы ─── */
@@ -608,5 +680,49 @@
   .admin-footer .footer-actions {
     flex-direction: column;
     gap: 6px;
+  }
+}
+
+
+/* ---------- mobile layout for model cards ---------- */
+@media (max-width: 600px) {
+  .modelcard-add-row {
+    flex-direction: column;
+    gap: 10px;
+  }
+  .modelcard-add-row input[type="text"],
+  .modelcard-add-row input[type="file"],
+  .modelcard-add-row button {
+    width: 100%;
+    min-width: unset;
+  }
+
+  .admin-modelcards table,
+  .admin-modelcards thead {
+    display: block;
+    width: 100%;
+  }
+  .admin-modelcards tr {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    margin-bottom: 12px;
+    border: 1px solid #333;
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .admin-modelcards td,
+  .admin-modelcards th {
+    border: none;
+    padding: 6px 8px;
+    word-break: break-word;
+  }
+  .admin-modelcards th:nth-child(odd),
+  .admin-modelcards td:nth-child(odd) {
+    background: #1a1a1a;
+  }
+  .admin-modelcards td:last-child {
+    display: flex;
+    gap: 6px;
+    justify-content: flex-end;
   }
 }
