@@ -9,3 +9,5 @@ sqlmodel
 psycopg2-binary     
 vk_api==11.9            # ← если используете библиотеку для VK
 alembic==1.13.1
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4 
