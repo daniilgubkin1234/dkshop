@@ -1,4 +1,3 @@
-// webapp/src/miniapps/ProductList.jsx
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { fetchProducts } from '../api.js';
@@ -6,10 +5,19 @@ import { useCart } from '../context/CartContext.jsx';
 import './ProductList.css';
 import ModelScroll from '../components/ModelScroll.jsx';
 
+function normalize(s) {
+  return (s || "")
+    .toLowerCase()
+    .replace(/[ё]/g, "е")
+    .replace(/[^\wа-я0-9]+/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 export default function ProductList({ onSearchChange }) {
   const [products, setProducts] = useState([]);
   const [filterQuery, setFilterQuery] = useState('');
-  const [selectedModel, setSelectedModel] = useState(null);    // array | string | null
+  const [selectedModel, setSelectedModel] = useState(null);
   const [selectedMatchByName, setSelectedMatchByName] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -17,7 +25,6 @@ export default function ProductList({ onSearchChange }) {
   const navigate = useNavigate();
   const { addToCart } = useCart();
 
-  /* ---------- загрузка товаров ---------- */
   useEffect(() => {
     if (window.Telegram?.WebApp?.expand) window.Telegram.WebApp.expand();
 
@@ -34,24 +41,22 @@ export default function ProductList({ onSearchChange }) {
     })();
   }, []);
 
-  /* ---------- поиск из SearchBar ---------- */
   useEffect(() => {
     if (onSearchChange) {
       onSearchChange((q) => setFilterQuery(q));
-      return () => onSearchChange(null);                 // сброс ref в App.jsx
+      return () => onSearchChange(null);
     }
   }, [onSearchChange]);
 
-  /* ---------- навигация и корзина ---------- */
   const handleClick     = (id)           => navigate(`/product/${id}`);
   const handleAddToCart = (e, product)   => { e.stopPropagation(); addToCart(product); };
 
-  /* ---------- фильтрация ---------- */
+  // --- новый фильтр с normalize для любых вариантов ---
   const filtered = products.filter((p) => {
-    const q      = (filterQuery || '').toLowerCase();
-    const name   = (p.name         || '').toLowerCase();
-    const model  = (p.model_compat || '').toLowerCase();
-    const type   = (p.type         || '').toLowerCase();
+    const q      = normalize(filterQuery);
+    const name   = normalize(p.name);
+    const model  = normalize(p.model_compat);
+    const type   = normalize(p.type);
 
     const matchesText =
       name.includes(q) || model.includes(q) || type.includes(q);
@@ -60,26 +65,28 @@ export default function ProductList({ onSearchChange }) {
       !selectedModel ||
       (Array.isArray(selectedModel)
         ? selectedModel.some((m) =>
-            selectedMatchByName ? name.includes(m) : model.includes(m)
+            selectedMatchByName
+              ? name.includes(m)
+              : model.includes(m)
           )
-        : selectedMatchByName
-          ? name.includes(String(selectedModel).toLowerCase())
-          : model.includes(String(selectedModel).toLowerCase()));
+        : selectedModel
+        ? (selectedMatchByName
+            ? name.includes(normalize(selectedModel))
+            : model.includes(normalize(selectedModel)))
+        : true);
 
     return matchesText && matchesModel;
   });
 
   return (
     <>
-      {/* ---------- динамический скролл моделей ---------- */}
       <ModelScroll
-        onSelect={(modelsLowerCase, byName) => {
-          setSelectedModel(modelsLowerCase);      // уже в lowerCase
+        onSelect={(modelsNorm, byName) => {
+          setSelectedModel(modelsNorm);      // уже нормализованные
           setSelectedMatchByName(!!byName);
         }}
       />
 
-      {/* ---------- список товаров ---------- */}
       {loading && (
         <p style={{ color: '#fff', textAlign: 'center', marginTop: 32 }}>
           Загрузка…

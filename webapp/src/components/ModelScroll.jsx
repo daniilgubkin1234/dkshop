@@ -1,6 +1,14 @@
-// webapp/src/components/ModelScroll.jsx
 import React, { useEffect, useState } from 'react';
 import './ModelScroll.css';
+
+function normalize(s) {
+  return (s || "")
+    .toLowerCase()
+    .replace(/[ё]/g, "е")
+    .replace(/[^\wа-я0-9]+/gi, " ") // не буквы/цифры в пробел
+    .replace(/\s+/g, " ")
+    .trim();
+}
 
 export default function ModelScroll({ onSelect }) {
   const [cards, setCards] = useState([]);
@@ -20,10 +28,9 @@ export default function ModelScroll({ onSelect }) {
         <div
           key={id}
           className="model-card"
-          /* ---- передаём все варианты в lowerCase ---- */
           onClick={() =>
             onSelect(
-              models.map((s) => s.toLowerCase()),
+              models.map(normalize),      // теперь передаем нормализованные
               !!match_by_name
             )
           }
