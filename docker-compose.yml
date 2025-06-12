@@ -38,7 +38,7 @@ services:
     volumes:
       - ./backend/bot:/bot
     env_file:
-      - backend/bot/.env
+      - webapp/.env.production  
     depends_on: [api]
 
   # ────────────────────────────────────────────────────────────────
