@@ -1,22 +1,27 @@
 # backend/Dockerfile
-# backend/Dockerfile
 FROM python:3.11-slim
 
-# ── 1. ставим зависимости ───────────────────────────────────────────
+# ── 0. build-инструменты (bcrypt, psycopg2) ─────────────────────────
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        gcc build-essential libffi-dev libpq-dev libssl-dev \
+ && rm -rf /var/lib/apt/lists/*
+
+# ── 1. Путь сборки ──────────────────────────────────────────────────
 WORKDIR /code
 
-COPY /app/requirements.txt /tmp/requirements.txt
+# ── 2. Python-зависимости ───────────────────────────────────────────
+COPY app/requirements.txt /tmp/requirements.txt
 RUN pip install --no-cache-dir \
-        --default-timeout=120 \
-        --retries 20 \
-        -i https://mirror.yandex.ru/mirrors/pypi/simple/ \
+        --default-timeout=120 --retries 20 \
+        --index-url https://mirror.yandex.ru/mirrors/pypi/simple/ \
         --trusted-host mirror.yandex.ru \
+        --extra-index-url https://pypi.org/simple \
         -r /tmp/requirements.txt
 
-# ── 2. копируем исходники ───────────────────────────────────────────
-COPY /app /app
-WORKDIR /app
+# ── 3. Исходники приложения ────────────────────────────────────────
+COPY app /app
 
-# ── 3. запускаем: миграция Alembic + Uvicorn ────────────────────────
+# ── 4. Запуск: миграция Alembic + Uvicorn ──────────────────────────
+EXPOSE 8001
 ENTRYPOINT ["sh", "-c", "alembic upgrade head && \
-                         uvicorn app.main:app --host 0.0.0.0 --port 8001"]
+                       uvicorn app.main:app --host 0.0.0.0 --port 8001"]
