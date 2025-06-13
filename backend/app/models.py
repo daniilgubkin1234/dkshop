@@ -2,7 +2,7 @@ from sqlmodel import SQLModel, Field, Column
 from typing import Optional, List
 from datetime import datetime
 from sqlalchemy import JSON
-
+from pydantic import BaseModel
 class Product(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     name: str
@@ -74,3 +74,8 @@ class User(SQLModel, table=True):
     first_name:  str | None = None
     last_name:   str | None = None
     username:    str | None = None
+
+class OrderCreate(BaseModel):
+    items: list[dict]
+    name: str
+    phone: str
