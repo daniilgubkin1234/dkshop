@@ -116,13 +116,23 @@ export async function loginApi(phone, password) {
   return toJsonOrThrow(r);             // {access_token, token_type}
 }
 
-export async function registerApi({ phone, name, password }) {
+export async function registerApi(data) {
   const r = await fetch(`${API_URL}/auth/register`, {
     method: "POST",
     headers: JSON_HEADERS,
-    body: JSON.stringify({ phone, name, password }),
+    body: JSON.stringify(data),
   });
-  return toJsonOrThrow(r);             // 201 → {id, phone, …} / 409
+
+  /* ✅  если не-OK — парсим тело и бросаем { status, detail } */
+  if (!r.ok) {
+    let detail = "unknown";
+    try {
+      const j = await r.json();
+      detail = j.detail ?? JSON.stringify(j);
+    } catch { /* тело не JSON */ }
+    throw { status: r.status, detail };
+  }
+  return r.json();               // 201
 }
 
 export const meApi = (token) =>

@@ -15,15 +15,12 @@ export default function Signup() {
     e.preventDefault();
     setBusy(true);
     registerApi(form)
-      .then(() => nav("/login"))
-      .catch(async (r) => {
-        if (r.status === 409) setError("Такой телефон уже зарегистрирован");
-        else {
-          const txt = (await r.text().catch(() => "")) || "Ошибка регистрации";
-          setError(txt);
-        }
-      })
-      .finally(() => setBusy(false));
+  .then(() => nav("/login"))
+  .catch((err) => {
+    if (err.status === 409)        setError("Телефон уже зарегистрирован");
+    else                           setError(err.detail || "Ошибка регистрации");
+  })
+  .finally(() => setBusy(false));
   };
 
   return (
