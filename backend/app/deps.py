@@ -5,6 +5,7 @@ from jose import jwt, JWTError
 from models import User
 from sqlmodel import Session, select
 from db import get_db
+import os
 SECRET = os.getenv("JWT_SECRET", "supersecretkey")
 ALGO   = "HS256"
 
