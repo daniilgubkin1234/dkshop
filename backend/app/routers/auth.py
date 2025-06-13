@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select
 from db import get_db
 from models import User
-from auth_utils import create_access_token
+from routers.auth_utils import create_access_token
 import hmac, hashlib, os, time, urllib.parse
 
 router = APIRouter(prefix="/auth", tags=["auth"])
