@@ -24,6 +24,8 @@ services:
     env_file:
       - webapp/.env.production                 # JWT_SECRET и др.
     depends_on: [db]
+    environment:
+      ALEMBIC_CONFIG: /app/alembic/alembic.ini
     ports: ["8001:8001"]
 
   # ────────────────────────────────────────────────────────────────
@@ -54,7 +56,7 @@ services:
 
 volumes:
   pgdata:
-  
+
 networks:
   default:
     driver: bridge
