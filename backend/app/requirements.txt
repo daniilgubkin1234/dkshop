@@ -8,7 +8,7 @@ fastapi
 uvicorn[standard]
 sqlmodel
 psycopg2-binary==2.9.9
-
+python-multipart==0.0.9
 vk_api==11.9            # ← если используете библиотеку для VK
 alembic==1.13.1
 python-jose[cryptography]==3.3.0
