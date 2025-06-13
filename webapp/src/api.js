@@ -121,7 +121,10 @@ export async function registerApi(data) {
   const r = await fetch(`${API_URL}/auth/register`, {
     method: "POST",
     headers: JSON_HEADERS,
-    body: JSON.stringify(data),
+    body: JSON.stringify({
+            ...data,
+            password_hash: data.password,        // ← новоe
+          }),
   });
   return toJsonOrThrow(r);          // null  | {id,…}  | throws
 }

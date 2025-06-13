@@ -22,7 +22,7 @@ export default function Signup() {
         if (err.status === 409)
           setError("Телефон уже зарегистрирован");
         else
-          setError(err.detail || "Ошибка регистрации");
+          setError(err.detail);
       })
       .finally(() => setBusy(false));
   };
