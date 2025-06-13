@@ -79,3 +79,14 @@ class OrderCreate(BaseModel):
     items: list[dict]
     name: str
     phone: str
+class OrderRead(BaseModel):
+    id: int
+    user_id: int | None
+    items: list[dict]
+    name: str
+    phone: str
+    created_at: datetime
+    status: str
+
+    class Config:
+        orm_mode = True
