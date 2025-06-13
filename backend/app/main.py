@@ -14,7 +14,7 @@ from routers import auth
 from db import get_db
 from pydantic import BaseModel
 from deps import get_current_user 
-from models import User, OrderCreate
+from models import User, OrderCreate, OrderRead
 app = FastAPI(title="DK API")
 app.include_router(auth.router)
 # --- CORS ---
