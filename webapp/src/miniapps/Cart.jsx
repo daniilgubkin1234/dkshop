@@ -1,19 +1,31 @@
 // webapp/src/miniapps/Cart.jsx
 
 import React, { useState } from "react";
-import { useCart  } from "../context/CartContext.jsx";
+import { useCart } from "../context/CartContext.jsx";
 import { createOrderApi } from "../api.js";
 import { useNavigate } from "react-router-dom";
 import "./Cart.css";
 
 export default function Cart() {
-  
   let ctx;
   try {
     ctx = useCart();
   } catch (err) {
     console.error("Cart.jsx: useCart() error:", err.message);
     ctx = null;
+  }
+
+  const token = localStorage.getItem('user_token');
+  if (!token) {
+    return (
+      <div className="cart-empty">
+        <h2>Оформление заказа доступно только из Telegram</h2>
+        <p>Пожалуйста, откройте магазин через Telegram-бота для оформления заказа.</p>
+        <button className="btn-back" onClick={() => (window.location.href = "/")}>
+          Вернуться на главную
+        </button>
+      </div>
+    );
   }
 
   if (!ctx) {
@@ -85,7 +97,10 @@ export default function Cart() {
         <p>Телефон: <b>{orderInfo.phone}</b></p>
         <p>Позиций: {orderInfo.items.length}</p>
         <p>Сумма: {orderInfo.total.toLocaleString()} ₽</p>
-        <button className="btn-back" onClick={() => navigate("/")}>
+        <button className="btn-back" onClick={() => navigate("/my-orders")}>
+          Мои заказы
+        </button>
+        <button className="btn-back" style={{ marginLeft: 10 }} onClick={() => navigate("/")}>
           Вернуться на главную
         </button>
       </div>
@@ -159,20 +174,20 @@ export default function Cart() {
           }}
           className="checkout-input"
         />
-         <input
-  type="tel"
-  inputMode="tel"
-  placeholder="+7 XXX XXX XXXX или 8 XXX XXX XXXX"
-  className="checkout-input"
-  value={phone}
-  onChange={e => {
-    setPhone(e.target.value);
-    setStatus("");
-  }}
-  pattern="^(?:\+7|8)(?: ?\d){10}$"
-  title="Номер в формате +7 900 900 9192 или 8 900 900 9192 (допускаются пробелы)"
-  required
-/>
+        <input
+          type="tel"
+          inputMode="tel"
+          placeholder="+7 XXX XXX XXXX или 8 XXX XXX XXXX"
+          className="checkout-input"
+          value={phone}
+          onChange={e => {
+            setPhone(e.target.value);
+            setStatus("");
+          }}
+          pattern="^(?:\+7|8)(?: ?\d){10}$"
+          title="Номер в формате +7 900 900 9192 или 8 900 900 9192 (допускаются пробелы)"
+          required
+        />
         <div className="cart-buttons">
           <button className="btn-clear" onClick={() => clearCart()}>
             Очистить корзину

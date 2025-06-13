@@ -17,4 +17,3 @@ def get_db():
     """
     with Session(engine) as session:
         yield session
-Base = SQLModel.metadata

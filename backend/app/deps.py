@@ -5,7 +5,7 @@ from jose import jwt, JWTError
 from models import User
 from sqlmodel import Session, select
 from db import get_db
-SECRET = os.getenv("SECRET_KEY")
+SECRET = os.getenv("JWT_SECRET", "supersecretkey")
 ALGO   = "HS256"
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/telegram")  # формально
