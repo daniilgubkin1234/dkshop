@@ -25,7 +25,8 @@ services:
       - webapp/.env.production                 # JWT_SECRET и др.
     depends_on: [db]
     environment:
-      ALEMBIC_CONFIG: /app/alembic/alembic.ini
+      PYTHONPATH: /app
+      ALEMBIC_CONFIG: /app/alembic.ini
     ports: ["8001:8001"]
 
   # ────────────────────────────────────────────────────────────────
