@@ -9,4 +9,4 @@ COPY app/ .
 EXPOSE 8001
 
 ENTRYPOINT ["sh", "-c", "alembic upgrade head && \
-            uvicorn main:app --host 0.0.0.0 --port 8001"]
+            uvicorn app.main:app --host 0.0.0.0 --port 8001"]
