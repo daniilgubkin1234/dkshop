@@ -2,7 +2,7 @@ from fastapi import FastAPI, status, Query, Path, UploadFile, File, HTTPExceptio
 from sqlmodel import SQLModel, Session, select
 from fastapi.middleware.cors import CORSMiddleware
 from  db import engine
-from .models import Product, FAQ, Question, Order, FooterLink, ModelCard
+from models import Product, FAQ, Question, Order, FooterLink, ModelCard
 from sqlalchemy import or_, func
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -10,8 +10,8 @@ from fastapi.security import HTTPBasic, HTTPBasicCredentials
 import secrets
 import shutil, uuid, os
 import requests
-from .routers import auth
-from .db import get_db
+from routers import auth
+from db import get_db
 from pydantic import BaseModel
 
 app = FastAPI(title="DK API")
