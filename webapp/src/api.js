@@ -104,11 +104,19 @@ const authFetch = (url, opts = {}) => {
 };
 
 /* ---------- auth -------------------------------------------------- */
-export const loginApi = (phone, password) =>
-  fetch(API_URL + "/auth/login", {
+export async function loginApi(phone, password) {
+  const body = new URLSearchParams();
+  body.append("username", phone);        // ключи именно такие!
+  body.append("password", password);
+
+  const r = await fetch(`${API}/auth/login`, {
     method: "POST",
-    headers: { Authorization: "Basic " + btoa(`${phone}:${password}`) },
-  }).then((r) => r.json());
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body,
+  });
+  if (!r.ok) throw new Error("bad creds");
+  return r.json();                       // {access_token, token_type}
+}
 
 export const registerApi = (body) =>
   fetch(API_URL + "/auth/register", {
@@ -117,11 +125,13 @@ export const registerApi = (body) =>
     body: JSON.stringify(body),
   }).then((r) => r.json());
 
-export const meApi = (token) =>
-  fetch(API_URL + "/auth/me", {
-    headers: { Authorization: `Bearer ${token}` },
-  }).then((r) => r.json());
-
+  export async function meApi(token) {
+    const r = await fetch(`${API}/auth/me`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!r.ok) throw new Error("unauthorized");
+    return r.json();
+  }
 /* ---------- orders (личный кабинет) ------------------------------- */
 export const myOrdersApi = () => authFetch("/orders/me");
 
