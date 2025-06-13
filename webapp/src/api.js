@@ -92,6 +92,11 @@ export const authFetch = (url, opts = {}) => {
   return fetch(`${API_URL}${url}`, { ...opts, headers }).then(toJsonOrThrow);
 };
 
+export const meApi = (token) =>
+  fetch(`${API_URL}/auth/me`, {
+    headers: { Authorization: `Bearer ${token}` },
+  }).then(toJsonOrThrow);
+
 // Оформление заказа (авторизация через Telegram WebApp!)
 export const createOrderApi = (data) =>
   authFetch("/orders", { method: "POST", body: JSON.stringify(data) });

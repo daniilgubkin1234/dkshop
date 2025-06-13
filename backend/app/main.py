@@ -399,3 +399,6 @@ def delete_model_card(
     if db_card:
         db.delete(db_card)
         db.commit()
+@app.get("/auth/me")
+def get_me(user: User = Depends(get_current_user)):
+    return user
