@@ -1,5 +1,5 @@
 # app/db.py
-from sqlmodel import create_engine, Session  # ← добавили Session
+from sqlmodel import SQLModel, create_engine, Session
 import os
 
 DATABASE_URL = os.getenv(
@@ -17,3 +17,4 @@ def get_db():
     """
     with Session(engine) as session:
         yield session
+Base = SQLModel.metadata
