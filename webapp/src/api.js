@@ -89,51 +89,50 @@ export const deleteModelCard = (id, token) =>
 
 
 
-  /* ================================================================== */
-/*               БЛОК ЛИЧНОГО КАБИНЕТА (НОВОЕ)                        */
-/* ================================================================== */
-
-/* ---------- универсальный fetch с user_token ---------------------- */
-const authFetch = (url, opts = {}) => {
-  const token = localStorage.getItem("user_token");      // ← новый ключ!
-  const headers = { "Content-Type": "application/json", ...opts.headers };
+ /* ----------------------------------------------------------------
+   authFetch — любой запрос, который требует токена пользователя
+------------------------------------------------------------------*/
+export const authFetch = (url, opts = {}) => {
+  const token = localStorage.getItem("user_token");
+  const headers = { ...JSON_HEADERS, ...opts.headers };
   if (token) headers.Authorization = `Bearer ${token}`;
-  return fetch(API_URL + url, { ...opts, headers }).then((r) =>
-    r.ok ? r.json() : Promise.reject(r)
-  );
+
+  return fetch(`${API_URL}${url}`, { ...opts, headers }).then(toJsonOrThrow);
 };
 
-/* ---------- auth -------------------------------------------------- */
+/* ----------------------------------------------------------------
+   AUTH
+------------------------------------------------------------------*/
 export async function loginApi(phone, password) {
   const body = new URLSearchParams();
-  body.append("username", phone);        // ключи именно такие!
+  body.append("username", phone);      // OAuth2PasswordRequestForm
   body.append("password", password);
 
-  const r = await fetch(`${API}/auth/login`, {
+  const r = await fetch(`${API_URL}/auth/login`, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body,
   });
-  if (!r.ok) throw new Error("bad creds");
-  return r.json();                       // {access_token, token_type}
+  return toJsonOrThrow(r);             // {access_token, token_type}
 }
 
-export const registerApi = (body) =>
-  fetch(API_URL + "/auth/register", {
+export async function registerApi({ phone, name, password }) {
+  const r = await fetch(`${API_URL}/auth/register`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  }).then((r) => r.json());
+    headers: JSON_HEADERS,
+    body: JSON.stringify({ phone, name, password }),
+  });
+  return toJsonOrThrow(r);             // 201 → {id, phone, …} / 409
+}
 
-  export async function meApi(token) {
-    const r = await fetch(`${API}/auth/me`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    if (!r.ok) throw new Error("unauthorized");
-    return r.json();
-  }
-/* ---------- orders (личный кабинет) ------------------------------- */
-export const myOrdersApi = () => authFetch("/orders/me");
+export const meApi = (token) =>
+  fetch(`${API_URL}/auth/me`, {
+    headers: { Authorization: `Bearer ${token}` },
+  }).then(toJsonOrThrow);
 
-export const createOrderApi = (body) =>
-  authFetch("/orders", { method: "POST", body: JSON.stringify(body) });
+/* ----------------------------------------------------------------
+   ORDERS  (личный кабинет)
+------------------------------------------------------------------*/
+export const myOrdersApi   = () => authFetch("/orders/me");
+export const createOrderApi = (data) =>
+  authFetch("/orders", { method: "POST", body: JSON.stringify(data) });
