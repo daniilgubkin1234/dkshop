@@ -9,8 +9,8 @@ from sqlmodel import Session, select
 from dotenv import load_dotenv
 import os
 from db import engine
-from models import User          # модель User уже должна быть
-                                    # (id, phone, name, password_hash)
+from models import User          
+   
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 load_dotenv(".env.production", override=True) 
