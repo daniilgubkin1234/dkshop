@@ -92,6 +92,15 @@ export const authFetch = (url, opts = {}) => {
   return fetch(`${API_URL}${url}`, { ...opts, headers }).then(toJsonOrThrow);
 };
 
+
+// Авторизация через Telegram WebApp (initData) — возвращает токен
+export const authTelegramApi = (initDataRaw) =>
+  fetch(`${API_URL}/auth/telegram`, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain" },
+    body: initDataRaw,
+  }).then(toJsonOrThrow);
+
 export const meApi = (token) =>
   fetch(`${API_URL}/auth/me`, {
     headers: { Authorization: `Bearer ${token}` },
