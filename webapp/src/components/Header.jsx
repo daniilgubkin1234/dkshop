@@ -5,18 +5,15 @@ import { useAuth } from "../context/AuthContext.jsx";
 import "./Header.css";
 
 const Header = ({ onSearch }) => {
-  // ── состояние ────────────────────────────────────────────────────
   const [query, setQuery] = useState("");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [infoTitle, setInfoTitle] = useState("");
   const [infoContent, setInfoContent] = useState("");
   const navigate = useNavigate();
 
-  // авторизация
-  const { user } = useAuth();                              // токен user_token
-  const isAdmin = localStorage.getItem("auth_token") !== null; // токен админки
+  const { user } = useAuth();
+  const isAdmin = localStorage.getItem("auth_token") !== null;
 
-  // ── информационные блоки ─────────────────────────────────────────
   const openInfo = (type) => {
     let title = "";
     let content = "";
@@ -66,7 +63,6 @@ const Header = ({ onSearch }) => {
     toggleSidebar();
   };
 
-  // ── Telegram WebApp back-button ──────────────────────────────────
   useEffect(() => {
     if (window.TelegramWebApp) {
       window.TelegramWebApp.ready();
@@ -82,18 +78,15 @@ const Header = ({ onSearch }) => {
     }
   };
 
-  // ── поиск ────────────────────────────────────────────────────────
   const handleSearchChange = (e) => {
     const value = e.target.value;
     setQuery(value);
     onSearch?.(value);
   };
 
-  // ── навигация ────────────────────────────────────────────────────
   const toggleSidebar = () => setIsSidebarOpen((prev) => !prev);
   const handleLogoClick = () => navigate("/");
 
-  // ── рендер ───────────────────────────────────────────────────────
   return (
     <>
       <header className="header-container">
@@ -152,15 +145,13 @@ const Header = ({ onSearch }) => {
           </div>
 
           <div className="header-bottom__right">
-            {/* ссылка Войти / ЛК */}
-            {user ? (
-              <Link to="/profile" className="header-profile">
-                Личный&nbsp;кабинет
-              </Link>
-            ) : (
-              <Link to="/login" className="header-profile">
-                Войти
-              </Link>
+            {/* Показывать имя пользователя, если авторизован через Telegram */}
+            {user && (
+              <span className="header-profile">
+                {user.first_name || user.username
+                  ? `Привет, ${user.first_name || user.username}!`
+                  : "Профиль"}
+              </span>
             )}
 
             {/* бургер-меню */}
@@ -219,12 +210,9 @@ const Header = ({ onSearch }) => {
                 </Link>
               </li>
             )}
-            
-            {!user && (
-  <li><Link to="/signup" onClick={toggleSidebar}>Регистрация</Link></li>
-)}
 
-            {/* админ-панель по прежнему токену auth_token */}
+            {/* Убрать регистрацию, логин, ЛК */}
+            {/* Админ-панель */}
             {isAdmin && (
               <li>
                 <Link
