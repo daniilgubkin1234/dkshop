@@ -27,7 +27,7 @@ async function toJsonOrThrow(r) {
 }
 
 /* =================================================================
-   ТО ВАРЫ  (оставлены как были)
+   ТОВАРЫ (оставлены как были)
 ==================================================================*/
 export async function fetchProducts() {
   const response = await fetch(`${API_URL}/products`);
@@ -44,15 +44,6 @@ export async function fetchProductById(id) {
   const found = all.find((item) => String(item.id) === String(id));
   if (!found) throw new Error("Товар не найден");
   return found;
-}
-
-export async function postOrder(orderData) {
-  const response = await fetch(`${API_URL}/orders`, {
-    method: "POST",
-    headers: JSON_HEADERS,
-    body: JSON.stringify(orderData),
-  });
-  return toJsonOrThrow(response);
 }
 
 /* ---------- MODEL CARDS ---------- */
@@ -101,42 +92,10 @@ export const authFetch = (url, opts = {}) => {
   return fetch(`${API_URL}${url}`, { ...opts, headers }).then(toJsonOrThrow);
 };
 
-/* =================================================================
-   AUTH
-==================================================================*/
-export async function loginApi(phone, password) {
-  const body = new URLSearchParams();
-  body.append("username", phone);   // OAuth2PasswordRequestForm
-  body.append("password", password);
-
-  const r = await fetch(`${API_URL}/auth/login`, {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body,
-  });
-  return toJsonOrThrow(r);          // {access_token, token_type}
-}
-
-export async function registerApi(data) {
-  const r = await fetch(`${API_URL}/auth/register`, {
-    method: "POST",
-    headers: JSON_HEADERS,
-    body: JSON.stringify({
-            ...data,
-            password_hash: data.password,        // ← новоe
-          }),
-  });
-  return toJsonOrThrow(r);          // null  | {id,…}  | throws
-}
-
-export const meApi = (token) =>
-  fetch(`${API_URL}/auth/me`, {
-    headers: { Authorization: `Bearer ${token}` },
-  }).then(toJsonOrThrow);
-
-/* =================================================================
-   ORDERS  (личный кабинет)
-==================================================================*/
-export const myOrdersApi    = () => authFetch("/orders/me");
+// Оформление заказа (авторизация через Telegram WebApp!)
 export const createOrderApi = (data) =>
   authFetch("/orders", { method: "POST", body: JSON.stringify(data) });
+
+// Получение своих заказов (авторизация через Telegram WebApp!)
+export const myOrdersApi = () => authFetch("/orders/me");
+

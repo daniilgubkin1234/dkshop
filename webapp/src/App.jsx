@@ -15,9 +15,6 @@ import ProductList from "./miniapps/ProductList.jsx";
 import Product     from "./miniapps/Product.jsx";
 import Cart        from "./miniapps/Cart.jsx";
 import MyOrders    from "./miniapps/MyOrders.jsx";
-import Login       from "./miniapps/Login.jsx";
-import Signup      from "./miniapps/Signup.jsx";
-import Profile     from "./miniapps/Profile.jsx";
 
 /* ── админка ──────────────────────────────────────────────────────── */
 import AdminLogin      from "./admin/AdminLogin.jsx";
@@ -55,12 +52,7 @@ export default function App() {
           <Route path="/product/:id" element={<Product />} />
           <Route path="/cart"        element={<Cart />} />
 
-          {/* личный кабинет */}
-          <Route path="/login"   element={<Login />} />
-          <Route path="/signup"  element={<Signup />} />
-          <Route path="/profile" element={
-            <PrivateRoute><Profile /></PrivateRoute>
-          } />
+          
           <Route path="/my-orders" element={
             <PrivateRoute><MyOrders /></PrivateRoute>
           } />

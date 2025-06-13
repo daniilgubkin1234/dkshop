@@ -13,7 +13,8 @@ import requests
 from routers import auth
 from db import get_db
 from pydantic import BaseModel
-
+from deps import get_current_user 
+from models import User, OrderCreate
 app = FastAPI(title="DK API")
 app.include_router(auth.router)
 # --- CORS ---
@@ -126,35 +127,24 @@ def delete_product(product_id: int):
 
 # --- Остальные эндпоинты (без изменений) ---
 
-@app.post("/orders")
-def create_order(order: Order):
-    with Session(engine) as session:
-        session.add(order)
-        session.commit()
-        session.refresh(order)
 
-    bot_token = os.getenv("BOT_TOKEN")
-    if bot_token:
-        try:
-            requests.post(
-                f"https://api.telegram.org/bot{bot_token}/sendMessage",
-                json={
-                    "chat_id": order.user_id,
-                    "text": (
-                        f"✅ Ваш заказ #{order.id} принят!\n\n"
-                        f"<b>Имя:</b> {order.name}\n"
-                        f"<b>Телефон:</b> {order.phone}\n"
-                        f"<b>Позиций:</b> {len(order.items)}\n"
-                        f"📦 Ожидайте звонка для подтверждения."
-                    ),
-                    "parse_mode": "HTML"
-                },
-                timeout=5
-            )
-        except Exception as e:
-            print("Ошибка при отправке сообщения в Telegram:", e)
+@app.post("/orders", status_code=201)
+def create_order(body: OrderCreate,
+                 user: User = Depends(get_current_user),
+                 db: Session = Depends(get_db)):
+    order = Order(**body.dict(), user_id=user.tg_id)
+    db.add(order); db.commit(); db.refresh(order)
+    # уведомить телеграм и т.д.
+    return {"order_id": order.id}
 
-    return {"status": "ok", "order_id": order.id}
+
+@app.get("/orders/me", response_model=list[OrderRead])
+def my_orders(user: User = Depends(get_current_user),
+              db: Session = Depends(get_db)):
+    return db.exec(select(Order)
+                   .where(Order.user_id == user.tg_id)
+                   .order_by(Order.created_at.desc())
+                  ).all()
 
 @app.get("/faq")
 def search_faq(q: str = Query("*", min_length=1)):

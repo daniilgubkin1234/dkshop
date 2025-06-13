@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { useCart  } from "../context/CartContext.jsx";
-import { postOrder } from "../api.js";
+import { createOrderApi } from "../api.js";
 import { useNavigate } from "react-router-dom";
 import "./Cart.css";
 
@@ -36,7 +36,7 @@ export default function Cart() {
 
   const postOrderRequest = async (data) => {
     try {
-      const response = await postOrder(data);
+      const response = await createOrderApi(data);
       setOrderInfo({
         orderId: response.order_id,
         name: data.name,
@@ -46,7 +46,7 @@ export default function Cart() {
       });
       clearCart();
     } catch (err) {
-      console.error("postOrder error:", err);
+      console.error("createOrderApi error:", err);
       setStatus("❌ Не удалось оформить заказ");
     }
   };

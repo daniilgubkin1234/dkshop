@@ -69,8 +69,8 @@ class ModelCard(SQLModel, table=True):
     match_by_name: bool = True    # искать подстроку в названии товара?
 
 class User(SQLModel, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
-
-    phone:       str           # логин
-    name:        str
-    password_hash: str
+    id:          int | None = Field(default=None, primary_key=True)
+    tg_id:       int        = Field(unique=True, index=True)
+    first_name:  str | None = None
+    last_name:   str | None = None
+    username:    str | None = None

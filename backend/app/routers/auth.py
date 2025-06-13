@@ -1,73 +1,48 @@
-# backend/app/routers/auth.py
-from datetime import datetime, timedelta, timezone
-
-from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from jose import jwt, JWTError
-from passlib.context import CryptContext
+# routers/auth.py
+from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select
-from dotenv import load_dotenv
-import os
-from db import engine
-from models import User          
-   
+from db import get_db
+from models import User
+from auth_utils import create_access_token
+import hmac, hashlib, os, time, urllib.parse
 
 router = APIRouter(prefix="/auth", tags=["auth"])
-load_dotenv(".env.production", override=True) 
-ALGORITHM     = "HS256"
-JWT_SECRET = os.getenv("JWT_SECRET")
-if not JWT_SECRET:
-    raise RuntimeError("JWT_SECRET not set")                  # положите в .env
-ACCESS_TTL_MIN = 24 * 60
+BOT_TOKEN = os.getenv("BOT_TOKEN")
 
-pwd_ctx = CryptContext(schemes=["bcrypt"], deprecated="auto")
-oauth2_scheme = OAuth2PasswordBearer("/auth/login")
+def verify(init_data_raw: str) -> dict:
+    """Проверка подписи initData из Telegram Web-App"""
+    data = dict(urllib.parse.parse_qsl(init_data_raw, strict_parsing=True))
+    hash_ = data.pop("hash", None)
+    if not hash_:
+        raise ValueError("no hash")
 
-# ---- helpers ---------------------------------------------------------
-def hash_pw(pw: str)      -> str:  return pwd_ctx.hash(pw)
-def verify_pw(pw, hashed) -> bool: return pwd_ctx.verify(pw, hashed)
+    data_check = "\n".join(f"{k}={data[k]}" for k in sorted(data))
+    secret = hashlib.sha256(BOT_TOKEN.encode()).digest()
+    if hmac.new(secret, data_check.encode(), hashlib.sha256).hexdigest() != hash_:
+        raise ValueError("bad hash")
+    # свежесть
+    if time.time() - int(data["auth_date"]) > 86400:
+        raise ValueError("stale auth")
 
-def make_token(sub: int):
-    payload = {
-        "sub": sub,
-        "exp": datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TTL_MIN),
-    }
-    return jwt.encode(payload, JWT_SECRET, ALGORITHM)
+    return {**data, **eval(data["user"])}   # user{id,username,…}
 
-def get_session():
-    with Session(engine) as s:
-        yield s
-
-def current_user(token: str = Depends(oauth2_scheme),
-                 db: Session = Depends(get_session)):
+@router.post("/telegram")
+def auth_telegram(init_data: str, db: Session = Depends(get_db)):
     try:
-        data = jwt.decode(token, JWT_SECRET, algorithms=[ALGORITHM])
-        user_id: int = data.get("sub")
-    except JWTError:
-        raise HTTPException(status_code=401, detail="bad token")
-    user = db.get(User, user_id)
+        payload = verify(init_data)
+    except Exception as e:
+        raise HTTPException(403, str(e))
+
+    tg_id = int(payload["id"])
+    user = db.exec(select(User).where(User.tg_id == tg_id)).first()
     if not user:
-        raise HTTPException(status_code=401, detail="not found")
-    return user
+        user = User(
+            tg_id      = tg_id,
+            username   = payload.get("username"),
+            first_name = payload.get("first_name"),
+            last_name  = payload.get("last_name"),
+        )
+        db.add(user); db.commit(); db.refresh(user)
 
-# ---- endpoints -------------------------------------------------------
-@router.post("/register", status_code=201)
-def register(u: User, db: Session = Depends(get_session)):
-    if db.exec(select(User).where(User.phone == u.phone)).first():
-        raise HTTPException(409, "phone exists")
-    obj = User(phone=u.phone, name=u.name,
-               password_hash=hash_pw(u.password_hash))
-    db.add(obj); db.commit(); db.refresh(obj)
-    return {"id": obj.id}
-
-@router.post("/login")
-def login(form: OAuth2PasswordRequestForm = Depends(),
-          db: Session = Depends(get_session)):
-    user = db.exec(select(User).where(User.phone == form.username)).first()
-    if not user or not verify_pw(form.password, user.password_hash):
-        raise HTTPException(401, "bad creds")
-    return {"access_token": make_token(user.id), "token_type": "bearer"}
-
-@router.get("/me")
-def me(user = Depends(current_user)):
-    return {"id": user.id, "phone": user.phone, "name": user.name}
+    token = create_access_token({"sub": str(user.tg_id)})
+    return {"access_token": token, "token_type": "bearer"}
