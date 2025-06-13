@@ -8,8 +8,8 @@ from passlib.context import CryptContext
 from sqlmodel import Session, select
 from dotenv import load_dotenv
 import os
-from ..db import engine
-from ..models import User          # модель User уже должна быть
+from db import engine
+from models import User          # модель User уже должна быть
                                     # (id, phone, name, password_hash)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
