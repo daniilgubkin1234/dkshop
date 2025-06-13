@@ -6,14 +6,12 @@ import React, {
 } from "react";
 import { loginApi, meApi } from "../api";
 
-/* ─────────── helpers ─────────── */
 const TOKEN_KEY = "user_token";
 export const AuthContext = createContext(null);
-export const useAuth = () => useContext(AuthContext);
+export const useAuth     = () => useContext(AuthContext);
 
-/* ─────────── provider ─────────── */
 export default function AuthProvider({ children }) {
-  const [user, setUser]   = useState(null);
+  const [user,  setUser]  = useState(null);
   const [ready, setReady] = useState(false);
 
   /* bootstrap session once */
@@ -23,11 +21,10 @@ export default function AuthProvider({ children }) {
 
     meApi(token)
       .then(setUser)
-      .catch(() => localStorage.removeItem(TOKEN_KEY))
+      .catch(() => localStorage.removeItem(TOKEN_KEY)) // 401 → logout
       .finally(() => setReady(true));
   }, []);
 
-  /* login → save token → fetch profile */
   const login = async (phone, password) => {
     const { access_token } = await loginApi(phone, password);
     localStorage.setItem(TOKEN_KEY, access_token);
@@ -35,13 +32,12 @@ export default function AuthProvider({ children }) {
     setUser(me);
   };
 
-  /* logout */
   const logout = () => {
     localStorage.removeItem(TOKEN_KEY);
     setUser(null);
   };
 
-  if (!ready) return null;             // можно показать спиннер
+  if (!ready) return null;   // можно спиннер
 
   return (
     <AuthContext.Provider value={{ user, login, logout }}>

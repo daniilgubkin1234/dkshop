@@ -3,28 +3,28 @@ import { useNavigate, Link } from "react-router-dom";
 import { registerApi } from "../api";
 
 export default function Signup() {
-  const [form, set]   = useState({ phone: "", name: "", password: "" });
+  const [form,  setForm]  = useState({ phone: "", name: "", password: "" });
   const [error, setError] = useState("");
   const [busy,  setBusy]  = useState(false);
   const nav = useNavigate();
 
   const onChange = (e) =>
-    set({ ...form, [e.target.name]: e.target.value });
+    setForm({ ...form, [e.target.name]: e.target.value });
 
   const onSubmit = (e) => {
     e.preventDefault();
     setBusy(true);
+    setError("");
+
     registerApi(form)
-  .then(() => nav("/login"))
-  .catch(async (r) => {
-    let text = "Ошибка регистрации";
-    try {
-      const data = await r.json();
-      text = data.detail || JSON.stringify(data);
-    } catch {/* тело не JSON */}
-    setError(text);
-  })
-  .finally(() => setBusy(false));
+      .then(() => nav("/login", { replace: true }))
+      .catch((err) => {
+        if (err.status === 409)
+          setError("Телефон уже зарегистрирован");
+        else
+          setError(err.detail || "Ошибка регистрации");
+      })
+      .finally(() => setBusy(false));
   };
 
   return (
