@@ -16,9 +16,13 @@ export default function Signup() {
     setBusy(true);
     registerApi(form)
   .then(() => nav("/login"))
-  .catch((err) => {
-    if (err.status === 409)        setError("Телефон уже зарегистрирован");
-    else                           setError(err.detail || "Ошибка регистрации");
+  .catch(async (r) => {
+    let text = "Ошибка регистрации";
+    try {
+      const data = await r.json();
+      text = data.detail || JSON.stringify(data);
+    } catch {/* тело не JSON */}
+    setError(text);
   })
   .finally(() => setBusy(false));
   };
