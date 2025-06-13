@@ -3,7 +3,7 @@ from sqlalchemy import engine_from_config, pool
 from alembic import context
 
 from sqlmodel import SQLModel
-from db import engine                   # берем engine из db.py
+from app.db import engine                   # берем engine из db.py
 
 # --------------------------------------------------------
 config = context.config

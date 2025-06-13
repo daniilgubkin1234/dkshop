@@ -24,6 +24,7 @@ services:
     env_file:
       - webapp/.env.production                 # JWT_SECRET и др.
     depends_on: [db]
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8001
     environment:
       PYTHONPATH: /app
       ALEMBIC_CONFIG: /app/alembic.ini
