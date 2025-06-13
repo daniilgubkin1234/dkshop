@@ -1,7 +1,7 @@
 from fastapi import FastAPI, status, Query, Path, UploadFile, File, HTTPException, Depends
 from sqlmodel import SQLModel, Session, select
 from fastapi.middleware.cors import CORSMiddleware
-from .db import engine
+from  db import engine
 from .models import Product, FAQ, Question, Order, FooterLink, ModelCard
 from sqlalchemy import or_, func
 from fastapi.responses import JSONResponse
