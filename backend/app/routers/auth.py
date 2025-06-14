@@ -6,7 +6,7 @@ from models import User
 from routers.auth_utils import create_access_token
 import hmac, hashlib, os, time, urllib.parse
 import logging
-
+from fastapi import Body
 router = APIRouter(prefix="/auth", tags=["auth"])
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 
@@ -42,7 +42,7 @@ def verify(init_data_raw: str) -> dict:
     return {**data, **eval(data["user"])}   # user{id,username,…}
 
 @router.post("/telegram")
-def auth_telegram(init_data: str, db: Session = Depends(get_db)):
+def auth_telegram(init_data: str = Body(..., media_type="text/plain"), db: Session = Depends(get_db)):
     logger.info(f"[TelegramAuth] /auth/telegram вызван, длина init_data={len(init_data) if init_data else 'None'}")
     try:
         payload = verify(init_data)
