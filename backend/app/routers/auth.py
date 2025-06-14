@@ -21,6 +21,7 @@ def verify(init_data_raw: str) -> dict:
         logger.error(f"[TelegramAuth] Ошибка парсинга initData: {e}")
         raise
     hash_ = data.pop("hash", None)
+    data.pop("signature", None)  # <- вот тут
     if not hash_:
         logger.error("[TelegramAuth] Нет hash в initData!")
         raise ValueError("no hash")
