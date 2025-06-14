@@ -1,34 +1,32 @@
 # routers/auth.py
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Body
 from sqlmodel import Session, select
 from db import get_db
 from models import User
 from routers.auth_utils import create_access_token
-import hmac, hashlib, os, time, urllib.parse
-import logging
-from fastapi import Body
+import hmac, hashlib, os, time, logging
+
 router = APIRouter(prefix="/auth", tags=["auth"])
 BOT_TOKEN = os.getenv("BOT_TOKEN")
-
 logger = logging.getLogger("uvicorn.error")
 
 def verify(init_data_raw: str) -> dict:
     logger.info(f"[TelegramAuth] BOT_TOKEN (в контейнере): {BOT_TOKEN!r}")
     logger.info(f"[TelegramAuth] Проверяем init_data_raw: {init_data_raw!r}")
     
-    try:
-        data = dict(urllib.parse.parse_qsl(init_data_raw, strict_parsing=True))
-    except Exception as e:
-        logger.error(f"[TelegramAuth] Ошибка парсинга initData: {e}")
-        raise
+    # Разбираем init_data_raw без декодирования percent-encoded значений!
+    items = [kv.split('=', 1) for kv in init_data_raw.split('&')]
+    data = {k: v for k, v in items}
     hash_ = data.pop("hash", None)
-    data.pop("signature", None)  # <- вот тут
+    data.pop("signature", None)
     if not hash_:
         logger.error("[TelegramAuth] Нет hash в initData!")
         raise ValueError("no hash")
-
+    
+    # Собираем строку из percent-encoded значений (как требует Telegram)
     data_check = "\n".join(f"{k}={data[k]}" for k in sorted(data))
     logger.info(f"[TelegramAuth] data_check строка: {data_check!r}")
+
     secret = hashlib.sha256(BOT_TOKEN.encode()).digest()
     expected_hash = hmac.new(secret, data_check.encode(), hashlib.sha256).hexdigest()
     logger.info(f"[TelegramAuth] Проверка подписи: hash={hash_}, expected={expected_hash}")
@@ -42,8 +40,12 @@ def verify(init_data_raw: str) -> dict:
         logger.error("[TelegramAuth] stale auth!")
         raise ValueError("stale auth")
 
-    logger.info(f"[TelegramAuth] Успешная верификация пользователя: {data.get('user', data)}")
-    return {**data, **eval(data["user"])}   # user{id,username,…}
+    # Для обратной совместимости
+    import urllib.parse
+    decoded_data = {k: urllib.parse.unquote_plus(v) for k, v in data.items()}
+
+    logger.info(f"[TelegramAuth] Успешная верификация пользователя: {decoded_data.get('user', decoded_data)}")
+    return {**decoded_data, **eval(decoded_data["user"])}   # user{id,username,…}
 
 @router.post("/telegram")
 def auth_telegram(init_data: str = Body(..., media_type="text/plain"), db: Session = Depends(get_db)):
