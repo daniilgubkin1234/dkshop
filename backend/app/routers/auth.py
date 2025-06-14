@@ -15,7 +15,7 @@ logger = logging.getLogger("uvicorn.error")
 def verify(init_data_raw: str) -> dict:
     logger.info(f"[TelegramAuth] BOT_TOKEN (в контейнере): {BOT_TOKEN!r}")
     logger.info(f"[TelegramAuth] Проверяем init_data_raw: {init_data_raw!r}")
-    logger.info(f"[TelegramAuth] data_check строка:\n{data_check!r}")
+    
     try:
         data = dict(urllib.parse.parse_qsl(init_data_raw, strict_parsing=True))
     except Exception as e:
@@ -28,6 +28,7 @@ def verify(init_data_raw: str) -> dict:
         raise ValueError("no hash")
 
     data_check = "\n".join(f"{k}={data[k]}" for k in sorted(data))
+    logger.info(f"[TelegramAuth] data_check строка: {data_check!r}")
     secret = hashlib.sha256(BOT_TOKEN.encode()).digest()
     expected_hash = hmac.new(secret, data_check.encode(), hashlib.sha256).hexdigest()
     logger.info(f"[TelegramAuth] Проверка подписи: hash={hash_}, expected={expected_hash}")
