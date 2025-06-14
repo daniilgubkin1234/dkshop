@@ -45,6 +45,7 @@ def verify(init_data_raw: str) -> dict:
 @router.post("/telegram")
 def auth_telegram(init_data: str = Body(..., media_type="text/plain"), db: Session = Depends(get_db)):
     logger.info(f"[TelegramAuth] /auth/telegram вызван, длина init_data={len(init_data) if init_data else 'None'}")
+    logger.info(f"[TelegramAuth] Полученные init_data: {init_data}")
     try:
         payload = verify(init_data)
     except Exception as e:
