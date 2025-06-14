@@ -13,6 +13,7 @@ BOT_TOKEN = os.getenv("BOT_TOKEN")
 logger = logging.getLogger("uvicorn.error")
 
 def verify(init_data_raw: str) -> dict:
+    logger.info(f"[TelegramAuth] BOT_TOKEN (в контейнере): {BOT_TOKEN!r}")
     logger.info(f"[TelegramAuth] Проверяем init_data_raw: {init_data_raw!r}")
     try:
         data = dict(urllib.parse.parse_qsl(init_data_raw, strict_parsing=True))
