@@ -15,6 +15,7 @@ logger = logging.getLogger("uvicorn.error")
 def verify(init_data_raw: str) -> dict:
     logger.info(f"[TelegramAuth] BOT_TOKEN (в контейнере): {BOT_TOKEN!r}")
     logger.info(f"[TelegramAuth] Проверяем init_data_raw: {init_data_raw!r}")
+    logger.info(f"[TelegramAuth] data_check строка:\n{data_check!r}")
     try:
         data = dict(urllib.parse.parse_qsl(init_data_raw, strict_parsing=True))
     except Exception as e:
@@ -47,6 +48,7 @@ def verify(init_data_raw: str) -> dict:
 def auth_telegram(init_data: str = Body(..., media_type="text/plain"), db: Session = Depends(get_db)):
     logger.info(f"[TelegramAuth] /auth/telegram вызван, длина init_data={len(init_data) if init_data else 'None'}")
     logger.info(f"[TelegramAuth] Полученные init_data: {init_data}")
+    
     try:
         payload = verify(init_data)
     except Exception as e:
