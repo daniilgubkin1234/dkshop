@@ -199,6 +199,16 @@ def orders_by_phone(phone: str):
         ).order_by(Order.created_at.desc())
         return session.exec(stmt).all()
 
+@app.get("/orders/by-user", response_model=list[Order])
+def orders_by_user(user_id: int, db: Session = Depends(get_db)):
+    """
+    Возвращает список заказов пользователя по его Telegram ID,
+    упорядоченных от новых к старым.
+    """
+    stmt = select(Order) \
+             .where(Order.user_id == user_id) \
+             .order_by(Order.created_at.desc())
+    return db.exec(stmt).all()
 # --- FAQ CRUD ---
 @app.get("/faq")
 def search_faq(q: str = Query("*", min_length=1)):
