@@ -21,7 +21,8 @@ services:
       - ./backend/app/static:/code/app/static
       - ./backend/app:/code/app
     depends_on: [db]
-    env_file: .env.production
+    env_file:
+      - webapp/.env.production
     ports: ["8001:8001"]
 
   bot:
@@ -30,7 +31,9 @@ services:
     command: python main.py
     volumes:
       - ./backend/bot:/bot
-    env_file: .env
+
+    env_file:
+      - webapp/.env.production
     depends_on: [api]
 
   node:
@@ -43,8 +46,10 @@ services:
     command: ["npm", "run", "dev"]
 volumes:
   pgdata:
+
 networks:
   default:
     driver: bridge
     driver_opts:
       com.docker.network.driver.mtu: 1450
+
