@@ -67,3 +67,10 @@ class ModelCard(SQLModel, table=True):
     )
     img: str                       # URL картинки
     match_by_name: bool = True    # искать подстроку в названии товара?
+class User(SQLModel, table=True):
+    id: int = Field(primary_key=True)            # = Telegram user ID
+    first_name: str
+    last_name: Optional[str] = None
+    username: Optional[str] = None
+    phone: Optional[str] = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)

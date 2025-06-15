@@ -2,3 +2,4 @@ python-telegram-bot==20.8
 aiohttp>=3.9
 python-dotenv
 requests>=2.28
+init-data-py 

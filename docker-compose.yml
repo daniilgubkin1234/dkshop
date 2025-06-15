@@ -15,7 +15,7 @@ services:
     image: python:3.12-slim
     working_dir: /code
     command: >
-      sh -c "pip install fastapi[all] sqlmodel psycopg2-binary requests&&
+      sh -c "pip install fastapi[all] sqlmodel psycopg2-binary requests init-data-py &&
              uvicorn app.main:app --host 0.0.0.0 --port 8001 --reload"
     volumes:
       - ./backend/app/static:/code/app/static

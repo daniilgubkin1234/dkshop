@@ -7,4 +7,5 @@ fastapi
 uvicorn[standard]
 sqlmodel
 psycopg2-binary     
-vk_api==11.9            # ← если используете библиотеку для VK
+vk_api==11.9   
+init-data-py         

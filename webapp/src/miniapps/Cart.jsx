@@ -1,13 +1,15 @@
 // webapp/src/miniapps/Cart.jsx
 
-import React, { useState } from "react";
-import { useCart  } from "../context/CartContext.jsx";
+import React, { useState, useEffect } from "react";
+import { useCart } from "../context/CartContext.jsx";
 import { postOrder } from "../api.js";
 import { useNavigate } from "react-router-dom";
 import "./Cart.css";
 
 export default function Cart() {
-  
+  const navigate = useNavigate();
+
+  // Получаем контекст корзины
   let ctx;
   try {
     ctx = useCart();
@@ -15,34 +17,45 @@ export default function Cart() {
     console.error("Cart.jsx: useCart() error:", err.message);
     ctx = null;
   }
+  const cartItems  = ctx?.cartItems || [];
+  const totalPrice = ctx?.totalPrice || 0;
+  const clearCart  = ctx?.clearCart || (() => {});
 
-  if (!ctx) {
-    return (
-      <div className="cart-empty">
-        <h2>Корзина недоступна</h2>
-        <button className="btn-back" onClick={() => (window.location.href = "/")}>
-          Вернуться на главную
-        </button>
-      </div>
-    );
-  }
-
-  const { cartItems, updateQuantity, removeFromCart, clearCart, totalPrice } = ctx;
-  const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
-  const [status, setStatus] = useState("");
-  const navigate = useNavigate();
+  // Состояние формы и статуса
+  const [name, setName]         = useState("");
+  const [phone, setPhone]       = useState("");
+  const [status, setStatus]     = useState("");
   const [orderInfo, setOrderInfo] = useState(null);
 
+  // Достаем авторизованного телеграм-пользователя из localStorage
+  const storedUser = JSON.parse(localStorage.getItem("dkshop_user") || "null");
+  const userId     = storedUser?.id;
+
+  // Предзаполняем поля ФИО и телефона, если пользователь вошел
+  useEffect(() => {
+    if (storedUser) {
+      if (storedUser.phone) {
+        setPhone(storedUser.phone);
+      }
+      const fullName = [storedUser.first_name, storedUser.last_name]
+        .filter(Boolean)
+        .join(" ");
+      if (fullName) {
+        setName(fullName);
+      }
+    }
+  }, [storedUser]);
+
+  // Отправка заказа на бэкенд
   const postOrderRequest = async (data) => {
     try {
       const response = await postOrder(data);
       setOrderInfo({
         orderId: response.order_id,
-        name: data.name,
-        phone: data.phone,
-        items: data.items,
-        total: totalPrice,
+        name:    data.name,
+        phone:   data.phone,
+        items:   data.items,
+        total:   totalPrice,
       });
       clearCart();
     } catch (err) {
@@ -58,24 +71,25 @@ export default function Cart() {
       setStatus("❗ Введите корректные ФИО и номер телефона");
       return;
     }
-
-    if (!cartItems || cartItems.length === 0) {
+    if (cartItems.length === 0) {
       setStatus("❗ Ваша корзина пуста");
       return;
     }
 
     const payload = {
-      name: name.trim(),
-      phone: phone.trim(),
-      items: cartItems.map((item) => ({
+      user_id: userId || null,
+      name:    name.trim(),
+      phone:   phone.trim(),
+      items:   cartItems.map((item) => ({
         product_id: item.id,
-        quantity: item.quantity,
+        quantity:   item.quantity,
       })),
     };
 
     postOrderRequest(payload);
   };
 
+  // Если заказ уже оформлен — показываем страницу с деталями
   if (orderInfo) {
     return (
       <div className="cart-empty">
@@ -92,7 +106,8 @@ export default function Cart() {
     );
   }
 
-  if (!cartItems || cartItems.length === 0) {
+  // Если корзина пуста — показываем заглушку
+  if (cartItems.length === 0) {
     return (
       <div className="cart-empty">
         <h2>Ваша корзина пуста</h2>
@@ -103,76 +118,49 @@ export default function Cart() {
     );
   }
 
+  // Основной рендер корзины
   return (
     <div className="cart-container">
-      <h2>Корзина</h2>
+      <h2>Ваша корзина ({cartItems.length} позиции)</h2>
 
-      <div className="cart-list">
+      <div className="cart-items">
         {cartItems.map((item) => (
           <div key={item.id} className="cart-item">
-            <img src={item.image} alt={item.name} className="cart-item-image" />
-            <div className="cart-item-info">
-              <h3 className="cart-item-name">{item.name}</h3>
-              <p className="cart-item-price">
-                {(item.price ?? 0).toLocaleString()} ₽ за шт.
+            <div className="cart-item__info">
+              <p className="cart-item__name">{item.name}</p>
+              <p className="cart-item__quantity">
+                Количество: {item.quantity}
               </p>
-              <div className="cart-item-quantity">
-                <input
-                  type="number"
-                  className="qty-input"
-                  value={item.quantity}
-                  min="1"
-                  onChange={(e) => {
-                    const val = Number(e.target.value);
-                    if (isNaN(val) || val < 1) {
-                      removeFromCart(item.id);
-                    } else {
-                      updateQuantity(item.id, val);
-                    }
-                  }}
-                />
-              </div>
-              <button className="btn-remove" onClick={() => removeFromCart(item.id)}>
-                Удалить
-              </button>
-            </div>
-            <div className="cart-item-subtotal">
-              <p>{((item.price ?? 0) * item.quantity).toLocaleString()} ₽</p>
+              <p className="cart-item__price">
+                Цена: {item.price.toLocaleString()} ₽
+              </p>
             </div>
           </div>
         ))}
       </div>
 
       <div className="cart-summary">
-        <p className="cart-total">Итого: {(totalPrice ?? 0).toLocaleString()} ₽</p>
-      </div>
+        <p className="cart-summary__total">
+          Итого: <b>{totalPrice.toLocaleString()} ₽</b>
+        </p>
 
-      <div style={{ marginTop: 24 }}>
-        <h3>Оформление заказа</h3>
-        <input
-          type="text"
-          placeholder="ФИО"
-          value={name}
-          onChange={(e) => {
-            setName(e.target.value);
-            setStatus("");
-          }}
-          className="checkout-input"
-        />
-         <input
-  type="tel"
-  inputMode="tel"
-  placeholder="+7 XXX XXX XXXX или 8 XXX XXX XXXX"
-  className="checkout-input"
-  value={phone}
-  onChange={e => {
-    setPhone(e.target.value);
-    setStatus("");
-  }}
-  pattern="^(?:\+7|8)(?: ?\d){10}$"
-  title="Номер в формате +7 900 900 9192 или 8 900 900 9192 (допускаются пробелы)"
-  required
-/>
+        <div className="cart-form">
+          <input
+            type="text"
+            placeholder="ФИО"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
+          <input
+            type="tel"
+            placeholder="Телефон"
+            pattern="^(?:\+7|8)(?: ?\d){10}$"
+            title="Номер в формате +7xxxxxxxxxx или 8xxxxxxxxxx"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+          />
+        </div>
+
         <div className="cart-buttons">
           <button className="btn-clear" onClick={() => clearCart()}>
             Очистить корзину
@@ -181,7 +169,8 @@ export default function Cart() {
             Оформить заказ
           </button>
         </div>
-        {status && <p style={{ marginTop: 12 }}>{status}</p>}
+
+        {status && <p className="cart-status">{status}</p>}
       </div>
     </div>
   );
