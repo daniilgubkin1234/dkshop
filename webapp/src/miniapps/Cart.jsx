@@ -121,46 +121,74 @@ export default function Cart() {
   // Основной рендер корзины
   return (
     <div className="cart-container">
-      <h2>Ваша корзина ({cartItems.length} позиции)</h2>
+      <h2>Корзина</h2>
 
-      <div className="cart-items">
+      <div className="cart-list">
         {cartItems.map((item) => (
           <div key={item.id} className="cart-item">
-            <div className="cart-item__info">
-              <p className="cart-item__name">{item.name}</p>
-              <p className="cart-item__quantity">
-                Количество: {item.quantity}
+            <img src={item.image} alt={item.name} className="cart-item-image" />
+            <div className="cart-item-info">
+              <h3 className="cart-item-name">{item.name}</h3>
+              <p className="cart-item-price">
+                {(item.price ?? 0).toLocaleString()} ₽ за шт.
               </p>
-              <p className="cart-item__price">
-                Цена: {item.price.toLocaleString()} ₽
-              </p>
+              <div className="cart-item-quantity">
+                <input
+                  type="number"
+                  className="qty-input"
+                  value={item.quantity}
+                  min="1"
+                  onChange={(e) => {
+                    const val = Number(e.target.value);
+                    if (isNaN(val) || val < 1) {
+                      removeFromCart(item.id);
+                    } else {
+                      updateQuantity(item.id, val);
+                    }
+                  }}
+                />
+              </div>
+              <button className="btn-remove" onClick={() => removeFromCart(item.id)}>
+                Удалить
+              </button>
+            </div>
+            <div className="cart-item-subtotal">
+              <p>{((item.price ?? 0) * item.quantity).toLocaleString()} ₽</p>
             </div>
           </div>
         ))}
       </div>
 
       <div className="cart-summary">
-        <p className="cart-summary__total">
-          Итого: <b>{totalPrice.toLocaleString()} ₽</b>
-        </p>
+        <p className="cart-total">Итого: {(totalPrice ?? 0).toLocaleString()} ₽</p>
+      </div>
 
-        <div className="cart-form">
-          <input
-            type="text"
-            placeholder="ФИО"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-          />
-          <input
-            type="tel"
-            placeholder="Телефон"
-            pattern="^(?:\+7|8)(?: ?\d){10}$"
-            title="Номер в формате +7xxxxxxxxxx или 8xxxxxxxxxx"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-          />
-        </div>
-
+      <div style={{ marginTop: 24 }}>
+        <h3>Оформление заказа</h3>
+        <input
+          type="text"
+          placeholder="ФИО"
+          value={name}
+          onChange={(e) => {
+            setName(e.target.value);
+            setStatus("");
+          }}
+          className="checkout-input"
+        />
+        <input
+          type="tel"
+          inputMode="tel"
+          placeholder="+7 XXX XXX XXXX или 8 XXX XXX XXXX"
+          className="checkout-input"
+          value={phone}
+          onChange={e => {
+            setPhone(e.target.value);
+            setStatus("");
+          }}
+          pattern="^(?:\+7|8)(?: ?\d){10}$"
+          title="Номер в формате +7 900 900 9192 или 8 900 900 9192 (допускаются пробелы)"
+          required
+        />
         <div className="cart-buttons">
           <button className="btn-clear" onClick={() => clearCart()}>
             Очистить корзину
@@ -169,8 +197,7 @@ export default function Cart() {
             Оформить заказ
           </button>
         </div>
-
-        {status && <p className="cart-status">{status}</p>}
+        {status && <p style={{ marginTop: 12 }}>{status}</p>}
       </div>
     </div>
   );
