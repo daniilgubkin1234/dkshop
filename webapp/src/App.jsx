@@ -7,7 +7,7 @@ import Footer          from './components/Footer.jsx';
 import ProductList     from './miniapps/ProductList.jsx';
 import Product         from './miniapps/Product.jsx';
 import Cart            from './miniapps/Cart.jsx';
-// мы уже перенаправляем `/my-orders` на `/profile`, так что этот импорт можно убрать
+
 // import MyOrders        from './miniapps/MyOrders.jsx';
 import Profile         from './miniapps/Profile.jsx';
 
