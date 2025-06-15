@@ -31,6 +31,19 @@ app.add_middleware(
 
 security = HTTPBasic()
 
+
+# --- Admin Basic Auth checker ---
+def check_admin(credentials: HTTPBasicCredentials = Depends(security)):
+    admin_user = os.getenv("ADMIN_USER", "")
+    admin_pass = os.getenv("ADMIN_PASSWORD", "")
+    correct_user = secrets.compare_digest(credentials.username, admin_user)
+    correct_pass = secrets.compare_digest(credentials.password, admin_pass)
+    if not (correct_user and correct_pass):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Unauthorized",
+            headers={"WWW-Authenticate": "Basic"},
+        )
 # --- Static files ---
 app.mount(
     "/static",
