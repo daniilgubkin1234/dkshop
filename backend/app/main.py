@@ -75,27 +75,29 @@ def health():
 class LoginRequest(BaseModel):
     initData: str
 
+
 @app.post("/login")
 async def login(body: LoginRequest):
-    # 1) распарсим initData
+    # 1) парсим и валидируем
     init_data = InitData.parse(body.initData)
-
-    # 2) валидируем подпись и auth_date
     if not init_data.validate(BOT_TOKEN):
         raise HTTPException(status_code=401, detail="Invalid auth data")
 
-    # 3) достаём user из объекта InitData и приводим к dict
+    # 2) достаём объект пользователя
     user_obj = init_data.user
-    # Для Pydantic v2: модель отдаёт .model_dump(), для v1 — .dict()
+
+    # 3) превращаем его в dict безопасно
     try:
         user_data = user_obj.model_dump()
-    except AttributeError:
-        user_data = user_obj.dict()
+    except Exception:
+        try:
+            user_data = user_obj.dict()
+        except Exception:
+            user_data = vars(user_obj)
 
-    # TODO: здесь можно сохранить или обновить пользователя в БД
+    # TODO: сохранить или обновить User в БД
 
     return {"status": "ok", "user": user_data}
-
 # --- Products CRUD ---
 @app.get("/products")
 def list_products(q: str | None = None):
