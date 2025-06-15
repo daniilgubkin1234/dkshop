@@ -16,7 +16,7 @@ from pydantic import BaseModel
 from init_data_py import InitData
 
 app = FastAPI(title="DK API")
-
+BOT_TOKEN = os.getenv("BOT_TOKEN", "")
 # --- CORS ---
 app.add_middleware(
     CORSMiddleware,
@@ -77,12 +77,23 @@ class LoginRequest(BaseModel):
 
 @app.post("/login")
 async def login(body: LoginRequest):
-    bot_token = os.getenv("BOT_TOKEN", "")
-    validator = InitData(token=bot_token)
-    if not validator.validate(body.initData):
+    # 1) распарсим initData
+    init_data = InitData.parse(body.initData)
+
+    # 2) валидируем подпись и auth_date
+    if not init_data.validate(BOT_TOKEN):
         raise HTTPException(status_code=401, detail="Invalid auth data")
-    user_data = validator.parse(body.initData)
-    # TODO: создать или обновить запись пользователя в БД
+
+    # 3) достаём user из объекта InitData и приводим к dict
+    user_obj = init_data.user
+    # Для Pydantic v2: модель отдаёт .model_dump(), для v1 — .dict()
+    try:
+        user_data = user_obj.model_dump()
+    except AttributeError:
+        user_data = user_obj.dict()
+
+    # TODO: здесь можно сохранить или обновить пользователя в БД
+
     return {"status": "ok", "user": user_data}
 
 # --- Products CRUD ---
