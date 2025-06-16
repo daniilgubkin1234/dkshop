@@ -9,29 +9,33 @@ import "./Cart.css";
 export default function Cart() {
   const navigate = useNavigate();
 
-  // Получаем контекст корзины
+  // 1) Берём из контекста все нужные методы и состояния
   let ctx;
   try {
     ctx = useCart();
   } catch (err) {
     console.error("Cart.jsx: useCart() error:", err.message);
-    ctx = null;
+    ctx = {};
   }
-  const cartItems  = ctx?.cartItems || [];
-  const totalPrice = ctx?.totalPrice || 0;
-  const clearCart  = ctx?.clearCart || (() => {});
+  const {
+    cartItems = [],
+    totalPrice = 0,
+    clearCart = () => {},
+    removeFromCart = () => {},
+    removeOneFromCart = () => {},
+    updateQuantity = () => {},
+  } = ctx;
 
-  // Состояние формы и статуса
+  // 2) Локальные поля формы
   const [name, setName]         = useState("");
   const [phone, setPhone]       = useState("");
   const [status, setStatus]     = useState("");
   const [orderInfo, setOrderInfo] = useState(null);
 
-  // Достаем авторизованного телеграм-пользователя из localStorage
+  // 3) Подгружаем пользователя
   const storedUser = JSON.parse(localStorage.getItem("dkshop_user") || "null");
   const userId     = storedUser?.id;
 
-  // Предзаполняем поля ФИО и телефона, если пользователь вошел
   useEffect(() => {
     if (storedUser) {
       if (storedUser.phone) {
@@ -46,7 +50,7 @@ export default function Cart() {
     }
   }, [storedUser]);
 
-  // Отправка заказа на бэкенд
+  // 4) Отправка заказа
   const postOrderRequest = async (data) => {
     try {
       const response = await postOrder(data);
@@ -66,7 +70,6 @@ export default function Cart() {
 
   const handleSubmit = () => {
     const phoneValid = /^(?:\+7|8)(?: ?\d){10}$/.test(phone);
-
     if (!name.trim() || !phoneValid) {
       setStatus("❗ Введите корректные ФИО и номер телефона");
       return;
@@ -75,21 +78,15 @@ export default function Cart() {
       setStatus("❗ Ваша корзина пуста");
       return;
     }
-
-    const payload = {
+    postOrderRequest({
       user_id: userId || null,
       name:    name.trim(),
       phone:   phone.trim(),
-      items:   cartItems.map((item) => ({
-        product_id: item.id,
-        quantity:   item.quantity,
-      })),
-    };
-
-    postOrderRequest(payload);
+      items:   cartItems.map((it) => ({ product_id: it.id, quantity: it.quantity })),
+    });
   };
 
-  // Если заказ уже оформлен — показываем страницу с деталями
+  // 5) Если заказ оформлен — показываем детали
   if (orderInfo) {
     return (
       <div className="cart-empty">
@@ -106,7 +103,7 @@ export default function Cart() {
     );
   }
 
-  // Если корзина пуста — показываем заглушку
+  // 6) Если корзина пуста
   if (cartItems.length === 0) {
     return (
       <div className="cart-empty">
@@ -118,10 +115,10 @@ export default function Cart() {
     );
   }
 
-  // Основной рендер корзины
+  // 7) Сам компонент корзины
   return (
     <div className="cart-container">
-      <h2>Корзина</h2>
+      <h2>Корзина ({cartItems.length} позиции)</h2>
 
       <div className="cart-list">
         {cartItems.map((item) => (
@@ -148,7 +145,10 @@ export default function Cart() {
                   }}
                 />
               </div>
-              <button className="btn-remove" onClick={() => removeFromCart(item.id)}>
+              <button
+                className="btn-remove"
+                onClick={() => removeFromCart(item.id)}
+              >
                 Удалить
               </button>
             </div>
@@ -163,17 +163,14 @@ export default function Cart() {
         <p className="cart-total">Итого: {(totalPrice ?? 0).toLocaleString()} ₽</p>
       </div>
 
-      <div style={{ marginTop: 24 }}>
+      <div className="checkout-section">
         <h3>Оформление заказа</h3>
         <input
           type="text"
           placeholder="ФИО"
-          value={name}
-          onChange={(e) => {
-            setName(e.target.value);
-            setStatus("");
-          }}
           className="checkout-input"
+          value={name}
+          onChange={(e) => { setName(e.target.value); setStatus(""); }}
         />
         <input
           type="tel"
@@ -181,23 +178,20 @@ export default function Cart() {
           placeholder="+7 XXX XXX XXXX или 8 XXX XXX XXXX"
           className="checkout-input"
           value={phone}
-          onChange={e => {
-            setPhone(e.target.value);
-            setStatus("");
-          }}
+          onChange={(e) => { setPhone(e.target.value); setStatus(""); }}
           pattern="^(?:\+7|8)(?: ?\d){10}$"
-          title="Номер в формате +7 900 900 9192 или 8 900 900 9192 (допускаются пробелы)"
+          title="Номер в формате +7 900 900 9192 или 8 900 900 9192"
           required
         />
         <div className="cart-buttons">
-          <button className="btn-clear" onClick={() => clearCart()}>
+          <button className="btn-clear" onClick={clearCart}>
             Очистить корзину
           </button>
           <button className="btn-checkout" onClick={handleSubmit}>
             Оформить заказ
           </button>
         </div>
-        {status && <p style={{ marginTop: 12 }}>{status}</p>}
+        {status && <p className="cart-status">{status}</p>}
       </div>
     </div>
   );

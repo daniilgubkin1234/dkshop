@@ -16,7 +16,11 @@ import requests
 from dotenv import load_dotenv, find_dotenv
 
 # ────────────────────────── Загрузка .env ──────────────────────────
-load_dotenv(find_dotenv())
+# vk_import.py находится в backend/app, поэтому .env.production — в той же папке
+env_path = Path(__file__).resolve().parent / ".env.production"
+
+# загружаем именно его, перезаписывая любые ранее установленные переменные
+load_dotenv(dotenv_path=env_path, override=True)
 
 VK_TOKEN    = os.getenv("VK_TOKEN")
 BACKEND_URL = os.getenv("BACKEND_URL", "https://dkshopbot.ru/api/products")
