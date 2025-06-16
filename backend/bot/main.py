@@ -142,7 +142,7 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
                 )
                 return
 
-    # 2) Общий поиск по товарам
+     # 2) Общий поиск по товарам
     try:
         async with aiohttp.ClientSession(timeout=HTTP_TIMEOUT) as sess:
             async with sess.get(f"{API_URL}/products", params={"q": query}) as resp:
@@ -152,12 +152,33 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
         logging.exception("API request failed [general search]")
         await update.message.reply_text("Сервис временно недоступен, попробуйте позже 🙏")
         return
+
+    # если API q=… не вернул ничего — подгружаем все товары и ищем точное совпадение в name
+    if not products:
+        try:
+            async with aiohttp.ClientSession(timeout=HTTP_TIMEOUT) as sess:
+                async with sess.get(f"{API_URL}/products") as resp_all:
+                    resp_all.raise_for_status()
+                    all_products = await resp_all.json()
+            name_matches = [
+                p for p in all_products
+                if query.lower() in p["name"].lower()
+            ]
+            if name_matches:
+                txt, kb = build_product_message(name_matches[0])
+                await update.message.reply_text(txt, reply_markup=kb)
+                return
+        except Exception:
+            logging.exception("API request failed [fallback name search]")
+
+    # если хоть что-то из API q вернулось — применяем fuzzy-логику
     if products:
-        # Сортируем и показываем топ-товар
         scored = []
         for p in products[:5]:
-            score = fuzzy(query, p["name"]) * 0.7 + \
-                    (len(tokens(query) & tokens(p["name"])) / max(len(tokens(p["name"])),1)) * 0.3
+            score = (
+                fuzzy(query, p["name"]) * 0.7 +
+                (len(tokens(query) & tokens(p["name"])) / max(len(tokens(p["name"])), 1)) * 0.3
+            )
             scored.append((score, p))
         scored.sort(key=lambda x: x[0], reverse=True)
         best_score, best_prod = scored[0]
@@ -166,9 +187,13 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
             await update.message.reply_text(txt, reply_markup=kb)
             return
         if best_score >= 0.4:
-            buttons = [InlineKeyboardButton(p["name"], web_app=WebAppInfo(
-                url=f"{FRONT_URL.rstrip('/')}/product/{p['id']}"
-            )) for _, p in scored[:3]]
+            buttons = [
+                InlineKeyboardButton(
+                    p["name"],
+                    web_app=WebAppInfo(url=f"{FRONT_URL.rstrip('/')}/product/{p['id']}")
+                )
+                for _, p in scored[:3]
+            ]
             await update.message.reply_text(
                 "Нашёл несколько подходящих товаров, уточните, пожалуйста:",
                 reply_markup=InlineKeyboardMarkup([buttons])
