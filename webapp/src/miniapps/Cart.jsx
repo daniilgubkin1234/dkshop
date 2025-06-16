@@ -118,7 +118,7 @@ export default function Cart() {
   // 7) Сам компонент корзины
   return (
     <div className="cart-container">
-      <h2>Корзина ({cartItems.length} позиции)</h2>
+      <h2>Корзина</h2>
 
       <div className="cart-list">
         {cartItems.map((item) => (
