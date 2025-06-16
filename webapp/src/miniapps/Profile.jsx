@@ -1,28 +1,28 @@
-// webapp/src/miniapps/Profile.jsx
-
 import React, { useEffect, useState } from 'react';
 import { API_URL } from '../api.js';
+import './Profile.css';
 
 export default function Profile() {
   const [orders, setOrders] = useState([]);
-  const user = JSON.parse(localStorage.getItem('dkshop_user') || '{}');
+  const [user, setUser]     = useState(() => {
+    const raw = localStorage.getItem('dkshop_user');
+    return raw ? JSON.parse(raw) : {};
+  });
 
+  // Показать «назад» в Telegram и загрузить заказы
   useEffect(() => {
-    // Инициализируем Telegram WebApp, показываем кнопку «Назад»
     if (window.TelegramWebApp) {
       window.TelegramWebApp.ready();
       window.TelegramWebApp.BackButton.show();
     }
 
-    // Запрашиваем заказы по Telegram-ID
     if (user.id) {
       fetch(`${API_URL}/orders/by-user?user_id=${user.id}`)
-        .then(res => res.ok ? res.json() : Promise.resolve([]))
+        .then(r => (r.ok ? r.json() : []))
         .then(setOrders)
         .catch(console.error);
     }
 
-    // При размонтировании скрываем кнопку «Назад»
     return () => {
       if (window.TelegramWebApp) {
         window.TelegramWebApp.BackButton.hide();
@@ -30,27 +30,37 @@ export default function Profile() {
     };
   }, [user.id]);
 
-  return (
-    <div style={{ padding: 16, color: '#fff' }}>
-      <h1>Личный кабинет</h1>
+  const handleLogout = () => {
+    localStorage.removeItem('dkshop_user');
+    window.location.reload();
+  };
 
-      <section style={{ marginBottom: 24 }}>
-        <h2>Моя информация</h2>
-        <p><strong>ID:</strong> {user.id}</p>
-        {user.first_name && <p><strong>Имя:</strong> {user.first_name}</p>}
-        {user.last_name  && <p><strong>Фамилия:</strong> {user.last_name}</p>}
-        {user.username   && <p><strong>Username:</strong> @{user.username}</p>}
-        {user.phone      && <p><strong>Телефон:</strong> {user.phone}</p>}
+  return (
+    <div className="profile-container">
+      <h1 className="profile-title">Личный кабинет</h1>
+
+      <section className="profile-card">
+        <h2 className="section-title">Моя информация</h2>
+        <div className="profile-info">
+          <div><span className="label">ID:</span> {user.id}</div>
+          {user.first_name && <div><span className="label">Имя:</span> {user.first_name}</div>}
+          {user.last_name  && <div><span className="label">Фамилия:</span> {user.last_name}</div>}
+          {user.username   && <div><span className="label">Username:</span> @{user.username}</div>}
+          {user.phone      && <div><span className="label">Телефон:</span> {user.phone}</div>}
+        </div>
+        <button className="btn-logout" onClick={handleLogout}>
+          Выйти
+        </button>
       </section>
 
-      <section>
-        <h2>Мои заказы</h2>
+      <section className="profile-card">
+        <h2 className="section-title">Мои заказы</h2>
         {orders.length === 0 ? (
-          <p>У вас пока нет заказов.</p>
+          <p className="empty-text">У вас пока нет заказов.</p>
         ) : (
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <table className="orders-table">
             <thead>
-              <tr style={{ textAlign: 'left', borderBottom: '1px solid #444' }}>
+              <tr>
                 <th>ID</th>
                 <th>Статус</th>
                 <th>Дата</th>
@@ -59,11 +69,11 @@ export default function Profile() {
             </thead>
             <tbody>
               {orders.map(o => (
-                <tr key={o.id} style={{ borderBottom: '1px solid #333' }}>
+                <tr key={o.id}>
                   <td>{o.id}</td>
                   <td>{o.status}</td>
                   <td>{new Date(o.created_at).toLocaleString()}</td>
-                  <td>{o.items?.length ?? '-'}</td>
+                  <td>{o.items?.length ?? 0}</td>
                 </tr>
               ))}
             </tbody>
