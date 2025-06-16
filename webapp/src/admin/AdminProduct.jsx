@@ -176,10 +176,15 @@ export default function AdminProduct() {
       .split(",")
       .map((url) => url.trim())
       .filter(Boolean)
-      .map((url, i) => (
-        <img
-          key={i}
-          src={url}
+      .map((url, i) => {
+             // если в url нет http(s) — делаем его абсолютным
+            const srcUrl = url.startsWith("http")
+              ? url
+              : `https://dkshopbot.ru${url.startsWith("/") ? "" : "/"}${url}`;
+            return (
+              <img
+            key={i}
+            src={srcUrl}
           alt="img"
           onError={(e) => {
             e.target.onerror = null;
@@ -193,7 +198,9 @@ export default function AdminProduct() {
             border: "1px solid #aaa",
           }}
         />
-      ));
+      
+      );
+     })
   }
 
   return (
