@@ -54,6 +54,13 @@ def build_product_message(product: dict) -> tuple[str, InlineKeyboardMarkup]:
     )]])
     return text, kb
 
+# Повторно используемые функции для оценки релевантности
+def fuzzy(a: str, b: str) -> float:
+    return SequenceMatcher(None, a.lower(), b.lower()).ratio()
+
+def tokens(s: str) -> set[str]:
+    return set(re.findall(r"\w+", s.lower()))
+
 async def cmd_start(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text(
         "Доброго времени суток! 👋\nВыберите пункт меню ниже 👇",
@@ -75,7 +82,7 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
 
     if "о компании" in text_lower:
         await update.message.reply_text(
-            "ℹ️ DK PROduct — это ваш надёжный партнёр по запчастям и аксессуарам."
+            "ℹ️ DK PROduct — это ваш надёжный партнёр по запчастям и аксессуарами."
         )
         return
 
@@ -97,14 +104,15 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
         await update.message.reply_text("Напишите, пожалуйста, запрос.")
         return
 
-    # 2) Поиск по модели (например: 2101-07)
+    # 2) Поиск по модели (например: 2101-07) с улучшенной логикой
     model_match = re.search(r"\b\d{4}-\d{2}\b", query)
     if model_match:
+        q = model_match.group(0)
         try:
             async with aiohttp.ClientSession(timeout=HTTP_TIMEOUT) as sess:
                 async with sess.get(
                     f"{API_URL}/products",
-                    params={"q": model_match.group(0)}
+                    params={"q": q}
                 ) as resp:
                     resp.raise_for_status()
                     products = await resp.json()
@@ -114,9 +122,34 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
             return
 
         if products:
-            txt, kb = build_product_message(products[0])
-            await update.message.reply_text(txt, reply_markup=kb)
-            return
+            # Оцениваем кандидатов топ-5 по схожести и токенам
+            candidates = products[:5]
+            scored = []
+            for p in candidates:
+                score = fuzzy(query, p["name"]) * 0.7 + \
+                        (len(tokens(query) & tokens(p["name"])) / max(len(tokens(p["name"])),1)) * 0.3
+                scored.append((score, p))
+            scored.sort(key=lambda x: x[0], reverse=True)
+
+            best_score, best_prod = scored[0]
+            # Если уверенность высокая — сразу показываем
+            if best_score >= 0.6:
+                txt, kb = build_product_message(best_prod)
+                await update.message.reply_text(txt, reply_markup=kb)
+                return
+            # Если средняя — предлагаем уточнить из топ-3
+            if best_score >= 0.4:
+                buttons = [
+                    InlineKeyboardButton(p["name"], web_app=WebAppInfo(
+                        url=f"{FRONT_URL.rstrip('/')}/product/{p['id']}"
+                    ))
+                    for _, p in scored[:3]
+                ]
+                kb = InlineKeyboardMarkup([buttons])
+                await update.message.reply_text(
+                    "Нашёл несколько похожих моделей, уточните, пожалуйста:", reply_markup=kb
+                )
+                return
 
     # 3) Поиск ответа в FAQ: точный → fuzzy → ключевые слова
     all_faqs = []
@@ -136,38 +169,28 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     except Exception:
         logging.exception("FAQ API error")
 
-    # 3.3) Попробуем fuzzy-поиск
-    def fuzzy(a: str, b: str) -> float:
-        return SequenceMatcher(None, a, b).ratio()
-
-    query_lc = query.lower()
+    # 3.3) Попробуем fuzzy-поиск в FAQ
     best_fuzzy, best_ratio = None, 0.0
     for f in all_faqs:
-        r = fuzzy(query_lc, f["question"].lower())
+        r = SequenceMatcher(None, query, f["question"].lower()).ratio()
         if r > best_ratio:
             best_ratio, best_fuzzy = r, f
-
     if best_fuzzy and best_ratio >= 0.65:
         await update.message.reply_text(best_fuzzy["answer"])
         return
 
-    # 3.4) Попробуем совпадение ключевых слов
-    def tokens(s: str) -> set[str]:
-        return set(re.findall(r"\w+", s.lower()))
-
+    # 3.4) Попробуем совпадение ключевых слов в FAQ
     query_toks = tokens(query)
     best_kw, best_count = None, 0
     for f in all_faqs:
-        faq_toks = tokens(f["question"])
-        inter = query_toks & faq_toks
+        inter = query_toks & tokens(f["question"])
         if len(inter) > best_count:
             best_count, best_kw = len(inter), f
-
     if best_kw and best_count >= 2:
         await update.message.reply_text(best_kw["answer"])
         return
 
-    # 4) Общий поиск по товарам
+    # 4) Общий поиск по товарам с улучшенной логикой
     try:
         async with aiohttp.ClientSession(timeout=HTTP_TIMEOUT) as sess:
             async with sess.get(f"{API_URL}/products", params={"q": query}) as resp:
@@ -179,9 +202,31 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
         return
 
     if products:
-        txt, kb = build_product_message(products[0])
-        await update.message.reply_text(txt, reply_markup=kb)
-        return
+        candidates = products[:5]
+        scored = []
+        for p in candidates:
+            score = fuzzy(query, p["name"]) * 0.7 + \
+                    (len(tokens(query) & tokens(p["name"])) / max(len(tokens(p["name"])),1)) * 0.3
+            scored.append((score, p))
+        scored.sort(key=lambda x: x[0], reverse=True)
+
+        best_score, best_prod = scored[0]
+        if best_score >= 0.6:
+            txt, kb = build_product_message(best_prod)
+            await update.message.reply_text(txt, reply_markup=kb)
+            return
+        if best_score >= 0.4:
+            buttons = [
+                InlineKeyboardButton(p["name"], web_app=WebAppInfo(
+                    url=f"{FRONT_URL.rstrip('/')}/product/{p['id']}"
+                ))
+                for _, p in scored[:3]
+            ]
+            kb = InlineKeyboardMarkup([buttons])
+            await update.message.reply_text(
+                "Нашёл несколько подходящих товаров, уточните, пожалуйста:", reply_markup=kb
+            )
+            return
 
     # 5) Ничего не найдено — передаём вопрос менеджеру
     await update.message.reply_text("Передаю вопрос менеджеру 👨‍🔧")
