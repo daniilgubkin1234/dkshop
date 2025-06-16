@@ -29,9 +29,9 @@ export default function AdminProduct() {
     }
     setLoading(true);
     fetch("https://dkshopbot.ru/products", {
-      headers: { Authorization: `Basic ${token}` }
+      headers: { Authorization: `Basic ${token}` },
     })
-      .then(async r => {
+      .then(async (r) => {
         if (r.status === 401) {
           localStorage.removeItem("auth_token");
           navigate("/admin/login");
@@ -181,6 +181,10 @@ export default function AdminProduct() {
           key={i}
           src={url}
           alt="img"
+          onError={(e) => {
+            e.target.onerror = null;
+            e.target.src = "/static/no-image.png";
+          }}
           style={{
             height: 40,
             borderRadius: 4,
@@ -200,39 +204,53 @@ export default function AdminProduct() {
         <input
           placeholder="Название"
           value={newProduct.name}
-          onChange={(e) => setNewProduct((p) => ({ ...p, name: e.target.value }))}
+          onChange={(e) =>
+            setNewProduct((p) => ({ ...p, name: e.target.value }))
+          }
         />
         <input
           placeholder="Цена (₽)"
           type="number"
           value={newProduct.price}
-          onChange={(e) => setNewProduct((p) => ({ ...p, price: e.target.value }))}
+          onChange={(e) =>
+            setNewProduct((p) => ({ ...p, price: e.target.value }))
+          }
         />
         <input
           placeholder="Совместимость (напр. 2101-07)"
           value={newProduct.model_compat}
-          onChange={(e) => setNewProduct((p) => ({ ...p, model_compat: e.target.value }))}
+          onChange={(e) =>
+            setNewProduct((p) => ({ ...p, model_compat: e.target.value }))
+          }
         />
         <input
           placeholder="Тип (напр. глушитель)"
           value={newProduct.type}
-          onChange={(e) => setNewProduct((p) => ({ ...p, type: e.target.value }))}
+          onChange={(e) =>
+            setNewProduct((p) => ({ ...p, type: e.target.value }))
+          }
         />
         <input
           placeholder="Остаток"
           type="number"
           value={newProduct.stock}
-          onChange={(e) => setNewProduct((p) => ({ ...p, stock: e.target.value }))}
+          onChange={(e) =>
+            setNewProduct((p) => ({ ...p, stock: e.target.value }))
+          }
         />
         <input
           placeholder="URL картинок (через запятую)"
           value={newProduct.images}
-          onChange={(e) => setNewProduct((p) => ({ ...p, images: e.target.value }))}
+          onChange={(e) =>
+            setNewProduct((p) => ({ ...p, images: e.target.value }))
+          }
         />
         <input
           placeholder="Описание"
           value={newProduct.description}
-          onChange={(e) => setNewProduct((p) => ({ ...p, description: e.target.value }))}
+          onChange={(e) =>
+            setNewProduct((p) => ({ ...p, description: e.target.value }))
+          }
         />
         <input
           type="file"
@@ -243,11 +261,13 @@ export default function AdminProduct() {
         />
         <button onClick={handleAdd}>Добавить товар</button>
       </div>
+
       {newProduct.images && (
         <div style={{ display: "flex", gap: 8, margin: "8px 0" }}>
           {renderImages(newProduct.images)}
         </div>
       )}
+
       {loading ? (
         <p>Загрузка товаров…</p>
       ) : (
@@ -268,12 +288,16 @@ export default function AdminProduct() {
             {products.map((p) =>
               editId === p.id ? (
                 <tr key={p.id}>
+                  {/* Режим редактирования */}
                   <td>{p.id}</td>
                   <td>
                     <input
                       value={editProduct.name}
                       onChange={(e) =>
-                        setEditProduct((v) => ({ ...v, name: e.target.value }))
+                        setEditProduct((v) => ({
+                          ...v,
+                          name: e.target.value,
+                        }))
                       }
                     />
                   </td>
@@ -282,7 +306,10 @@ export default function AdminProduct() {
                       value={editProduct.price}
                       type="number"
                       onChange={(e) =>
-                        setEditProduct((v) => ({ ...v, price: e.target.value }))
+                        setEditProduct((v) => ({
+                          ...v,
+                          price: e.target.value,
+                        }))
                       }
                     />
                   </td>
@@ -301,7 +328,10 @@ export default function AdminProduct() {
                     <input
                       value={editProduct.type}
                       onChange={(e) =>
-                        setEditProduct((v) => ({ ...v, type: e.target.value }))
+                        setEditProduct((v) => ({
+                          ...v,
+                          type: e.target.value,
+                        }))
                       }
                     />
                   </td>
@@ -310,7 +340,10 @@ export default function AdminProduct() {
                       value={editProduct.stock}
                       type="number"
                       onChange={(e) =>
-                        setEditProduct((v) => ({ ...v, stock: e.target.value }))
+                        setEditProduct((v) => ({
+                          ...v,
+                          stock: e.target.value,
+                        }))
                       }
                     />
                   </td>
@@ -332,7 +365,13 @@ export default function AdminProduct() {
                       style={{ marginTop: 6 }}
                     />
                     {editProduct.images && (
-                      <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          gap: 8,
+                          marginTop: 6,
+                        }}
+                      >
                         {renderImages(editProduct.images)}
                       </div>
                     )}
@@ -349,6 +388,7 @@ export default function AdminProduct() {
                 </tr>
               ) : (
                 <tr key={p.id}>
+                  {/* Обычный режим отображения */}
                   <td>{p.id}</td>
                   <td>{p.name}</td>
                   <td>{p.price}</td>
@@ -357,11 +397,17 @@ export default function AdminProduct() {
                   <td>{p.stock}</td>
                   <td>
                     {p.images && p.images.length > 0
-                      ? renderImages((Array.isArray(p.images) ? p.images : [p.images]).join(","))
+                      ? renderImages(
+                          (Array.isArray(p.images) ? p.images : [p.images]).join(
+                            ","
+                          )
+                        )
                       : ""}
                   </td>
-                  <td>
-                    <button onClick={() => handleEdit(p)}>Редактировать</button>
+                  <td>                    
+                    <button onClick={() => handleEdit(p)}>
+                      Редактировать
+                    </button>
                     <button
                       style={{ background: "#e53935", color: "#fff" }}
                       onClick={() => handleDelete(p.id)}
