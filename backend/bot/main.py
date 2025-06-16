@@ -235,7 +235,7 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     except Exception:
         logging.exception("Failed to send question to manager API")
 
-async def main() -> None:
+def main() -> None:
     app = (
         ApplicationBuilder()
         .token(BOT_TOKEN)
@@ -248,5 +248,4 @@ async def main() -> None:
     app.run_polling(allowed_updates=["message"] )
 
 if __name__ == "__main__":
-    import asyncio
-    asyncio.run(main())
+    main()
