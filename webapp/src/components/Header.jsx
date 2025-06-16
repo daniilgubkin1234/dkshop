@@ -10,6 +10,7 @@ const Header = ({ onSearch }) => {
   const [infoTitle, setInfoTitle] = useState('');
   const [infoContent, setInfoContent] = useState('');
   const navigate = useNavigate();
+  const isAdmin = localStorage.getItem("auth_token") !== null;
 
   // проверяем, есть ли в localStorage проверенный телеграм-пользователь
   const user = JSON.parse(localStorage.getItem('dkshop_user') || 'null');
@@ -202,7 +203,17 @@ const Header = ({ onSearch }) => {
 
             {/* Убрать регистрацию, логин, ЛК */}
             {/* Админ-панель */}
-            
+            {isAdmin && (
+              <li>
+                <Link
+                  to="/admin/orders"
+                  className="admin-link"
+                  onClick={toggleSidebar}
+                >
+                  🛠 Панель администратора
+                </Link>
+              </li>
+            )}
           </ul>
         </nav>
       </aside>
