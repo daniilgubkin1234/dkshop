@@ -30,10 +30,7 @@ export default function Profile() {
     };
   }, [user.id]);
 
-  const handleLogout = () => {
-    localStorage.removeItem('dkshop_user');
-    window.location.reload();
-  };
+  
 
   return (
     <div className="profile-container">
@@ -48,9 +45,7 @@ export default function Profile() {
           {user.username   && <div><span className="label">Username:</span> @{user.username}</div>}
           {user.phone      && <div><span className="label">Телефон:</span> {user.phone}</div>}
         </div>
-        <button className="btn-logout" onClick={handleLogout}>
-          Выйти
-        </button>
+        
       </section>
 
       <section className="profile-card">
