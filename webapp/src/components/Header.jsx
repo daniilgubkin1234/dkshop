@@ -210,7 +210,7 @@ const Header = ({ onSearch }) => {
                   className="admin-link"
                   onClick={toggleSidebar}
                 >
-                  🛠 Панель администратора
+                   Панель администратора
                 </Link>
               </li>
             )}
