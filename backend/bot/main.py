@@ -4,6 +4,7 @@ import os
 import re
 import logging
 import aiohttp
+from difflib import SequenceMatcher
 
 from telegram import (
     Update,
@@ -29,15 +30,15 @@ logging.basicConfig(
 )
 
 # ─── Переменные окружения ───
-BOT_TOKEN   = os.getenv("BOT_TOKEN")
-API_URL     = os.getenv("API_URL")     # Например https://dkshopbot.ru/api
-FRONT_URL   = os.getenv("FRONT_URL")   # Например https://dkshopbot.ru
+BOT_TOKEN    = os.getenv("BOT_TOKEN")
+API_URL      = os.getenv("API_URL")     # Например https://dkshopbot.ru/api
+FRONT_URL    = os.getenv("FRONT_URL")   # Например https://dkshopbot.ru
 HTTP_TIMEOUT = aiohttp.ClientTimeout(total=10)
 
 # ─── Постоянное меню (persistent keyboard) ───
 MAIN_MENU = ReplyKeyboardMarkup(
     keyboard=[
-        ["🛍 Открыть магазин",],
+        ["🛍 Открыть магазин"],
         ["ℹ️ О компании", "📣 Группа Вконтакте"],
         ["🙋‍♂️ Пригласить друга"]
     ],
@@ -45,23 +46,20 @@ MAIN_MENU = ReplyKeyboardMarkup(
     one_time_keyboard=False
 )
 
-# ─── Помощник: формирует сообщение и кнопку для одного товара ───
 def build_product_message(product: dict) -> tuple[str, InlineKeyboardMarkup]:
     url  = f"{FRONT_URL.rstrip('/')}/product/{product['id']}"
     text = f"<b>{product['name']}</b>\nЦена: <b>{product['price']} ₽</b>"
-    kb   = InlineKeyboardMarkup([[
-        InlineKeyboardButton("Открыть карточку", web_app=WebAppInfo(url=url))
-    ]])
+    kb   = InlineKeyboardMarkup([[InlineKeyboardButton(
+        "Открыть карточку", web_app=WebAppInfo(url=url)
+    )]])
     return text, kb
 
-# ─── /start: просто выводим MAIN_MENU ───
 async def cmd_start(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text(
         "Доброго времени суток! 👋\nВыберите пункт меню ниже 👇",
         reply_markup=MAIN_MENU
     )
 
-# ─── Обработка любого текста ───
 async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     text_lower = update.message.text.strip().lower()
 
@@ -69,26 +67,21 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     if "открыть магазин" in text_lower:
         await update.message.reply_text(
             "🚀 Перейдите в магазин:",
-            reply_markup=InlineKeyboardMarkup([[
-                InlineKeyboardButton("🛍Открыть магазин", web_app=WebAppInfo(url=FRONT_URL))
-            ]])
+            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton(
+                "🛍Открыть магазин", web_app=WebAppInfo(url=FRONT_URL)
+            )]])
         )
         return
-
 
     if "о компании" in text_lower:
         await update.message.reply_text(
-            "ℹ️ DK PROduct — это ваш надёжный партнёр по запчастям и аксессуарам.",
-            
+            "ℹ️ DK PROduct — это ваш надёжный партнёр по запчастям и аксессуарам."
         )
         return
 
-
-
     if "группа вконтакте" in text_lower:
         await update.message.reply_text(
-            "📣 Наша группа: https://vk.com/dk_pro_tuning?from=groups",
-            
+            "📣 Наша группа: https://vk.com/dk_pro_tuning?from=groups"
         )
         return
 
@@ -125,18 +118,54 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
             await update.message.reply_text(txt, reply_markup=kb)
             return
 
-    # 3) Прямой запрос к FAQ
+    # 3) Поиск ответа в FAQ: точный → fuzzy → ключевые слова
+    all_faqs = []
     try:
         async with aiohttp.ClientSession(timeout=HTTP_TIMEOUT) as sess:
+            # 3.1) Точный поиск
             async with sess.get(f"{API_URL}/faq", params={"q": query}) as resp:
                 resp.raise_for_status()
                 faqs = await resp.json()
                 if faqs:
-                    # Просто выводим ответ из FAQ
                     await update.message.reply_text(faqs[0]["answer"])
                     return
+            # 3.2) Фоллбэк: загрузим все FAQ
+            async with sess.get(f"{API_URL}/faq") as resp_all:
+                resp_all.raise_for_status()
+                all_faqs = await resp_all.json()
     except Exception:
-        logging.warning("FAQ API not responding")
+        logging.exception("FAQ API error")
+
+    # 3.3) Попробуем fuzzy-поиск
+    def fuzzy(a: str, b: str) -> float:
+        return SequenceMatcher(None, a, b).ratio()
+
+    query_lc = query.lower()
+    best_fuzzy, best_ratio = None, 0.0
+    for f in all_faqs:
+        r = fuzzy(query_lc, f["question"].lower())
+        if r > best_ratio:
+            best_ratio, best_fuzzy = r, f
+
+    if best_fuzzy and best_ratio >= 0.65:
+        await update.message.reply_text(best_fuzzy["answer"])
+        return
+
+    # 3.4) Попробуем совпадение ключевых слов
+    def tokens(s: str) -> set[str]:
+        return set(re.findall(r"\w+", s.lower()))
+
+    query_toks = tokens(query)
+    best_kw, best_count = None, 0
+    for f in all_faqs:
+        faq_toks = tokens(f["question"])
+        inter = query_toks & faq_toks
+        if len(inter) > best_count:
+            best_count, best_kw = len(inter), f
+
+    if best_kw and best_count >= 2:
+        await update.message.reply_text(best_kw["answer"])
+        return
 
     # 4) Общий поиск по товарам
     try:
@@ -163,7 +192,6 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
         logging.exception("Failed to send question to manager API")
 
 
-# ─── Точка входа ───
 def main() -> None:
     app = (
         ApplicationBuilder()
