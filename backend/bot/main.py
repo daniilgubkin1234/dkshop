@@ -202,22 +202,24 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     except Exception:
         logging.exception("API request failed [type search]")
 
-    # 4) FAQ — не менялся
-    faqs = []
+        faqs = []
     try:
         async with aiohttp.ClientSession(timeout=HTTP_TIMEOUT) as sess:
+            # 1. Пробуем точный поиск по API
             async with sess.get(f"{API_URL}/faq", params={"q": query}) as resp:
                 resp.raise_for_status()
                 faqs = await resp.json()
                 if faqs:
                     await update.message.reply_text(faqs[0]["answer"])
                     return
+            # 2. Если не нашли — загружаем все FAQ
             async with sess.get(f"{API_URL}/faq") as resp:
                 resp.raise_for_status()
                 faqs = await resp.json()
     except Exception:
         logging.exception("FAQ API error")
 
+    # 3. Сначала поиск по SequenceMatcher
     best_faq, best_ratio = None, 0.0
     for f in faqs:
         r = SequenceMatcher(None, query.lower(), f["question"].lower()).ratio()
@@ -227,7 +229,37 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
         await update.message.reply_text(best_faq["answer"])
         return
 
-    # 5) Эскалация менеджеру
+    # 4. Далее — ключевые слова (>=2)
+    def keywords(s): return set(re.findall(r"[a-zа-яё0-9\\-]+", s.lower()))
+    query_words = keywords(query)
+    faq_matches = []
+    for idx, f in enumerate(faqs):
+        faq_words = keywords(f["question"])
+        inter = query_words & faq_words
+        if len(inter) >= 2:
+            faq_matches.append((len(inter), idx, f))
+
+    # Если найдено хотя бы 1 хороший match — предлагаем лучший или варианты
+    if faq_matches:
+        faq_matches.sort(reverse=True)  # по количеству совпадений
+        if len(faq_matches) == 1:
+            await update.message.reply_text(faq_matches[0][2]["answer"])
+            return
+        # Если есть несколько — вывести топ-3 кнопками
+        buttons = [
+            InlineKeyboardButton(
+                f[2]["question"],
+                callback_data=f'faq_{f[1]}'
+            )
+            for f in faq_matches[:3]
+        ]
+        await update.message.reply_text(
+            "Я нашёл несколько возможных ответов на ваш вопрос. Уточните, что вы имели в виду:",
+            reply_markup=InlineKeyboardMarkup([[btn] for btn in buttons])
+        )
+        return
+
+    # 5. Если ничего не нашли — эскалация менеджеру
     await update.message.reply_text("Передаю вопрос менеджеру 👨‍🔧")
     try:
         async with aiohttp.ClientSession(timeout=HTTP_TIMEOUT) as sess:
