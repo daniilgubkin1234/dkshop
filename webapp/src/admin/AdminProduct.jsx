@@ -20,7 +20,14 @@ export default function AdminProduct() {
   const [editId, setEditId] = useState(null);
   const [editProduct, setEditProduct] = useState(emptyProduct);
   const navigate = useNavigate();
+  const [modelCards, setModelCards] = useState([]);
 
+useEffect(() => {
+  fetch("/model_cards")
+    .then((r) => (r.ok ? r.json() : []))
+    .then(setModelCards)
+    .catch(() => setModelCards([]));
+}, []);
   const loadProducts = () => {
     const token = localStorage.getItem("auth_token");
     if (!token) {
@@ -223,6 +230,30 @@ export default function AdminProduct() {
             setNewProduct((p) => ({ ...p, price: e.target.value }))
           }
         />
+        <select
+  value=""
+  onChange={e => {
+    const val = e.target.value;
+    if (val) {
+      setNewProduct(p => ({
+        ...p,
+        model_compat: p.model_compat
+          ? p.model_compat + ", " + val
+          : val
+      }));
+    }
+  }}
+  style={{ minWidth: 180 }}
+>
+  <option value="">— выбрать модель —</option>
+  {modelCards.map(card =>
+    card.models.map(model => (
+      <option key={card.label + model} value={model}>
+        {card.label}: {model}
+      </option>
+    ))
+  )}
+</select>
         <input
           placeholder="Совместимость (напр. 2101-07)"
           value={newProduct.model_compat}
