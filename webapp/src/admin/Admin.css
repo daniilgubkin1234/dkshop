@@ -236,6 +236,74 @@
   margin-bottom: 0;
 }
 
+.admin-products .product-add-row select {
+  flex: 1 0 180px;
+  min-width: 140px;
+  background: #23242c;
+  color: #fff;
+  border: 1px solid #454575;
+  border-radius: 4px;
+  padding: 7px;
+  font-size: 14px;
+  margin-bottom: 0;
+  outline: none;
+  transition: border 0.2s;
+}
+
+.admin-products .product-add-row select:focus {
+  border-color: #1a73e8;
+}
+
+.admin-products .product-add-row option {
+  background: #23242c;
+  color: #fff;
+}
+
+
+
+.product-multiselect {
+  background: #23242c;
+  color: #fff;
+  border: 1.5px solid #454575;
+  border-radius: 4px;
+  padding: 7px;
+  font-size: 15px;
+  min-width: 140px;
+  outline: none;
+  transition: border 0.2s;
+  margin-bottom: 0;
+  box-shadow: 0 2px 12px #23275214;
+  scrollbar-color: #454575 #23242c; /* для Firefox */
+}
+
+.product-multiselect:focus {
+  border-color: #1a73e8;
+}
+
+.product-multiselect option {
+  background: #23242c;
+  color: #fff;
+  padding: 8px 6px;
+  border-radius: 2px;
+}
+
+/* При выделении — синий фон */
+.product-multiselect option:checked,
+.product-multiselect option[selected] {
+  background: #1a73e8 !important;
+  color: #fff !important;
+}
+
+/* Кастомный скроллбар для Chrome */
+.product-multiselect::-webkit-scrollbar {
+  width: 10px;
+  background: #23242c;
+}
+.product-multiselect::-webkit-scrollbar-thumb {
+  background: #454575;
+  border-radius: 7px;
+}
+
 .admin-products .product-add-row button {
   background: #1a73e8;
   color: #fff;
