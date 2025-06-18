@@ -4,6 +4,7 @@ import re
 import logging
 import aiohttp
 from difflib import SequenceMatcher
+from typing import Dict
 
 from telegram import (
     Update,
@@ -17,25 +18,25 @@ from telegram.ext import (
     ApplicationBuilder,
     CommandHandler,
     MessageHandler,
-    CallbackQueryHandler,      # ⬅️ добавили
+    CallbackQueryHandler,
     filters,
     Defaults,
     ContextTypes,
 )
 
-# ─── Настройка логирования ───────────────────────────────────────
+# ─── ЛОГИРОВАНИЕ ─────────────────────────────────────────────────
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     level=logging.INFO,
 )
 
-# ─── Переменные окружения ────────────────────────────────────────
+# ─── ENV ────────────────────────────────────────────────────────
 BOT_TOKEN    = os.getenv("BOT_TOKEN")
 API_URL      = os.getenv("API_URL")     # https://dkshopbot.ru/api
 FRONT_URL    = os.getenv("FRONT_URL")   # https://dkshopbot.ru
 HTTP_TIMEOUT = aiohttp.ClientTimeout(total=10)
 
-# ─── Постоянное меню (Reply Keyboard) ────────────────────────────
+# ─── Меню ───────────────────────────────────────────────────────
 MAIN_MENU = ReplyKeyboardMarkup(
     keyboard=[
         ["🛍 Открыть магазин"],
@@ -46,7 +47,7 @@ MAIN_MENU = ReplyKeyboardMarkup(
     one_time_keyboard=False,
 )
 
-# ─── INTENT_PATTERNS (ваш список) ────────────────────────────────
+# ─── INTENT_PATTERNS ────────────────────────────────────────────
 INTENT_PATTERNS = {
     "PRODUCT": [
         r"\b\d{4}-\d{2}\b",
@@ -57,44 +58,64 @@ INTENT_PATTERNS = {
         r"^(как|почему|когда|можно ли|что делать)\b",
         r"\b(гаранти[яию]|доставка|возврат|оплата)\b",
         r"\b(компани[яиюй]|транспортные|транспортной|траснпортными|отличие|какого)\b",
-        r"\b(какого|зачем|изготавливаете ли|сколько|оплата|могу ли|состыковывается|состыкуется|как звучит зрб|какзвучит zrb|как звучит|комфорт|спорт как звучит|как звучит спорт)\b",
+        r"\b(какого|зачем|изготавливаете ли|сколько|оплата|могу ли|состыковывается|состыкуется|"
+        r"как звучит зрб|как звучит zrb|как звучит|комфорт|спорт как звучит|как звучит спорт)\b",
         r"\b(комфорт как звучит|как звучит комфорт|для чего |входят ли)\b",
+        r"\b(какой звук зрб|зрб какой звук|какой звук комфорт|комфорт какой звук)\b",
+        r"\b(какой звук спорт|спорт какой звук|какой звук sport|comfort какой звук)\b",
+        r"\b(как звучит sport|как звучит comfort|sport какой звук)\b",
     ],
 }
 
-# ─── Вспомогательные функции ─────────────────────────────────────
+# ─── Алиасы и транслит ──────────────────────────────────────────
+ALIASES: Dict[str, str] = {                 # ★ NEW
+}
+
+TRANSLIT = str.maketrans("zrb", "зрб")      # ★ NEW
+
+
+def normalize_kir_lat(s: str) -> str:       # ★ NEW
+    """zrb → зрб, g→г и т.п. (добавляйте по мере надобности)"""
+    return s.translate(TRANSLIT)
+
+
+def apply_aliases(q: str) -> str:           # ★ NEW
+   
+    return q
+
+
+# ─── Вспомогательные функции ────────────────────────────────────
 def fuzzy(a: str, b: str) -> float:
-    """SequenceMatcher 0…1"""
     return SequenceMatcher(None, a.lower(), b.lower()).ratio()
 
+
 def tokens(s: str) -> set[str]:
-    return set(re.findall(r"\w+", s.lower()))
+    s = normalize_kir_lat(s.lower())        # ★ MOD
+    return set(re.findall(r"\w+", s))
+
 
 def detect_intent(text: str) -> tuple[str, float]:
-    """
-    Простая эвристическая классификация:
-    возвращает (PRODUCT | FAQ, confidence 0…1)
-    """
     text = text.lower()
     scores = {"PRODUCT": 0, "FAQ": 0}
     for intent, pats in INTENT_PATTERNS.items():
         for p in pats:
             if re.search(p, text):
                 scores[intent] += 1
-    # цифры-модель = сильный сигнал «товар»
     if re.search(r"\d{4}-\d{2}", text):
         scores["PRODUCT"] += 2
     total = sum(scores.values()) or 1
     intent = max(scores, key=scores.get)
     return intent, scores[intent] / total
 
+
 def build_product_message(product: dict) -> tuple[str, InlineKeyboardMarkup]:
     url  = f"{FRONT_URL.rstrip('/')}/product/{product['id']}"
     text = f"<b>{product['name']}</b>\nЦена: <b>{product['price']} ₽</b>"
-    kb   = InlineKeyboardMarkup([[InlineKeyboardButton(
-        "Открыть карточку", web_app=WebAppInfo(url=url)
-    )]])
+    kb   = InlineKeyboardMarkup(
+        [[InlineKeyboardButton("Открыть карточку", web_app=WebAppInfo(url=url))]]
+    )
     return text, kb
+
 
 # ─── /start ──────────────────────────────────────────────────────
 async def cmd_start(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
@@ -103,7 +124,8 @@ async def cmd_start(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
         reply_markup=MAIN_MENU,
     )
 
-# ─── Callback: уточняем, что хотел пользователь ─────────────────
+
+# ─── Callback: уточняем намерение ────────────────────────────────
 async def cb_intent(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     data = update.callback_query.data
     await update.callback_query.answer()
@@ -118,13 +140,14 @@ async def cb_intent(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
             "Хорошо, слушаю ваш вопрос!"
         )
 
+
 # ─── Основной обработчик текста ─────────────────────────────────
 async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     text = update.message.text or ""
     query = text.strip()
     text_lower = query.lower()
 
-    # ---------- Меню ----------
+    # ---------- меню ----------
     if "открыть магазин" in text_lower:
         await update.message.reply_text(
             "🚀 Перейдите в магазин:",
@@ -135,9 +158,7 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
         )
         return
     if "о компании" in text_lower:
-        await update.message.reply_text(
-            "ℹ️ DK PROduct — ваш надёжный партнёр по запчастям."
-        )
+        await update.message.reply_text("ℹ️ DK PROduct — ваш надёжный партнёр.")
         return
     if "группа вконтакте" in text_lower:
         await update.message.reply_text(
@@ -150,41 +171,33 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
         )
         return
 
-    # ---------- Пустой запрос ----------
     if not query:
         await update.message.reply_text("Напишите, пожалуйста, запрос.")
         return
 
-    # ---------- Определяем INTENT ----------
+    # ---------- INTENT ----------
     forced = ctx.user_data.get("forced_intent")
-    if forced:
-        intent, conf = forced, 1.0
-    else:
-        intent, conf = detect_intent(query)
+    intent, conf = (forced, 1.0) if forced else detect_intent(query)
 
-    # если бот не уверен (<0.6) — спрашиваем прямо
     if conf < 0.6 and not forced:
         kb = InlineKeyboardMarkup([[
             InlineKeyboardButton("🔍 Ищу товар", callback_data="INTENT_PRODUCT"),
             InlineKeyboardButton("❓ Вопрос",     callback_data="INTENT_FAQ"),
         ]])
-        await update.message.reply_text(
-            "Что именно нужно найти?", reply_markup=kb
-        )
+        await update.message.reply_text("Что именно нужно найти?", reply_markup=kb)
         return
 
-    # ------------------------------------------------------------------
-    # ------------------------   ПОИСК ТОВАРА   ------------------------
-    # ------------------------------------------------------------------
+    # ==============================================================
+    #                       PRODUCT SEARCH
+    # ==============================================================
     if intent == "PRODUCT":
-        # 1) Поиск по модели 2101-07
+        # 1) модель «2101-07»
         model_match = re.search(r"\b\d{4}-\d{2}\b", text_lower)
         if model_match:
             try:
                 async with aiohttp.ClientSession(timeout=HTTP_TIMEOUT) as sess:
                     async with sess.get(
-                        f"{API_URL}/products",
-                        params={"q": model_match.group(0)},
+                        f"{API_URL}/products", params={"q": model_match.group(0)}
                     ) as resp:
                         resp.raise_for_status()
                         products = await resp.json()
@@ -194,9 +207,7 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
                     "Сервис временно недоступен, попробуйте позже 🙏"
                 )
                 return
-
             if products:
-                # Сортируем по fuzzy
                 scored = [
                     (
                         fuzzy(query, p["name"]) * 0.7 +
@@ -225,11 +236,10 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
                     )
                     return
 
-        # 2) Общий поиск /products?q=
+        # 2) общий поиск
         try:
             async with aiohttp.ClientSession(timeout=HTTP_TIMEOUT) as sess:
-                async with sess.get(f"{API_URL}/products",
-                                    params={"q": query}) as resp:
+                async with sess.get(f"{API_URL}/products", params={"q": query}) as resp:
                     resp.raise_for_status()
                     products = await resp.json()
         except Exception:
@@ -239,7 +249,7 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
             )
             return
 
-        # fallback — загружаем всё
+        # 3) fallback — загружаем всё
         if not products:
             try:
                 async with aiohttp.ClientSession(timeout=HTTP_TIMEOUT) as sess:
@@ -250,6 +260,7 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
                 logging.exception("API request failed [all]")
                 products = []
 
+        # 4) сортируем fuzzy
         if products:
             scored = []
             for p in products:
@@ -261,6 +272,7 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
                 scored.append((score, p))
             scored.sort(key=lambda x: x[0], reverse=True)
             best_score, best_prod = scored[0]
+
             if best_score >= 0.6:
                 txt, kb = build_product_message(best_prod)
                 await update.message.reply_text(txt, reply_markup=kb)
@@ -278,24 +290,36 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
                 )
                 return
 
+        # 5) доп-поиск по type  (если alias заменил слово «паук» на «коллектор») ★ NEW
+        try:
+            async with aiohttp.ClientSession(timeout=HTTP_TIMEOUT) as sess:
+                async with sess.get(f"{API_URL}/products") as resp_all:
+                    resp_all.raise_for_status()
+                    all_products = await resp_all.json()
+            type_matches = [p for p in all_products
+                            if query.lower() in (p.get("type", "") or "").lower()]
+            if type_matches:
+                txt, kb = build_product_message(type_matches[0])
+                await update.message.reply_text(txt, reply_markup=kb)
+                return
+        except Exception:
+            logging.exception("API request failed [type search]")
+
         await update.message.reply_text(
             "Не найдено 😔 Попробуйте изменить запрос или уточнить модель."
         )
-        return  # intent=PRODUCT завершается здесь
+        return  # завершили PRODUCT
 
-    # ------------------------------------------------------------------
-    # ------------------------   ПОИСК FAQ   ---------------------------
-    # ------------------------------------------------------------------
+    # ==============================================================
+    #                          FAQ SEARCH
+    # ==============================================================
     if intent == "FAQ":
         faqs = []
         try:
             async with aiohttp.ClientSession(timeout=HTTP_TIMEOUT) as sess:
-                # точное вхождение
-                async with sess.get(f"{API_URL}/faq",
-                                    params={"q": query}) as resp_faq:
-                    resp_faq.raise_for_status()
-                    faqs = await resp_faq.json()
-                # fallback — все
+                async with sess.get(f"{API_URL}/faq", params={"q": query}) as resp:
+                    resp.raise_for_status()
+                    faqs = await resp.json()
                 if not faqs:
                     async with sess.get(f"{API_URL}/faq") as resp_all:
                         resp_all.raise_for_status()
@@ -303,17 +327,15 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
         except Exception:
             logging.exception("FAQ API error")
 
-        # fuzzy + ключевые слова
         best_faq, best_ratio = None, 0.0
         for f in faqs:
-            r = SequenceMatcher(None, query,
-                                f["question"].lower()).ratio()
+            r = SequenceMatcher(None, query, f["question"].lower()).ratio()
             if r > best_ratio:
                 best_ratio, best_faq = r, f
-        if best_faq and best_ratio >= 0.65:
+        if best_faq and best_ratio >= 0.55:        # ★ MOD — 0.55
             await update.message.reply_text(best_faq["answer"])
             return
-        # ключевые слова
+
         query_toks = tokens(query)
         best_kw, best_count = None, 0
         for f in faqs:
@@ -324,17 +346,16 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
             await update.message.reply_text(best_kw["answer"])
             return
 
-        # если даже FAQ не помог
         await update.message.reply_text(
             "Не нашёл ответа 😔 Передаю вопрос менеджеру."
         )
         try:
             async with aiohttp.ClientSession(timeout=HTTP_TIMEOUT) as sess:
-                await sess.post(f"{API_URL}/questions",
-                                json={"question": text})
+                await sess.post(f"{API_URL}/questions", json={"question": text})
         except Exception:
             logging.exception("Failed to send to manager")
         return
+
 
 # ─── main() ──────────────────────────────────────────────────────
 def main() -> None:
@@ -346,11 +367,8 @@ def main() -> None:
     )
 
     app.add_handler(CommandHandler("start", cmd_start))
-    app.add_handler(CallbackQueryHandler(cb_intent,
-                                         pattern=r"^INTENT_"))   # ⬅️
-    app.add_handler(
-        MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text)
-    )
+    app.add_handler(CallbackQueryHandler(cb_intent, pattern=r"^INTENT_"))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
 
     logging.info("Bot started")
     app.run_polling(allowed_updates=["message", "callback_query"])
