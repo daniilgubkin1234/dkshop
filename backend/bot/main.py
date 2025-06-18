@@ -1,27 +1,9 @@
-# bot/main.py
-"""Telegram‑бот DK PROduct  ·  расширенный поиск товара по полному запросу.
-
-Ключевые изменения (v2)
-=======================
-1. **Поиск всегда идёт по _полному_ запросу**.  Модель (формата `0000-00`)   
-   учитывается как обязательный фильтр, но остальные слова тоже влияют на рейтинг.
-2. **Скоринг** = 60 % пересечения токенов + 20 % fuzzy + 20 % «совпала ли модель».  
-   Когда модель присутствует в запросе, товар _должен_ содержать такую же модель, иначе
-   его рейтинг резко падает.
-3. **Уточняющий вопрос** с примером и подсказкой, если найдено ≤ 3 средних
-   совпадения или не найдено точных.
-4. Фоллбэк: FAQ → вопрос менеджеру (без изменений).
-"""
-
-from __future__ import annotations
-
 import os
 import re
 import logging
-from difflib import SequenceMatcher
-from typing import Any, Tuple
-
 import aiohttp
+from difflib import SequenceMatcher
+
 from telegram import (
     Update,
     InlineKeyboardButton,
@@ -39,169 +21,246 @@ from telegram.ext import (
     ContextTypes,
 )
 
-# ─── Логирование ──────────────────────────────────────────────────────────
+# ─── Настройка логирования ───
 logging.basicConfig(
-    format="%(asctime)s | %(levelname)-8s | %(name)s | %(message)s",
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     level=logging.INFO,
 )
-logger = logging.getLogger("dkbot")
 
-# ─── Параметры окружения ─────────────────────────────────────────────────
-BOT_TOKEN: str = os.getenv("BOT_TOKEN", "")
-API_URL: str = os.getenv("API_URL", "https://dkshopbot.ru/api")
-FRONT_URL: str = os.getenv("FRONT_URL", "https://dkshopbot.ru")
+# ─── Переменные окружения ───
+BOT_TOKEN    = os.getenv("BOT_TOKEN")
+API_URL      = os.getenv("API_URL")     # Например https://dkshopbot.ru/api
+FRONT_URL    = os.getenv("FRONT_URL")   # Например https://dkshopbot.ru
 HTTP_TIMEOUT = aiohttp.ClientTimeout(total=10)
 
-# ─── Меню ────────────────────────────────────────────────────────────────
+# ─── Постоянное меню (persistent keyboard) ───
 MAIN_MENU = ReplyKeyboardMarkup(
     keyboard=[
         ["🛍 Открыть магазин"],
         ["ℹ️ О компании", "📣 Группа Вконтакте"],
-        ["🙋‍♂️ Пригласить друга"],
+        ["🙋‍♂️ Пригласить друга"]
     ],
     resize_keyboard=True,
+    one_time_keyboard=False
 )
 
-# ─── Вспомогательные утилиты ─────────────────────────────────────────────
 
-def norm(text: str) -> str:
-    """Нижний регистр + очистка от лишних символов."""
-    return re.sub(r"[^\w\d]+", " ", text.lower()).strip()
-
-
-def tokens(text: str) -> set[str]:
-    return set(re.findall(r"\w+", text.lower()))
-
-
-def fuzzy(a: str, b: str) -> float:
-    """Sequence‑matcher ratio 0‑1."""
-    return SequenceMatcher(None, a.lower(), b.lower()).ratio()
-
-
-def score(query: str, product: dict[str, Any], model: str | None) -> float:
-    """Комбинированный рейтинг для сортировки."""
-    t_overlap = len(tokens(query) & tokens(product["name"])) / max(len(tokens(product["name"])), 1)
-    f = fuzzy(query, product["name"])
-    m = 0.0
-    if model:
-        if model in product.get("name", "") or model in str(product.get("model_compat", "")):
-            m = 1.0
-    return 0.6 * t_overlap + 0.2 * f + 0.2 * m
-
-
-def build_product_message(product: dict[str, Any]) -> Tuple[str, InlineKeyboardMarkup]:
-    url = f"{FRONT_URL.rstrip('/')}/product/{product['id']}"
-    text = (
-        f"<b>{product['name']}</b>\n"
-        f"Цена: <b>{product['price']} ₽</b>"
-    )
-    kb = InlineKeyboardMarkup(
-        [[InlineKeyboardButton("Открыть карточку", web_app=WebAppInfo(url=url))]]
-    )
+# ─── Помощник: формирует сообщение и кнопку для одного товара ───
+def build_product_message(product: dict) -> tuple[str, InlineKeyboardMarkup]:
+    url  = f"{FRONT_URL.rstrip('/')}/product/{product['id']}"
+    text = f"<b>{product['name']}</b>\nЦена: <b>{product['price']} ₽</b>"
+    kb   = InlineKeyboardMarkup([[InlineKeyboardButton(
+        "Открыть карточку", web_app=WebAppInfo(url=url)
+    )]])
     return text, kb
 
-# ─── Асинхронные запросы к API ───────────────────────────────────────────
+# ─── Функции для оценки схожести ───
+def fuzzy(a: str, b: str) -> float:
+    return SequenceMatcher(None, a.lower(), b.lower()).ratio()
 
-async def api_get(path: str, params: dict[str, Any] | None = None) -> Any:
-    async with aiohttp.ClientSession(timeout=HTTP_TIMEOUT) as sess:
-        async with sess.get(f"{API_URL}{path}", params=params) as resp:
-            resp.raise_for_status()
-            return await resp.json()
+def tokens(s: str) -> set[str]:
+    return set(re.findall(r"\w+", s.lower()))
 
-# ─── Хэндлеры ─────────────────────────────────────────────────────────────
-
-async def cmd_start(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+# ─── /start: просто выводим MAIN_MENU ───
+async def cmd_start(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text(
-        "Доброго времени суток! 👋\n" "Выберите пункт меню ниже.",
-        reply_markup=MAIN_MENU,
+        "Доброго времени суток! 👋\nВыберите пункт меню ниже 👇",
+        reply_markup=MAIN_MENU
     )
 
+# ─── Обработка любого текста ───
+async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
+    text = update.message.text or ""
+    query = text.strip()
+    text_lower = query.lower()
 
-async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
-    if not update.message or not update.message.text:
-        return
-
-    raw = update.message.text.strip()
-    query = norm(raw)
-    lower = raw.lower()
-
-    # ── системные пункты меню ────────────────────────────────────────────
-    if "открыть магазин" in lower:
+    # 0) Перехватываем нажатия из persistent-меню
+    if "открыть магазин" in text_lower:
         await update.message.reply_text(
             "🚀 Перейдите в магазин:",
-            reply_markup=InlineKeyboardMarkup(
-                [[InlineKeyboardButton("🛍 Открыть", web_app=WebAppInfo(url=FRONT_URL))]]
-            ),
+            reply_markup=InlineKeyboardMarkup([[
+                InlineKeyboardButton("🛍Открыть магазин", web_app=WebAppInfo(url=FRONT_URL))
+            ]])
         )
         return
-    if "о компании" in lower:
-        await update.message.reply_text("ℹ️ DK PROduct — запчасти и тюнинг.")
+    if "о компании" in text_lower:
+        await update.message.reply_text(
+            "ℹ️ DK PROduct — это ваш надёжный партнёр по запчастям и аксессуарами."
+        )
         return
-    if "группа вконтакте" in lower:
-        await update.message.reply_text("📣 https://vk.com/dk_pro_tuning")
+    if "группа вконтакте" in text_lower:
+        await update.message.reply_text(
+            "📣 Наша группа: https://vk.com/dk_pro_tuning?from=groups"
+        )
         return
-    if "пригласить друга" in lower:
-        await update.message.reply_text("🙋‍♂️ https://t.me/DK_PROduct_bot")
+    if "пригласить друга" in text_lower:
+        await update.message.reply_text(
+            "🙋‍♂️ Приглашайте друзей по ссылке:\nhttps://t.me/DK_PROduct_bot"
+        )
         return
 
+    # Если пустой запрос
     if not query:
         await update.message.reply_text("Напишите, пожалуйста, запрос.")
         return
 
-    # ── парсим модель, но не выбрасываем остальные слова ────────────────
-    model_match = re.search(r"\b\d{4}-\d{2}\b", query)
-    model_token: str | None = model_match.group(0) if model_match else None
+    # 1) Поиск по модели (например: 2101-07)
+    model_match = re.search(r"\b\d{4}-\d{2}\b", text_lower)
+    if model_match:
+        q_model = model_match.group(0)
+        try:
+            async with aiohttp.ClientSession(timeout=HTTP_TIMEOUT) as sess:
+                async with sess.get(
+                    f"{API_URL}/products",
+                    params={"q": q_model}
+                ) as resp:
+                    resp.raise_for_status()
+                    products = await resp.json()
+        except Exception:
+            logging.exception("API request failed [search by model]")
+            await update.message.reply_text("Сервис временно недоступен, попробуйте позже 🙏")
+            return
+        if products:
+            # Сортируем топ-5 по fuzzy + токены
+            scored = []
+            for p in products[:5]:
+                score = fuzzy(query, p["name"]) * 0.7 + \
+                        (len(tokens(query) & tokens(p["name"])) / max(len(tokens(p["name"])),1)) * 0.3
+                scored.append((score, p))
+            scored.sort(key=lambda x: x[0], reverse=True)
+            best_score, best_prod = scored[0]
+            if best_score >= 0.6:
+                txt, kb = build_product_message(best_prod)
+                await update.message.reply_text(txt, reply_markup=kb)
+                return
+            if best_score >= 0.4:
+                buttons = [InlineKeyboardButton(p["name"], web_app=WebAppInfo(
+                    url=f"{FRONT_URL.rstrip('/')}/product/{p['id']}"
+                )) for _, p in scored[:3]]
+                await update.message.reply_text(
+                    "Нашёл несколько похожих моделей, уточните, пожалуйста:",
+                    reply_markup=InlineKeyboardMarkup([buttons])
+                )
+                return
 
-    # ── 1) Главный поиск: всегда по полному запросу ─────────────────────
+     # 2) Общий поиск по товарам
     try:
-        products: list[dict[str, Any]] = await api_get("/products", {"q": query})
+        async with aiohttp.ClientSession(timeout=HTTP_TIMEOUT) as sess:
+            async with sess.get(f"{API_URL}/products", params={"q": query}) as resp:
+                resp.raise_for_status()
+                products = await resp.json()
     except Exception:
-        logger.exception("API /products failed")
-        await update.message.reply_text("Сервис временно недоступен 🙏")
+        logging.exception("API request failed [general search]")
+        await update.message.reply_text("Сервис временно недоступен, попробуйте позже 🙏")
         return
 
-    # ── 2) Считаем рейтинги ─────────────────────────────────────────────
-    rated: list[Tuple[float, dict[str, Any]]] = [
-        (score(query, p, model_token), p) for p in products
-    ]
-    rated.sort(key=lambda x: x[0], reverse=True)
+    # если API по фразе ничего не нашёл — подгружаем полный список
+    if not products:
+        try:
+            async with aiohttp.ClientSession(timeout=HTTP_TIMEOUT) as sess:
+                async with sess.get(f"{API_URL}/products") as resp_all:
+                    resp_all.raise_for_status()
+                    products = await resp_all.json()
+        except Exception:
+            logging.exception("API request failed [fallback load all]")
+            products = []  # пусть дальше просто будет пусто
 
-    if rated and rated[0][0] >= 0.75:
-        txt, kb = build_product_message(rated[0][1])
+    # теперь применяем fuzzy-логику ко всему списку products
+    if products:
+        # рассчитываем score для каждого товара
+        scored = []
+        for p in products:
+            score = (
+                fuzzy(query, p["name"]) * 0.7 +
+                (len(tokens(query) & tokens(p["name"])) / max(len(tokens(p["name"])), 1)) * 0.3
+            )
+            scored.append((score, p))
+        # берём топ-5, сортируем
+        scored.sort(key=lambda x: x[0], reverse=True)
+        best_score, best_prod = scored[0]
+
+        # если уверены, что нашли — показываем
+    if best_score >= 0.6:
+        txt, kb = build_product_message(best_prod)
         await update.message.reply_text(txt, reply_markup=kb)
         return
 
-    if rated and rated[0][0] >= 0.4:
-        # несколько средних совпадений → просим уточнить
-        await update.message.reply_text(
-            "Нашёл несколько похожих товаров, но точное совпадение не определил.\n"
-            "Пожалуйста, уточните модель (например, 2101-07) или введите более точное "
-            "название детали целиком.",
-        )
-        return
-
-    # ── 3) FAQ ──────────────────────────────────────────────────────────
-    try:
-        faqs: list[dict[str, Any]] = await api_get("/faq", {"q": query})
-    except Exception:
-        faqs = []
-    if faqs:
-        best = max(faqs, key=lambda f: fuzzy(query, f["question"]))
-        if fuzzy(query, best["question"]) >= 0.65:
-            await update.message.reply_text(best["answer"])
+        # если не очень уверены, но что-то нашлось — предлагаем выбор
+    if best_score >= 0.4:
+            buttons = [
+                InlineKeyboardButton(
+                    p["name"],
+                    web_app=WebAppInfo(url=f"{FRONT_URL.rstrip('/')}/product/{p['id']}")
+                )
+                for _, p in scored[:3]
+            ]
+            await update.message.reply_text(
+                "Нашёл несколько подходящих товаров, уточните, пожалуйста:",
+                reply_markup=InlineKeyboardMarkup([buttons])
+            )
             return
 
-    # ── 4) Передаём вопрос менеджеру ────────────────────────────────────
+    # 3) Поиск по типу товара (fallback)
+    try:
+        async with aiohttp.ClientSession(timeout=HTTP_TIMEOUT) as sess:
+            async with sess.get(f"{API_URL}/products") as resp_all:
+                resp_all.raise_for_status()
+                all_products = await resp_all.json()
+        type_matches = [p for p in all_products if query in p.get("type", "").lower()]
+        if type_matches:
+            prod = type_matches[0]
+            txt, kb = build_product_message(prod)
+            await update.message.reply_text(txt, reply_markup=kb)
+            return
+    except Exception:
+        logging.exception("API request failed [type search]")
+
+    # 4) Поиск ответа в FAQ
+    faqs = []
+    try:
+        async with aiohttp.ClientSession(timeout=HTTP_TIMEOUT) as sess:
+            # точный поиск
+            async with sess.get(f"{API_URL}/faq", params={"q": query}) as resp_faq:
+                resp_faq.raise_for_status()
+                faqs = await resp_faq.json()
+                if faqs:
+                    await update.message.reply_text(faqs[0]["answer"])
+                    return
+            # фоллбэк загрузить все
+            async with sess.get(f"{API_URL}/faq") as resp_all:
+                resp_all.raise_for_status()
+                faqs = await resp_all.json()
+    except Exception:
+        logging.exception("FAQ API error")
+    # fuzzy
+    best_faq, best_ratio = None, 0.0
+    for f in faqs:
+        r = SequenceMatcher(None, query, f["question"].lower()).ratio()
+        if r > best_ratio:
+            best_ratio, best_faq = r, f
+    if best_faq and best_ratio >= 0.65:
+        await update.message.reply_text(best_faq["answer"])
+        return
+    # ключевые слова
+    query_toks = tokens(query)
+    best_kw, best_count = None, 0
+    for f in faqs:
+        inter = query_toks & tokens(f["question"])
+        if len(inter) > best_count:
+            best_count, best_kw = len(inter), f
+    if best_kw and best_count >= 2:
+        await update.message.reply_text(best_kw["answer"])
+        return
+
+    # 5) Ничего не найдено — передаём вопрос менеджеру
     await update.message.reply_text("Передаю вопрос менеджеру 👨‍🔧")
     try:
-        await api_get("/questions", {"question": raw})  # допустим GET‑ручка
+        async with aiohttp.ClientSession(timeout=HTTP_TIMEOUT) as sess:
+            await sess.post(f"{API_URL}/questions", json={"question": text})
     except Exception:
-        logger.warning("Не удалось отправить вопрос менеджеру")
+        logging.exception("Failed to send question to manager API")
 
-
-# ─── Запуск ───────────────────────────────────────────────────────────────
-
-def main():
+def main() -> None:
     app = (
         ApplicationBuilder()
         .token(BOT_TOKEN)
@@ -210,10 +269,8 @@ def main():
     )
     app.add_handler(CommandHandler("start", cmd_start))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
-
-    logger.info("Bot started")
-    app.run_polling(allowed_updates=["message"])
-
+    logging.info("Bot started")
+    app.run_polling(allowed_updates=["message"] )
 
 if __name__ == "__main__":
     main()
