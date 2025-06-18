@@ -311,6 +311,7 @@ useEffect(() => {
               <th>Тип</th>
               <th>Остаток</th>
               <th>Картинки</th>
+              <th>Описание</th>
               <th>Действия</th>
             </tr>
           </thead>
@@ -407,6 +408,17 @@ useEffect(() => {
                     )}
                   </td>
                   <td>
+                  <input
+                    value={editProduct.description}
+                    onChange={(e) =>
+                    setEditProduct((v) => ({
+                     ...v,
+                      description: e.target.value,
+                    }))
+                    }
+                  />
+                  </td>
+                  <td>
                     <button onClick={handleEditSave}>Сохранить</button>
                     <button
                       style={{ background: "#c32", color: "#fff" }}
@@ -434,6 +446,7 @@ useEffect(() => {
                         )
                       : ""}
                   </td>
+                  <td>{p.description}</td>
                   <td>                    
                     <button onClick={() => handleEdit(p)}>
                       Редактировать
