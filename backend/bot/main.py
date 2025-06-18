@@ -80,10 +80,12 @@ async def send_product_with_hint(update: Update, product: dict) -> None:
 # ─── /start ───
 async def cmd_start(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text(
-        "Доброго времени суток! 👋\nВыберите пункт меню ниже 👇",
+        "Добро пожаловать в DK PROduct! 👋\n\n"
+        "Я помогу вам найти нужный товар по запросу — просто напишите, что ищете, например: «глушитель 2112» или «паук 2110-2112».\n\n"
+        "Также вы можете задать любой вопрос по подбору запчастей или работе магазина — я найду для вас ответ или передам вопрос менеджеру.\n\n"
+        "Пользуйтесь меню ниже для быстрого доступа к функциям 👇",
         reply_markup=MAIN_MENU,
     )
-
 # ─── Основной обработчик текста ───
 async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     text  = update.message.text or ""
