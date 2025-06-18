@@ -218,11 +218,23 @@
 }
 
 .admin-products .product-add-row {
-  min-width: 170px;
-  max-width: 210px;
-  flex: 1 0 170px;
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
 }
 
+
+
+.admin-products .product-add-row input,
+.admin-products .product-add-row select,
+.admin-products .product-multiselect {
+  flex: 1 0 180px;
+  min-width: 150px;
+  max-width: 230px;
+  box-sizing: border-box;
+  margin-bottom: 0;
+}
 .admin-products .product-add-row input {
   flex: 1 0 140px;
   min-width: 110px;
