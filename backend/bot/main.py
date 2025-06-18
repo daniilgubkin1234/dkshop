@@ -55,16 +55,27 @@ def build_product_message(product: dict) -> tuple[str, InlineKeyboardMarkup]:
     )]])
     return text, kb
 
-
 def fuzzy(a: str, b: str) -> float:
     return SequenceMatcher(None, a.lower(), b.lower()).ratio()
-
 
 # токенизатор: буквы + цифры (нужны 2110‑2112)
 TOKEN_RE = re.compile(r"[a-zа-яё0-9]+", re.I)
 
 def tokenize(s: str) -> set[str]:
     return set(TOKEN_RE.findall(s.lower()))
+
+# ─── Унифицированная отправка товара + подсказки ───
+async def send_product_with_hint(update: Update, product: dict) -> None:
+    txt, kb = build_product_message(product)
+    await update.message.reply_text(txt, reply_markup=kb)
+    # дополнительное сообщение-подсказка
+    hint_text = (
+        "Если я не нашёл интересующий вас товар, вы можете найти конкретно то, что вам нужно в нашем магазине!"
+    )
+    hint_kb = InlineKeyboardMarkup([
+        [InlineKeyboardButton("🛍 Открыть магазин", web_app=WebAppInfo(url=FRONT_URL))]
+    ])
+    await update.message.reply_text(hint_text, reply_markup=hint_kb)
 
 # ─── /start ───
 async def cmd_start(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
@@ -125,8 +136,7 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
         if products:
             # повторно ранжируем внутри результатов модели по полному запросу
             best_prod = _rank_products(query, products)[0]
-            txt, kb = build_product_message(best_prod)
-            await update.message.reply_text(txt, reply_markup=kb)
+            await send_product_with_hint(update, best_prod)
             return
 
     # 2) Общий поиск — сначала только по названиям
@@ -161,8 +171,7 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
         best_prod, best_score = _rank_products(query, pool)
 
         if best_score >= 0.6:
-            txt, kb = build_product_message(best_prod)
-            await update.message.reply_text(txt, reply_markup=kb)
+            await send_product_with_hint(update, best_prod)
             return
         if best_score >= 0.4:
             top3 = _rank_products(query, pool, k=3, return_scores=False)
@@ -186,9 +195,7 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
                 all_products = await resp.json()
         type_matches = [p for p in all_products if query in p.get("type", "").lower()]
         if type_matches:
-            prod = type_matches[0]
-            txt, kb = build_product_message(prod)
-            await update.message.reply_text(txt, reply_markup=kb)
+            await send_product_with_hint(update, type_matches[0])
             return
     except Exception:
         logging.exception("API request failed [type search]")
@@ -250,7 +257,6 @@ def _rank_products(query: str, products: list[dict], *, k: int | None = 1, retur
     top = [p for _, p in scored[:k]]
     return (top, None) if not return_scores else top
 
-
 def main() -> None:
     app = (
         ApplicationBuilder()
@@ -262,7 +268,6 @@ def main() -> None:
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
     logging.info("Bot started")
     app.run_polling(allowed_updates=["message"])
-
 
 if __name__ == "__main__":
     main()
