@@ -252,7 +252,29 @@
   resize: vertical;
 }
 
+.admin-products .product-add-row input {
+  
+  background: #23242c;
+  color: #fff;
+  border: 1px solid #454575;
+  border-radius: 4px;
+  padding: 7px;
+  font-size: 14px;
+  margin-bottom: 0;
+}
 
+.admin-products .product-add-row select {
+  
+  background: #23242c;
+  color: #fff;
+  border: 1px solid #454575;
+  border-radius: 4px;
+  padding: 7px;
+  font-size: 14px;
+  margin-bottom: 0;
+  outline: none;
+  transition: border 0.2s;
+}
 
 .admin-products .product-add-row select:focus {
   border-color: #1a73e8;
