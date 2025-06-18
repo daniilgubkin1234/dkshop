@@ -223,7 +223,7 @@ useEffect(() => {
           }
         />
        <div style={{ display: "flex", flexDirection: "column" }}>
-    <label style={{color: "#88aaff", fontSize: 13, marginBottom: 3}}>Быстрый выбор моделей (мультивыбор)</label>
+  
     <select
       multiple
       value={newProduct.model_compat.split(',').map(x => x.trim()).filter(Boolean)}
