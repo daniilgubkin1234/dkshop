@@ -222,30 +222,29 @@ useEffect(() => {
             setNewProduct((p) => ({ ...p, name: e.target.value }))
           }
         />
-        <div style={{display: "flex", flexDirection: "column", flex: 1, minWidth: 180}}>
-  <label style={{color: "#88aaff", fontSize: 13, marginBottom: 3}}>Быстрый выбор моделей (мультивыбор)</label>
-  <select
-    multiple
-    value={newProduct.model_compat.split(',').map(x => x.trim()).filter(Boolean)}
-    onChange={e => {
-      const selected = Array.from(e.target.selectedOptions).map(opt => opt.value);
-      setNewProduct(p => ({
-        ...p,
-        model_compat: selected.join(", ")
-      }));
-    }}
-    className="product-multiselect"
-    style={{ minHeight: 100 }} // можно подобрать нужную высоту
-  >
-    {modelCards.flatMap(card =>
-      (card.models || []).map(model => (
-        <option key={card.label + model} value={model}>
-          {card.label}: {model}
-        </option>
-      ))
-    )}
-  </select>
-</div>
+       <div style={{ display: "flex", flexDirection: "column" }}>
+    <label style={{color: "#88aaff", fontSize: 13, marginBottom: 3}}>Быстрый выбор моделей (мультивыбор)</label>
+    <select
+      multiple
+      value={newProduct.model_compat.split(',').map(x => x.trim()).filter(Boolean)}
+      onChange={e => {
+        const selected = Array.from(e.target.selectedOptions).map(opt => opt.value);
+        setNewProduct(p => ({
+          ...p,
+          model_compat: selected.join(", ")
+        }));
+      }}
+      className="product-multiselect"
+    >
+      {modelCards.flatMap(card =>
+        (card.models || []).map(model => (
+          <option key={card.label + model} value={model}>
+            {card.label}: {model}
+          </option>
+        ))
+      )}
+    </select>
+  </div>
 
         <input
           placeholder="Совместимость (напр. 2101-07)"

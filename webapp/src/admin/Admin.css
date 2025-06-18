@@ -218,10 +218,9 @@
 }
 
 .admin-products .product-add-row {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 24px;
-  flex-wrap: wrap;
+  min-width: 170px;
+  max-width: 210px;
+  flex: 1 0 170px;
 }
 
 .admin-products .product-add-row input {
@@ -261,19 +260,12 @@
 
 
 
-.product-multiselect {
-  background: #23242c;
-  color: #fff;
-  border: 1.5px solid #454575;
-  border-radius: 4px;
-  padding: 7px;
+.admin-products .product-multiselect {
+  height: 135px;
+  min-width: 170px;
+  max-width: 210px;
+  resize: vertical;
   font-size: 15px;
-  min-width: 140px;
-  outline: none;
-  transition: border 0.2s;
-  margin-bottom: 0;
-  box-shadow: 0 2px 12px #23275214;
-  scrollbar-color: #454575 #23242c; /* для Firefox */
 }
 
 .product-multiselect:focus {
