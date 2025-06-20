@@ -69,13 +69,13 @@ export default function AdminInfo() {
   return (
     <div className="admin-container">
       <AdminHeader />
-      <h2>Статичные страницы</h2>
+      <h2>Информация</h2>
 
       {/* ——— форма добавления / обновления ——— */}
       <div className="info-add-row">
         <input
           style={{ minWidth: 120 }}
-          placeholder="slug (латиницей)"
+          placeholder="Slug"
           value={form.slug}
           onChange={e => setForm(f => ({ ...f, slug: e.target.value }))}
         />
@@ -85,13 +85,13 @@ export default function AdminInfo() {
           onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
         />
         <textarea
-        placeholder="Контент (можно переносы строк и табы)"
+        placeholder="Контент"
         value={form.content}
         onChange={e => setForm(f => ({ ...f, content: e.target.value }))}
         rows={4}
         style={{ minWidth: 260, resize: "vertical" }}
         />
-        <button onClick={save}>Сохранить</button>
+        <button onClick={save}>Добавить</button>
       </div>
 
       {/* ——— таблица ——— */}
@@ -102,7 +102,7 @@ export default function AdminInfo() {
           <thead>
             <tr>
               <th>ID</th>
-              <th>slug</th>
+              <th>Slug</th>
               <th>Заголовок</th>
               <th>Контент</th>
               <th />
