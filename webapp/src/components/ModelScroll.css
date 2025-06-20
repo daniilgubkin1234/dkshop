@@ -37,7 +37,12 @@
   .model-card:hover {
     background: #2a2a2a;
   }
-  
+  /* убираем системный «active-highlight» */
+  .model-card:active {
+    background: #1c1c1e;              /* тот же фон, что и по умолчанию */
+    -webkit-tap-highlight-color: transparent; /* для мобильных Safari/Chrome */
+    outline: none;                    /* на случай focus-outline */
+  }
   .model-card.active {
     border: 2px solid #e53935;
   }
