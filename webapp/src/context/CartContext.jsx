@@ -1,26 +1,39 @@
 /**
  * webapp/src/context/CartContext.jsx
  *
- * Хранит состояние корзины в React Context + локалсторадж.
- * Экспортирует:
- *   - useCart() – хук для получения всех методов/свойств корзины
- *   - CartProvider – провайдер, который нужно обернуть вокруг всего <App>
+ * 1. Читает корзину из localStorage, а если пользователь авторизован –
+ *    догружает актуальные позиции с бэкенда (`GET /cart?user_id=`).
+ * 2. Любое изменение корзины мгновенно отражается в state и localStorage
+ *    + параллельно шлёт запрос на сервер, чтобы синхронизировать БД.
  */
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
+import { API_URL } from '../api.js';
 
 const CartContext = createContext(null);
-
-export function useCart() {
+export const useCart = () => {
   const ctx = useContext(CartContext);
-  if (!ctx) {
-    throw new Error('useCart должен вызываться внутри CartProvider');
-  }
+  if (!ctx) throw new Error('useCart должен вызываться внутри CartProvider');
   return ctx;
-}
+};
 
 export function CartProvider({ children }) {
-  // Инициализируем cartItems из localStorage
+  /* ------------------------------------------------------------
+     0) базовые данные
+  ------------------------------------------------------------ */
+  const storedUser = JSON.parse(localStorage.getItem('dkshop_user') || 'null');
+  const userId     = storedUser?.id;          // undefined → гость
+  const isGuest    = !userId;
+
+  /* ------------------------------------------------------------
+     1) локальная инициализация из localStorage (мгновенно)
+  ------------------------------------------------------------ */
   const [cartItems, setCartItems] = useState(() => {
     try {
       const raw = localStorage.getItem('dkshop_cart');
@@ -30,44 +43,80 @@ export function CartProvider({ children }) {
     }
   });
 
-  // Сохраняем cartItems в localStorage
+  /* ------------------------------------------------------------
+     2) загрузка корзины с сервера (если userId) – once on mount
+  ------------------------------------------------------------ */
+  const fetchedFromServer = useRef(false);
+  useEffect(() => {
+    if (isGuest || fetchedFromServer.current) return;
+
+    (async () => {
+      try {
+        const data = await fetch(
+          `${API_URL}/cart?user_id=${userId}`
+        ).then(r => (r.ok ? r.json() : []));
+        // Если сервер вернул что-то, подменяем локальный state
+        if (Array.isArray(data) && data.length) setCartItems(data);
+      } catch {/* silent */}
+      fetchedFromServer.current = true;
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId]);
+
+  /* ------------------------------------------------------------
+     3) синхронизация в localStorage при любом изменении
+  ------------------------------------------------------------ */
   useEffect(() => {
     try {
       localStorage.setItem('dkshop_cart', JSON.stringify(cartItems));
-    } catch {
-      /* игнорируем */
-    }
+    } catch {/* ignore */}
   }, [cartItems]);
 
-  const findIndex = (id) => cartItems.findIndex((item) => item.id === id);
-
-  // Добавляет товар в корзину (или увеличивает quantity на 1)
-  const addToCart = (product) => {
-    setCartItems((prev) => {
-      const idx = prev.findIndex((it) => it.id === product.id);
-      if (idx === -1) {
-        return [
-          ...prev,
-          {
-            id: product.id,
-            name: product.name,
-            price: product.price,
-            image: product.images?.[0] || '',
-            quantity: 1,
-          },
-        ];
-      } else {
-        const updated = [...prev];
-        updated[idx].quantity += 1;
-        return updated;
-      }
-    });
+  /* ------------------------------------------------------------
+     4) helpers для запросов к API
+  ------------------------------------------------------------ */
+  const postDelta = (productId, delta) => {
+    if (isGuest) return;
+    fetch(`${API_URL}/cart`, {
+      method : 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body   : JSON.stringify({ user_id: userId, product_id: productId, delta })
+    }).catch(() => {/* ignore network error */});
   };
 
-  // Уменьшает quantity на 1; если quantity = 0, убирает товар
-  const removeOneFromCart = (productId) => {
-    setCartItems((prev) => {
-      const idx = prev.findIndex((it) => it.id === productId);
+  const clearServerCart = () => {
+    if (isGuest) return;
+    fetch(`${API_URL}/cart/clear?user_id=${userId}`, { method: 'DELETE' })
+      .catch(() => {/* ignore */});
+  };
+
+  /* ------------------------------------------------------------
+     5) операции с корзиной
+  ------------------------------------------------------------ */
+  const addToCart = product => {
+    setCartItems(prev => {
+      const idx = prev.findIndex(it => it.id === product.id);
+      let updated;
+      if (idx === -1) {
+        updated = [...prev, {
+          id : product.id,
+          name: product.name,
+          price: product.price,
+          image: product.images?.[0] || '',
+          quantity: 1,
+        }];
+      } else {
+        updated = [...prev];
+        updated[idx].quantity += 1;
+      }
+      return updated;
+    });
+    postDelta(product.id, +1);
+  };
+
+  const removeOneFromCart = productId => {
+    setCartItems(prev => {
+      const idx = prev.findIndex(it => it.id === productId);
       if (idx === -1) return prev;
       const updated = [...prev];
       if (updated[idx].quantity > 1) {
@@ -77,52 +126,64 @@ export function CartProvider({ children }) {
       }
       return updated;
     });
+    postDelta(productId, -1);
   };
 
-  // Удаляет весь товар (вне зависимости от quantity)
-  const removeFromCart = (productId) => {
-    setCartItems((prev) => prev.filter((it) => it.id !== productId));
+  const removeFromCart = productId => {
+      setCartItems(prev => {
+          const qty = prev.find(it => it.id === productId)?.quantity || 0;
+          postDelta(productId, -qty);
+          return prev.filter(it => it.id !== productId);
+        });
   };
 
-  // Обновить точное количество (при ручном вводе)
-  const updateQuantity = (productId, newQuantity) => {
-    setCartItems((prev) => {
-      const idx = findIndex(productId);
+  const updateQuantity = (productId, newQty) => {
+    setCartItems(prev => {
+      const idx = prev.findIndex(it => it.id === productId);
       if (idx === -1) return prev;
+  
+      const oldQty  = prev[idx].quantity;
       const updated = [...prev];
-      if (newQuantity <= 0) {
-        updated.splice(idx, 1);
-      } else {
-        updated[idx].quantity = newQuantity;
+  
+      /* #1: если newQty <= 0 — нужно удалить позицию                */
+      if (newQty <= 0) {
+        postDelta(productId, -oldQty);   // отправляем «-oldQty»
+        updated.splice(idx, 1);          // убираем из списка (#1 fix)
+        return updated;
       }
+  
+      /* #2: normal case — просто меняем qty и отправляем δ          */
+      updated[idx].quantity = newQty;
+      postDelta(productId, newQty - oldQty);   // (#2 fix)
       return updated;
     });
   };
 
-  // Полностью очистить корзину
   const clearCart = () => {
     setCartItems([]);
+    clearServerCart();
   };
 
-  // Общее число единиц (для бейджа, если нужно)
-  const totalCount = cartItems.reduce((sum, it) => sum + it.quantity, 0);
+  /* ------------------------------------------------------------
+     6) агрегаты
+  ------------------------------------------------------------ */
+  const totalCount = cartItems.reduce((s, it) => s + it.quantity, 0);
+  const totalPrice = cartItems.reduce((s, it) => s + it.price * it.quantity, 0);
 
-  // Итоговая сумма (сумма цен * quantity)
-  const totalPrice = cartItems.reduce((sum, it) => sum + it.price * it.quantity, 0);
-
+  /* ------------------------------------------------------------
+     7) provider
+  ------------------------------------------------------------ */
   return (
-    <CartContext.Provider
-      value={{
-        cartItems,
-        addToCart,
-        removeOneFromCart,
-        removeFromCart,
-        updateQuantity,
-        clearCart,
-        totalCount,
-        totalPrice,
-      }}
-    >
+    <CartContext.Provider value={{
+      cartItems,
+      addToCart,
+      removeOneFromCart,
+      removeFromCart,
+      updateQuantity,
+      clearCart,
+      totalCount,
+      totalPrice,
+    }}>
       {children}
     </CartContext.Provider>
   );

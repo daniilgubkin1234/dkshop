@@ -61,7 +61,7 @@ export default function Product() {
   return (
     <div className="product-page">
       <button className="product-back" onClick={() => navigate("/")}>
-        ← Вернуться на главную
+        Вернуться на главную
       </button>
 
       <div className="product-content">

@@ -5,9 +5,10 @@ from .db import engine, get_db
 from .models import (
     Product, FAQ, Question, Order,
     FooterLink, ModelCard, StaticPage,
-    CompanyInfo   
+    CompanyInfo, CartItem
 )
-from sqlalchemy import or_, func
+from sqlalchemy import or_, func, delete 
+
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
@@ -451,3 +452,70 @@ def upsert_company(info: PhoneIn, db: Session = Depends(get_db), creds: HTTPBasi
         db.add(obj)
     db.commit(); db.refresh(obj)
     return obj
+
+
+# ---------- Cart ----------
+class CartItemRead(BaseModel):
+    """Что отдаём фронту – составной PK + quantity."""
+    user_id: int
+    product_id: int
+    quantity: int
+    class Config: orm_mode = True
+
+
+@app.get("/cart", response_model=list[CartItemRead])
+def get_cart(user_id: int, db: Session = Depends(get_db)):
+    """
+    Возвращает все записи корзины для данного Telegram-пользователя.
+    """
+    stmt = select(CartItem).where(CartItem.user_id == user_id)
+    return db.exec(stmt).all()
+
+
+class CartAdd(BaseModel):
+    user_id: int
+    product_id: int
+    delta: int = 1              # сколько добавить (может быть < 0)
+
+
+@app.post("/cart", response_model=list[CartItemRead])
+def add_to_cart(body: CartAdd, db: Session = Depends(get_db)):
+    """
+    Пошагово изменяет количество товара в корзине.
+    Если после изменения quantity ≤ 0 — позиция удаляется.
+    """
+    # 1. ищем строку по составному PK
+    row = db.get(CartItem, (body.user_id, body.product_id))
+
+    if row:
+        row.quantity += body.delta
+    else:
+        row = CartItem(
+            user_id   = body.user_id,
+            product_id= body.product_id,
+            quantity  = body.delta
+        )
+
+    # 2. удаляем или сохраняем
+    if row.quantity <= 0:
+        db.delete(row)
+    else:
+        row.quantity = max(1, row.quantity)   # непременно ≥ 1
+        db.add(row)
+
+    db.commit()
+
+    # 3. отдаём актуальное состояние корзины
+    return db.exec(
+        select(CartItem).where(CartItem.user_id == body.user_id)
+    ).all()
+
+
+@app.delete("/cart/clear", status_code=204)
+def clear_cart(user_id: int, db: Session = Depends(get_db)):
+    """
+    Полностью очищает корзину пользователя – используется по кнопке
+    «Очистить корзину» после успешного оформления заказа.
+    """
+    db.exec(delete(CartItem).where(CartItem.user_id == user_id))
+    db.commit()

@@ -83,3 +83,8 @@ class StaticPage(SQLModel, table=True):
 class CompanyInfo(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     phone: str
+
+class CartItem(SQLModel, table=True):
+    user_id: int      = Field(primary_key=True)   # Telegram user
+    product_id: int   = Field(primary_key=True)
+    quantity: int     = 1
