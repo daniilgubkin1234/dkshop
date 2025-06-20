@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import AdminHeader from "./AdminHeader";
 import "./Admin.css";
-
+import "./AdminFAQ.css";
 const empty = { question: "", answer: "" };
 
 export default function AdminFAQ() {
@@ -102,17 +102,18 @@ export default function AdminFAQ() {
   return (
     <div className="admin-container admin-faq">
       <AdminHeader />
-      <h2>FAQ — частые вопросы</h2>
+      <h2>FAQ</h2>
       <div className="faq-add-row">
         <input
           placeholder="Вопрос"
           value={newQ.question}
           onChange={e => setNewQ(q => ({ ...q, question: e.target.value }))}
         />
-        <input
-          placeholder="Ответ"
-          value={newQ.answer}
-          onChange={e => setNewQ(q => ({ ...q, answer: e.target.value }))}
+        <textarea
+        placeholder="Ответ"
+        value={newQ.answer}
+        onChange={e => setNewQ(q => ({ ...q, answer: e.target.value }))}
+        rows={3}
         />
         <button onClick={handleAdd}>Добавить</button>
       </div>
@@ -135,10 +136,11 @@ export default function AdminFAQ() {
                   />
                 </td>
                 <td>
-                  <input
-                    value={editQ.answer}
-                    onChange={e => setEditQ(q => ({ ...q, answer: e.target.value }))}
-                  />
+                 <textarea
+                value={editQ.answer}
+                onChange={e => setEditQ(q => ({ ...q, answer: e.target.value }))}
+                rows={3} 
+                />
                 </td>
                 <td>
                   <button onClick={handleEditSave}>Сохранить</button>
@@ -148,10 +150,10 @@ export default function AdminFAQ() {
             ) : (
               <tr key={row.id}>
                 <td>{row.question}</td>
-                <td>{row.answer}</td>
+                <td style={{ whiteSpace: 'pre-line' }}>{row.answer}</td>
                 <td>
-                  <button onClick={() => handleEdit(row)}>Редактировать</button>
-                  <button onClick={() => handleDelete(row.id)}>Удалить</button>
+                  <button onClick={() => handleEdit(row)}>✎</button>
+                  <button onClick={() => handleDelete(row.id)}>🗑</button>
                 </td>
               </tr>
             )
