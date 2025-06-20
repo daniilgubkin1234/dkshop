@@ -169,7 +169,14 @@ export function CartProvider({ children }) {
   ------------------------------------------------------------ */
   const totalCount = cartItems.reduce((s, it) => s + it.quantity, 0);
   const totalPrice = cartItems.reduce((s, it) => s + it.price * it.quantity, 0);
-
+  const reloadFromServer = async () => {
+    if (!userId) return;
+    try {
+      const fresh = await fetch(`${API_URL}/cart?user_id=${userId}`)
+                          .then(r => r.ok ? r.json() : []);
+      setCartItems(fresh);
+    } catch {/* ignore */}
+  };
   /* ------------------------------------------------------------
      7) provider
   ------------------------------------------------------------ */
@@ -183,6 +190,7 @@ export function CartProvider({ children }) {
       clearCart,
       totalCount,
       totalPrice,
+      reloadFromServer, 
     }}>
       {children}
     </CartContext.Provider>

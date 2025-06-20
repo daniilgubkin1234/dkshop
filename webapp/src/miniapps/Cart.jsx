@@ -1,92 +1,72 @@
 // webapp/src/miniapps/Cart.jsx
-
-import React, { useState, useEffect } from "react";
-import { useCart } from "../context/CartContext.jsx";
-import { postOrder } from "../api.js";
-import { useNavigate } from "react-router-dom";
-import "./Cart.css";
+import React, { useEffect, useState } from 'react';
+import { useNavigate }               from 'react-router-dom';
+import { useCart }                   from '../context/CartContext.jsx';
+import { postOrder }                 from '../api.js';
+import './Cart.css';
 
 export default function Cart() {
+  const {
+    cartItems,
+    totalPrice,
+    addToCart,            // вдруг понадобится
+    removeFromCart,
+    removeOneFromCart,
+    updateQuantity,
+    clearCart,
+    reloadFromServer,     // <-- новое
+  } = useCart();
+
+  /* ───────── fetch fresh cart on mount ───────── */
+  useEffect(() => { reloadFromServer?.(); }, [reloadFromServer]);
+
   const navigate = useNavigate();
 
-  // 1) Берём из контекста все нужные методы и состояния
-  let ctx;
-  try {
-    ctx = useCart();
-  } catch (err) {
-    console.error("Cart.jsx: useCart() error:", err.message);
-    ctx = {};
-  }
-  const {
-    cartItems = [],
-    totalPrice = 0,
-    clearCart = () => {},
-    removeFromCart = () => {},
-    removeOneFromCart = () => {},
-    updateQuantity = () => {},
-  } = ctx;
-
-  // 2) Локальные поля формы
-  const [name, setName]         = useState("");
-  const [phone, setPhone]       = useState("");
-  const [status, setStatus]     = useState("");
+  /* ───────── форма оформления ───────── */
+  const [name,  setName]  = useState('');
+  const [phone, setPhone] = useState('');
+  const [status, setStatus] = useState('');
   const [orderInfo, setOrderInfo] = useState(null);
 
-  // 3) Подгружаем пользователя
-  const storedUser = JSON.parse(localStorage.getItem("dkshop_user") || "null");
+  /* ───── подставляем данные авторизованного пользователя ───── */
+  const storedUser = JSON.parse(localStorage.getItem('dkshop_user') || 'null');
   const userId     = storedUser?.id;
 
   useEffect(() => {
-    if (storedUser) {
-      if (storedUser.phone) {
-        setPhone(storedUser.phone);
-      }
-      const fullName = [storedUser.first_name, storedUser.last_name]
-        .filter(Boolean)
-        .join(" ");
-      if (fullName) {
-        setName(fullName);
-      }
-    }
+    if (!storedUser) return;
+    if (storedUser.phone) setPhone(storedUser.phone);
+    const fullName = [storedUser.first_name, storedUser.last_name]
+      .filter(Boolean).join(' ');
+    if (fullName) setName(fullName);
   }, [storedUser]);
 
-  // 4) Отправка заказа
-  const postOrderRequest = async (data) => {
+  /* ───────── отправка заказа ───────── */
+  const handleSubmit = async () => {
+    const phoneValid = /^(?:\+7|8)(?: ?\d){10}$/.test(phone);
+    if (!name.trim() || !phoneValid)             return setStatus('❗ Введите корректные ФИО и номер телефона');
+    if (cartItems.length === 0)                  return setStatus('❗ Ваша корзина пуста');
+
     try {
-      const response = await postOrder(data);
+      const resp = await postOrder({
+        user_id: userId || null,
+        name:    name.trim(),
+        phone:   phone.trim(),
+        items:   cartItems.map(i => ({ product_id: i.id, quantity: i.quantity })),
+      });
       setOrderInfo({
-        orderId: response.order_id,
-        name:    data.name,
-        phone:   data.phone,
-        items:   data.items,
-        total:   totalPrice,
+        orderId: resp.order_id,
+        name,
+        phone,
+        items: cartItems,
+        total: totalPrice,
       });
       clearCart();
-    } catch (err) {
-      console.error("postOrder error:", err);
-      setStatus("❌ Не удалось оформить заказ");
+    } catch {
+      setStatus('❌ Не удалось оформить заказ');
     }
   };
 
-  const handleSubmit = () => {
-    const phoneValid = /^(?:\+7|8)(?: ?\d){10}$/.test(phone);
-    if (!name.trim() || !phoneValid) {
-      setStatus("❗ Введите корректные ФИО и номер телефона");
-      return;
-    }
-    if (cartItems.length === 0) {
-      setStatus("❗ Ваша корзина пуста");
-      return;
-    }
-    postOrderRequest({
-      user_id: userId || null,
-      name:    name.trim(),
-      phone:   phone.trim(),
-      items:   cartItems.map((it) => ({ product_id: it.id, quantity: it.quantity })),
-    });
-  };
-
-  // 5) Если заказ оформлен — показываем детали
+  /* ───────── отображение ───────── */
   if (orderInfo) {
     return (
       <div className="cart-empty">
@@ -96,38 +76,41 @@ export default function Cart() {
         <p>Телефон: <b>{orderInfo.phone}</b></p>
         <p>Позиций: {orderInfo.items.length}</p>
         <p>Сумма: {orderInfo.total.toLocaleString()} ₽</p>
-        <button className="btn-back" onClick={() => navigate("/")}>
+        <button className="btn-back" onClick={() => navigate('/')}>
           Вернуться на главную
         </button>
       </div>
     );
   }
 
-  // 6) Если корзина пуста
   if (cartItems.length === 0) {
     return (
       <div className="cart-empty">
         <h2>Ваша корзина пуста</h2>
-        <button className="btn-back" onClick={() => navigate("/")}>
+        <button className="btn-back" onClick={() => navigate('/')}>
           Вернуться в каталог
         </button>
       </div>
     );
   }
 
-  // 7) Сам компонент корзины
   return (
     <div className="cart-container">
       <h2>Корзина</h2>
 
       <div className="cart-list">
-        {cartItems.map((item) => (
+        {cartItems.map(item => (
           <div key={item.id} className="cart-item">
-            <img src={item.image} alt={item.name} className="cart-item-image" />
+            <img
+              src={item.image || '/static/no-image.png'}
+              alt={item.name}
+              className="cart-item-image"
+              onError={e => { e.target.src = '/static/no-image.png'; }}
+            />
             <div className="cart-item-info">
               <h3 className="cart-item-name">{item.name}</h3>
               <p className="cart-item-price">
-                {(item.price ?? 0).toLocaleString()} ₽ за шт.
+                {item.price.toLocaleString()} ₽ за шт.
               </p>
               <div className="cart-item-quantity">
                 <input
@@ -135,9 +118,9 @@ export default function Cart() {
                   className="qty-input"
                   value={item.quantity}
                   min="1"
-                  onChange={(e) => {
+                  onChange={e => {
                     const val = Number(e.target.value);
-                    if (isNaN(val) || val < 1) {
+                    if (isNaN(val) || val <= 0) {
                       removeFromCart(item.id);
                     } else {
                       updateQuantity(item.id, val);
@@ -153,14 +136,16 @@ export default function Cart() {
               </button>
             </div>
             <div className="cart-item-subtotal">
-              <p>{((item.price ?? 0) * item.quantity).toLocaleString()} ₽</p>
+              <p>{(item.price * item.quantity).toLocaleString()} ₽</p>
             </div>
           </div>
         ))}
       </div>
 
       <div className="cart-summary">
-        <p className="cart-total">Итого: {(totalPrice ?? 0).toLocaleString()} ₽</p>
+        <p className="cart-total">
+          Итого: {totalPrice.toLocaleString()} ₽
+        </p>
       </div>
 
       <div className="checkout-section">
@@ -170,7 +155,7 @@ export default function Cart() {
           placeholder="ФИО"
           className="checkout-input"
           value={name}
-          onChange={(e) => { setName(e.target.value); setStatus(""); }}
+          onChange={e => { setName(e.target.value); setStatus(''); }}
         />
         <input
           type="tel"
@@ -178,11 +163,12 @@ export default function Cart() {
           placeholder="+7 XXX XXX XXXX или 8 XXX XXX XXXX"
           className="checkout-input"
           value={phone}
-          onChange={(e) => { setPhone(e.target.value); setStatus(""); }}
-          pattern="^(?:\+7|8)(?: ?\d){10}$"
+          onChange={e => { setPhone(e.target.value); setStatus(''); }}
+          pattern="^(?:\\+7|8)(?: ?\\d){10}$"
           title="Номер в формате +7 900 900 9192 или 8 900 900 9192"
           required
         />
+
         <div className="cart-buttons">
           <button className="btn-clear" onClick={clearCart}>
             Очистить корзину
@@ -191,6 +177,7 @@ export default function Cart() {
             Оформить заказ
           </button>
         </div>
+
         {status && <p className="cart-status">{status}</p>}
       </div>
     </div>
