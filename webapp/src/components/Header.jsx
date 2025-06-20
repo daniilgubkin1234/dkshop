@@ -150,7 +150,11 @@ export default function Header({ onSearch }) {
 
             {isAdmin && (
               <li>
-                <Link to="/admin/orders" onClick={toggleSidebar}>
+                <Link
+                  to="/admin/orders"
+                  className="admin-link"     
+                onClick={toggleSidebar}
+                >
                   Панель администратора
                 </Link>
               </li>
