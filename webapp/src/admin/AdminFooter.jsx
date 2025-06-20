@@ -45,7 +45,9 @@ export default function AdminFooter() {
     setLinks(await res.json());
   };
 
-  useEffect(loadLinks, []);              // eslint-disable-line
+  useEffect(() => {
+    loadLinks();          // вызываем async-функцию
+  }, []);             // eslint-disable-line
 
   /* ------------- CRUD ------------- */
   const handleAdd = async (e) => {
