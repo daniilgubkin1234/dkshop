@@ -1,0 +1,67 @@
+/* ── горизонтальная строка добавления ────────────────────────────── */
+.info-add-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 24px;
+  }
+  
+  .info-add-row input,
+  .info-add-row textarea {
+    padding: 8px 10px;
+    background: #2b2b2d;
+    border: 1px solid #444;
+    color: #eee;
+    border-radius: 6px;
+    font-size: 14px;
+    min-width: 160px;
+  }
+  
+  .info-add-row textarea {
+    min-height: 90px;
+    resize: vertical;
+  }
+  
+  /* кнопка «Сохранить» / «Добавить» */
+  .info-add-row button {
+    background: #1a73e8;
+    color: #fff;
+    font-weight: 500;
+    border: none;
+    border-radius: 5px;
+    padding: 8px 16px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+  }
+  
+  .info-add-row button:hover {
+    background: #1764c7;
+  }
+  
+  /* ── таблица ─────────────────────────────────────────────────────── */
+  .admin-container table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  
+  .admin-container th,
+  .admin-container td {
+    border: 1px solid #444;
+    padding: 10px 12px;
+    font-size: 14px;
+  }
+  
+  .admin-container th {
+    background: #1f1f21;
+    font-weight: 600;
+  }
+  
+  .admin-container tr:nth-child(even) td {
+    background: #262628;
+  }
+  
+  /* контент с сохранением переносов строк */
+  .admin-container td.pre {
+    white-space: pre-line;
+  }
+  

@@ -2,8 +2,8 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import AdminHeader from "./AdminHeader.jsx";
-import "./Admin.css";
 
+import './AdminInfo.css';
 const empty = { slug: "", title: "", content: "" };
 
 export default function AdminInfo() {
@@ -84,10 +84,12 @@ export default function AdminInfo() {
           value={form.title}
           onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
         />
-        <input
-          placeholder="Контент"
-          value={form.content}
-          onChange={e => setForm(f => ({ ...f, content: e.target.value }))}
+        <textarea
+        placeholder="Контент (можно переносы строк и табы)"
+        value={form.content}
+        onChange={e => setForm(f => ({ ...f, content: e.target.value }))}
+        rows={4}
+        style={{ minWidth: 260, resize: "vertical" }}
         />
         <button onClick={save}>Сохранить</button>
       </div>
