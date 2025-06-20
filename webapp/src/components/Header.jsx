@@ -73,9 +73,6 @@ export default function Header({ onSearch }) {
               rel="noopener noreferrer"
               className="header-official"
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="#fff">
-                <path d="M12 3C7.03 3 3 7.03 3 12s4.03 9 9 9 9-4.03 9-9-4.03-9-9-9z" />
-              </svg>
               <span>Official channel</span>
             </a>
           </div>
