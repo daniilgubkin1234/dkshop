@@ -17,7 +17,7 @@ import AdminFAQ        from './admin/AdminFAQ.jsx';
 import AdminProduct    from './admin/AdminProduct.jsx';
 import AdminFooter     from './admin/AdminFooter.jsx';
 import AdminModelCards from './admin/AdminModelCards.jsx';
-
+import AdminInfo       from './admin/AdminInfo.jsx';
 import { API_URL } from './api.js';
 
 export default function App() {
@@ -85,6 +85,8 @@ export default function App() {
           <Route path="/admin/products"    element={<AdminProduct />} />
           <Route path="/admin/footer"      element={<AdminFooter />} />
           <Route path="/admin/model_cards" element={<AdminModelCards />} />
+          <Route path="/admin/info"        element={<AdminInfo />} />
+
 
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

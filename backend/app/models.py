@@ -74,3 +74,9 @@ class User(SQLModel, table=True):
     username: Optional[str] = None
     phone: Optional[str] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
+
+class StaticPage(SQLModel, table=True):
+    id:        int | None = Field(default=None, primary_key=True)
+    slug:      str        # 'payment' / 'refund' / 'delivery' / 'contacts'
+    title:     str
+    content:   str        # многострочный markdown / plain-text

@@ -39,6 +39,9 @@ export default function AdminHeader() {
       >
       Карточки каталога
       </Link>
+      <Link to="/admin/info" className={location.pathname.includes("/info") ? "active" : ""}>
+        Информация
+      </Link>
     </div>
   );
 }

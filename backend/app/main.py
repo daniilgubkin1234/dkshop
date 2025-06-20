@@ -386,3 +386,45 @@ def delete_model_card_db(card_id: int, db: Session = Depends(get_db), creds: HTT
     if db_card:
         db.delete(db_card)
         db.commit()
+
+
+# ─── Static pages (/info) ───────────────────────────────────────────────
+class StaticPageCreate(BaseModel):
+    slug: str
+    title: str
+    content: str
+
+class StaticPageRead(StaticPageCreate):
+    id: int
+    class Config: orm_mode = True
+
+@app.get("/info", response_model=list[StaticPageRead])
+def public_info(db: Session = Depends(get_db)):
+    return db.query(StaticPage).all()
+
+# --- admin CRUD ---
+@app.get("/admin/info", response_model=list[StaticPageRead])
+def admin_info(db: Session = Depends(get_db), creds: HTTPBasicCredentials = Depends(check_admin)):
+    return db.query(StaticPage).all()
+
+@app.post("/admin/info", response_model=StaticPageRead, status_code=201)
+def create_info(page: StaticPageCreate, db: Session = Depends(get_db), creds: HTTPBasicCredentials = Depends(check_admin)):
+    obj = StaticPage(**page.dict())
+    db.add(obj); db.commit(); db.refresh(obj)
+    return obj
+
+@app.patch("/admin/info/{page_id}", response_model=StaticPageRead)
+def update_info(page_id: int, page: StaticPageCreate, db: Session = Depends(get_db), creds: HTTPBasicCredentials = Depends(check_admin)):
+    db_page = db.get(StaticPage, page_id)
+    if not db_page:
+        raise HTTPException(404, "Not found")
+    for k, v in page.dict().items():
+        setattr(db_page, k, v)
+    db.commit(); db.refresh(db_page)
+    return db_page
+
+@app.delete("/admin/info/{page_id}", status_code=204)
+def delete_info(page_id: int, db: Session = Depends(get_db), creds: HTTPBasicCredentials = Depends(check_admin)):
+    db_page = db.get(StaticPage, page_id)
+    if db_page:
+        db.delete(db_page); db.commit()
