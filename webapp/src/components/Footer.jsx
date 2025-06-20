@@ -3,12 +3,18 @@ import "./Footer.css";
 
 export default function Footer() {
   const [links, setLinks] = useState([]);
+  const [phone, setPhone]   = useState('');
 
   useEffect(() => {
     fetch("/footer")
       .then(r => r.ok ? r.json() : [])
       .then(setLinks)
       .catch(() => setLinks([]));
+
+    fetch("/company")
+      .then(r => r.ok ? r.json() : null)
+      .then(data => data && setPhone(data.phone))
+      .catch(() => {});
   }, []);
 
   return (
@@ -30,7 +36,9 @@ export default function Footer() {
 
         <div className="footer-contact">
           <h4 className="footer-title">Контактный телефон</h4>
-          <a className="footer-phone" href="tel:+78482636363">8 848 263 63 63</a>
+          <a className="footer-phone" href={`tel:${phone.replace(/\\D/g,'')}`}>
+   {        phone || '—'}
+          </a>
         </div>
       </div>
     </footer>

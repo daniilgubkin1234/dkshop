@@ -55,7 +55,7 @@
     vertical-align: top;
     text-align: left;
   }
-  .admin-faq th { background: #2a2a2a; }
+  .admin-faq th { background: #262628; }
   
   /* сохраняем переносы строк в ответе */
   .admin-faq td.answer-cell { white-space: pre-line; }

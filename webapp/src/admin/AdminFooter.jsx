@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import AdminHeader from "./AdminHeader";
-
+import './AdminFooter.css';
 const API = "/admin/footer";          // ← все запросы идут на защищённый префикс
 
 export default function AdminFooter() {
@@ -17,7 +17,7 @@ export default function AdminFooter() {
   const [editTitle, setEditTitle] = useState("");
   const [editUrl,   setEditUrl]   = useState("");
   const [editIcon,  setEditIcon]  = useState("");
-
+  const [newPhone, setNewPhone] = useState('');
   const navigate = useNavigate();
   const token    = localStorage.getItem("auth_token");
   const headers  = {
@@ -46,7 +46,8 @@ export default function AdminFooter() {
   };
 
   useEffect(() => {
-    loadLinks();          // вызываем async-функцию
+    loadLinks(); 
+    fetch('/company').then(r=>r.ok?r.json():null).then(d=>d&&setNewPhone(d.phone));         // вызываем async-функцию
   }, []);             // eslint-disable-line
 
   /* ------------- CRUD ------------- */
@@ -81,13 +82,31 @@ export default function AdminFooter() {
       <h2>Полезные ссылки</h2>
 
       {/* ── форма добавления ── */}
-      <form onSubmit={handleAdd} style={{ display: "flex", gap: 12, marginBottom: 24 }}>
+      <form onSubmit={handleAdd} className="footer-add-row">
         <input value={newTitle} onChange={e=>setNewTitle(e.target.value)} placeholder="Название" required/>
         <input type="url" value={newUrl} onChange={e=>setNewUrl(e.target.value)} placeholder="URL" required/>
         <input value={newIcon} onChange={e=>setNewIcon(e.target.value)} placeholder="Иконка" style={{width:90}}/>
         <button type="submit">Добавить</button>
       </form>
-
+        <form onSubmit={e=>{
+      e.preventDefault();
+      if(!authOrRedirect()) return;
+      fetch('/admin/company',{
+        method:'POST',
+        headers,
+        body: JSON.stringify({ phone:newPhone })
+      }).then(()=>alert('Телефон обновлён!'));
+    }}
+    className="footer-add-row"
+  >
+    <input
+      placeholder="Контактный телефон"
+      value={newPhone}
+      onChange={e=>setNewPhone(e.target.value)}
+      style={{minWidth:220}}
+    />
+    <button>Сохранить</button>
+  </form>
       {/* ── таблица ── */}
       <table style={{ width:"100%", borderCollapse:"collapse", color:"#fff" }}>
         <thead>

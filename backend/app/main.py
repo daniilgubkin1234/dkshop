@@ -4,7 +4,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from .db import engine, get_db
 from .models import (
     Product, FAQ, Question, Order,
-    FooterLink, ModelCard, StaticPage   
+    FooterLink, ModelCard, StaticPage,
+    CompanyInfo   
 )
 from sqlalchemy import or_, func
 from fastapi.responses import JSONResponse
@@ -431,3 +432,22 @@ def delete_info(page_id: int, db: Session = Depends(get_db), creds: HTTPBasicCre
     db_page = db.get(StaticPage, page_id)
     if db_page:
         db.delete(db_page); db.commit()
+
+
+class PhoneIn(BaseModel):
+    phone: str
+
+@app.get("/company", response_model=CompanyInfo | None)
+def get_company(db: Session = Depends(get_db)):
+    return db.exec(select(CompanyInfo).limit(1)).first()
+
+@app.post("/admin/company", response_model=CompanyInfo)
+def upsert_company(info: PhoneIn, db: Session = Depends(get_db), creds: HTTPBasicCredentials = Depends(check_admin)):
+    obj = db.exec(select(CompanyInfo).limit(1)).first()
+    if obj:
+        obj.phone = info.phone          # update
+    else:
+        obj = CompanyInfo(phone=info.phone)
+        db.add(obj)
+    db.commit(); db.refresh(obj)
+    return obj

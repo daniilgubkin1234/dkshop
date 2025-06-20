@@ -1,0 +1,51 @@
+/* ───── горизонтальная строка добавления ───── */
+.footer-add-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 24px;
+  }
+  
+  .footer-add-row input {
+    background: #2b2b2d;
+    color: #fff;
+    border: 1px solid #444;
+    border-radius: 4px;
+    padding: 7px 10px;
+    font-size: 14px;
+    min-width: 140px;
+    outline: none;
+  }
+  
+  /* кнопка "Добавить / Сохранить" — общий стиль */
+  .footer-add-row button,
+  .footer-phone-row button {
+    background: #1a73e8;
+    color: #fff;
+    font-weight: 500;
+    border: none;
+    border-radius: 5px;
+    padding: 8px 16px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+  }
+  .footer-add-row button:hover,
+  .footer-phone-row button:hover { background: #135cc0; }
+  
+  /* строка редактирования телефона */
+  .footer-phone-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 32px;
+  }
+  .footer-phone-row input {
+    background: #262628;
+    color: #fff;
+    border: 1px solid #444;
+    border-radius: 4px;
+    padding: 7px 10px;
+    font-size: 18px;
+    min-width: 220px;
+    outline: none;
+  }

@@ -80,3 +80,6 @@ class StaticPage(SQLModel, table=True):
     slug:      str        # 'payment' / 'refund' / 'delivery' / 'contacts'
     title:     str
     content:   str        # многострочный markdown / plain-text
+class CompanyInfo(SQLModel, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+    phone: str
