@@ -2,7 +2,10 @@ from fastapi import FastAPI, status, Query, Path, UploadFile, File, HTTPExceptio
 from sqlmodel import SQLModel, Session, select
 from fastapi.middleware.cors import CORSMiddleware
 from .db import engine, get_db
-from .models import Product, FAQ, Question, Order, FooterLink, ModelCard
+from .models import (
+    Product, FAQ, Question, Order,
+    FooterLink, ModelCard, StaticPage   
+)
 from sqlalchemy import or_, func
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
