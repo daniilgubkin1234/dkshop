@@ -36,7 +36,7 @@ export default function Footer() {
 
         <div className="footer-contact">
           <h4 className="footer-title">Контактный телефон</h4>
-          <a className="footer-phone" href={`tel:${phone.replace(/\\D/g,'')}`}>
+          <a className="footer-phone" href={`tel:${phone.replace(/\D/g,'')}`}>
    {        phone || '—'}
           </a>
         </div>
