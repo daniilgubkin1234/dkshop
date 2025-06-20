@@ -1,163 +1,137 @@
 // webapp/src/admin/AdminInfo.jsx
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import AdminHeader   from "./AdminHeader.jsx";
+import AdminHeader from "./AdminHeader.jsx";
 import "./Admin.css";
 
-const emptyPage = { slug: "payment", title: "", content: "" };
-const SLUGS = [
-  { value: "payment",  label: "Оплата заказа" },
-  { value: "refund",   label: "Возврат" },
-  { value: "delivery", label: "Доставка" },
-  { value: "contacts", label: "Контакты" },
-];
+const empty = { slug: "", title: "", content: "" };
 
 export default function AdminInfo() {
-  const [pages, setPages]         = useState([]);
-  const [newPage, setNewPage]     = useState(emptyPage);
-  const [editId, setEditId]       = useState(null);
-  const [editPage, setEditPage]   = useState(emptyPage);
-  const [loading, setLoading]     = useState(false);
-  const navigate = useNavigate();
-  const token    = localStorage.getItem("auth_token");
+  const [pages, setPages]       = useState([]);
+  const [form,  setForm]        = useState(empty);
+  const [editId, setEditId]     = useState(null);
+  const [loading, setLoading]   = useState(false);
+  const nav  = useNavigate();
+  const tok  = localStorage.getItem("auth_token");
 
-  /* ---------- helpers ---------- */
-  const req = (url, opts={}) =>
+  const api = (url, opt={}) =>
     fetch(url, {
-      ...opts,
+      ...opt,
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Basic ${token}`,
-        ...opts.headers,
+        Authorization: `Basic ${tok}`,
+        ...opt.headers,
       },
     });
 
-  const loadPages = () => {
-    if (!token) return navigate("/admin/login");
+  const load = () => {
+    if (!tok) return nav("/admin/login");
     setLoading(true);
-    req("https://dkshopbot.ru/admin/info")
+    api("https://dkshopbot.ru/admin/info")
       .then(r => (r.status === 401 ? [] : r.json()))
       .then(setPages)
       .finally(() => setLoading(false));
   };
 
-  /* ---------- CRUD ---------- */
-  const handleAdd = () => {
-    if (!newPage.title.trim()) return alert("Введите заголовок");
-    req("https://dkshopbot.ru/admin/info", {
-      method: "POST",
-      body: JSON.stringify(newPage),
-    })
-      .then(r => r.json())
-      .then(p => {
-        setPages(prev => [...prev, p]);
-        setNewPage(emptyPage);
-      });
+  /* ---------- create / update (upsert) ---------- */
+  const save = async () => {
+    if (!form.slug.trim() || !form.title.trim())
+      return alert("Введите slug и заголовок");
+
+    // upsert: если slug существует → PATCH, иначе → POST
+    const existed = pages.find(p => p.slug === form.slug);
+
+    const url   = existed
+      ? `https://dkshopbot.ru/admin/info/${existed.id}`
+      : "https://dkshopbot.ru/admin/info";
+    const method = existed ? "PATCH" : "POST";
+
+    const res = await api(url, { method, body: JSON.stringify(form) }).then(r => r.json());
+
+    setPages(pages => {
+      const idx = pages.findIndex(p => p.id === res.id);
+      if (idx === -1) return [...pages, res];
+      const copy = [...pages];
+      copy[idx] = res;
+      return copy;
+    });
+    setForm(empty);
+    setEditId(null);
   };
 
-  const handleDelete = id => {
-    if (!window.confirm("Удалить эту страницу?")) return;
-    req(`https://dkshopbot.ru/admin/info/${id}`, { method: "DELETE" })
-      .then(() => setPages(prev => prev.filter(p => p.id !== id)));
-  };
+  const del = id =>
+    window.confirm("Удалить страницу?") &&
+    api(`https://dkshopbot.ru/admin/info/${id}`, { method: "DELETE" })
+      .then(() => setPages(p => p.filter(x => x.id !== id)));
 
-  const handleEditSave = () => {
-    if (!editPage.title.trim()) return alert("Введите заголовок");
-    req(`https://dkshopbot.ru/admin/info/${editId}`, {
-      method: "PATCH",
-      body: JSON.stringify(editPage),
-    })
-      .then(r => r.json())
-      .then(p => {
-        setPages(prev => prev.map(item => (item.id === p.id ? p : item)));
-        setEditId(null);
-      });
-  };
+  useEffect(load, []); // eslint-disable-line
 
-  useEffect(loadPages, []); // eslint-disable-line
-
-  /* ---------- render ---------- */
   return (
     <div className="admin-container">
       <AdminHeader />
-      <h2>Информация</h2>
+      <h2>Статичные страницы</h2>
 
-      {/* ----- add row ----- */}
+      {/* ——— форма добавления / обновления ——— */}
       <div className="info-add-row">
-        <select
-          value={newPage.slug}
-          onChange={e => setNewPage(p => ({ ...p, slug: e.target.value }))}>
-          {SLUGS.map(s => (
-            <option key={s.value} value={s.value}>{s.label}</option>
-          ))}
-        </select>
+        <input
+          style={{ minWidth: 120 }}
+          placeholder="slug (латиницей)"
+          value={form.slug}
+          onChange={e => setForm(f => ({ ...f, slug: e.target.value }))}
+        />
         <input
           placeholder="Заголовок"
-          value={newPage.title}
-          onChange={e => setNewPage(p => ({ ...p, title: e.target.value }))}
+          value={form.title}
+          onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
         />
         <input
-          placeholder="Содержимое"
-          value={newPage.content}
-          onChange={e => setNewPage(p => ({ ...p, content: e.target.value }))}
+          placeholder="Контент"
+          value={form.content}
+          onChange={e => setForm(f => ({ ...f, content: e.target.value }))}
         />
-        <button onClick={handleAdd}>Добавить / Обновить</button>
+        <button onClick={save}>Сохранить</button>
       </div>
 
-      {/* ----- table ----- */}
+      {/* ——— таблица ——— */}
       {loading ? (
         <p>Загрузка…</p>
       ) : (
         <table>
           <thead>
             <tr>
-              <th>ID</th><th>Слаг</th><th>Заголовок</th>
-              <th>Контент</th><th>Действия</th>
+              <th>ID</th>
+              <th>slug</th>
+              <th>Заголовок</th>
+              <th>Контент</th>
+              <th />
             </tr>
           </thead>
           <tbody>
-            {pages.map(p =>
-              editId === p.id ? (
-                <tr key={p.id}>
-                  <td>{p.id}</td>
-                  <td>{p.slug}</td>
-                  <td>
-                    <input
-                      value={editPage.title}
-                      onChange={e => setEditPage(v => ({ ...v, title: e.target.value }))}
-                    />
-                  </td>
-                  <td>
-                    <input
-                      value={editPage.content}
-                      onChange={e => setEditPage(v => ({ ...v, content: e.target.value }))}
-                    />
-                  </td>
-                  <td>
-                    <button onClick={handleEditSave}>Сохранить</button>
-                    <button onClick={() => setEditId(null)}>Отмена</button>
-                  </td>
-                </tr>
-              ) : (
-                <tr key={p.id}>
-                  <td>{p.id}</td>
-                  <td>{p.slug}</td>
-                  <td>{p.title}</td>
-                  <td style={{ whiteSpace: "pre-wrap" }}>{p.content}</td>
-                  <td>
-                    <button onClick={() => { setEditId(p.id); setEditPage(p); }}>
-                      Редактировать
-                    </button>
-                    <button
-                      style={{ background: "#e53935", color: "#fff" }}
-                      onClick={() => handleDelete(p.id)}
-                    >
-                      Удалить
-                    </button>
-                  </td>
-                </tr>
-              )
-            )}
+            {pages.map(p => (
+              <tr key={p.id}>
+                <td>{p.id}</td>
+                <td>{p.slug}</td>
+                <td>{p.title}</td>
+                <td style={{ whiteSpace: "pre-wrap" }}>{p.content}</td>
+                <td>
+                  <button
+                    onClick={() => {
+                      setForm({ slug: p.slug, title: p.title, content: p.content });
+                      setEditId(p.id);
+                      window.scrollTo({ top: 0, behavior: "smooth" });
+                    }}
+                  >
+                    ✎
+                  </button>
+                  <button
+                    style={{ background: "#e53935", color: "#fff" }}
+                    onClick={() => del(p.id)}
+                  >
+                    🗑
+                  </button>
+                </td>
+              </tr>
+            ))}
           </tbody>
         </table>
       )}
