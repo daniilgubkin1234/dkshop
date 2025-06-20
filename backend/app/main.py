@@ -455,38 +455,58 @@ def upsert_company(info: PhoneIn, db: Session = Depends(get_db), creds: HTTPBasi
 
 
 # ---------- Cart ----------
-class CartItemRead(BaseModel):
-    """Что отдаём фронту – составной PK + quantity."""
-    user_id: int
-    product_id: int
+
+class CartItemFull(BaseModel):
+    id: int           # product_id
+    name: str
+    price: int
+    image: str | None = None
     quantity: int
     class Config: orm_mode = True
 
+def _enrich(user_id: int, db: Session) -> list[CartItemFull]:
+    """Берём cart_items → подтягиваем сведения о товарах."""
+    rows = db.exec(
+        select(CartItem).where(CartItem.user_id == user_id)
+    ).all()
+    if not rows:
+        return []
 
-@app.get("/cart", response_model=list[CartItemRead])
+    prod_ids = [r.product_id for r in rows]
+    prods = {
+        p.id: p for p in db.exec(
+            select(Product).where(Product.id.in_(prod_ids))
+        )
+    }
+
+    enriched: list[CartItemFull] = []
+    for r in rows:
+        p = prods.get(r.product_id)
+        if not p:
+            continue                # товар удалён из каталога
+        enriched.append(
+            CartItemFull(
+                id       = p.id,
+                name     = p.name,
+                price    = p.price,
+                image    = (p.images or [None])[0],
+                quantity = r.quantity,
+            )
+        )
+    return enriched
+
+@app.get("/cart", response_model=list[CartItemFull])
 def get_cart(user_id: int, db: Session = Depends(get_db)):
-    """
-    Возвращает все записи корзины для данного Telegram-пользователя.
-    """
-    stmt = select(CartItem).where(CartItem.user_id == user_id)
-    return db.exec(stmt).all()
-
+    return _enrich(user_id, db)
 
 class CartAdd(BaseModel):
     user_id: int
     product_id: int
-    delta: int = 1              # сколько добавить (может быть < 0)
+    delta: int = 1                 # может быть отрицательным
 
-
-@app.post("/cart", response_model=list[CartItemRead])
+@app.post("/cart", response_model=list[CartItemFull])
 def add_to_cart(body: CartAdd, db: Session = Depends(get_db)):
-    """
-    Пошагово изменяет количество товара в корзине.
-    Если после изменения quantity ≤ 0 — позиция удаляется.
-    """
-    # 1. ищем строку по составному PK
     row = db.get(CartItem, (body.user_id, body.product_id))
-
     if row:
         row.quantity += body.delta
     else:
@@ -496,26 +516,16 @@ def add_to_cart(body: CartAdd, db: Session = Depends(get_db)):
             quantity  = body.delta
         )
 
-    # 2. удаляем или сохраняем
     if row.quantity <= 0:
         db.delete(row)
     else:
-        row.quantity = max(1, row.quantity)   # непременно ≥ 1
+        row.quantity = max(1, row.quantity)
         db.add(row)
 
     db.commit()
-
-    # 3. отдаём актуальное состояние корзины
-    return db.exec(
-        select(CartItem).where(CartItem.user_id == body.user_id)
-    ).all()
-
+    return _enrich(body.user_id, db)
 
 @app.delete("/cart/clear", status_code=204)
 def clear_cart(user_id: int, db: Session = Depends(get_db)):
-    """
-    Полностью очищает корзину пользователя – используется по кнопке
-    «Очистить корзину» после успешного оформления заказа.
-    """
     db.exec(delete(CartItem).where(CartItem.user_id == user_id))
     db.commit()
