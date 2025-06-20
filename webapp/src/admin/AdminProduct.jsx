@@ -449,13 +449,13 @@ useEffect(() => {
                   <td>{p.description}</td>
                   <td>                    
                     <button onClick={() => handleEdit(p)}>
-                      Редактировать
+                    ✎
                     </button>
                     <button
                       style={{ background: "#e53935", color: "#fff" }}
                       onClick={() => handleDelete(p.id)}
                     >
-                      Удалить
+                      🗑
                     </button>
                   </td>
                 </tr>

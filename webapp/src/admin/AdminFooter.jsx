@@ -111,8 +111,8 @@ export default function AdminFooter() {
                 <td><a href={l.url} target="_blank" rel="noopener noreferrer" style={{color:"#6cb2ff"}}>{l.url}</a></td>
                 <td style={{textAlign:"center"}}>{l.icon || "🔗"}</td>
                 <td>
-                  <button onClick={()=>{setEditId(l.id); setEditTitle(l.title); setEditUrl(l.url); setEditIcon(l.icon||"");}}>Ред.</button>{" "}
-                  <button onClick={()=>handleDelete(l.id)}>Удалить</button>
+                  <button onClick={()=>{setEditId(l.id); setEditTitle(l.title); setEditUrl(l.url); setEditIcon(l.icon||"");}}>✎</button>{" "}
+                  <button onClick={()=>handleDelete(l.id)}>🗑</button>
                 </td>
               </tr>
             )

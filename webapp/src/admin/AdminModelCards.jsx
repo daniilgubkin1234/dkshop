@@ -249,12 +249,12 @@ export default function AdminModelCards() {
                 </td>
                 <td style={{ textAlign: "center" }}>{row.match_by_name ? "✓" : ""}</td>
                 <td>
-                  <button onClick={() => handleEdit(row)}>Ред.</button>
+                  <button onClick={() => handleEdit(row)}>✎</button>
                   <button
                     style={{ background: "#e53935", color: "#fff" }}
                     onClick={() => handleDelete(row.id)}
                   >
-                    Удалить
+                    🗑
                   </button>
                 </td>
               </tr>

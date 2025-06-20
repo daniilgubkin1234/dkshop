@@ -101,7 +101,7 @@ export default function AdminOrders() {
                   onClick={() => deleteOrder(o.id)}
                   style={{ marginLeft: 8, background: "#e53935", color: "#fff" }}
                 >
-                  Удалить
+                  🗑
                 </button>
               </td>
             </tr>

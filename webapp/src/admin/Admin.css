@@ -521,6 +521,73 @@
 .admin-modelcards button[style*="background: #e53935"]:hover { background: #f05545 !important; }
 
 
+/* ───────────────  ЕДИНЫЕ СТИЛИ ДЛЯ add-row  ─────────────── */
+
+/* 1) Общий контейнер строки добавления  */
+.admin-add-row,
+.faq-add-row,
+.footer-add-row,
+.modelcard-add-row,
+.info-add-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+
+/* 2) Инпуты / textarea / select выглядят одинаково */
+.admin-add-row input,
+.admin-add-row textarea,
+.admin-add-row select,
+.faq-add-row   input,
+.faq-add-row   textarea,
+.footer-add-row input,
+.modelcard-add-row input[type="text"],
+.info-add-row  input,
+.info-add-row  textarea {
+  background: #2b2b2d;
+  color: #fff;
+  border: 1px solid #444;
+  border-radius: 4px;
+  padding: 7px 10px;
+  font-size: 14px;
+  min-width: 160px;
+  outline: none;
+}
+.admin-add-row textarea,
+.info-add-row  textarea {
+  resize: vertical;
+  min-height: 60px;
+}
+
+/* 3) Единая кнопка “Добавить / Сохранить” */
+.admin-add-row button,
+.faq-add-row   button,
+.footer-add-row button,
+.modelcard-add-row button,
+.info-add-row  button {
+  background: #1a73e8;
+  color: #fff;
+  font-weight: 500;
+  border: none;
+  border-radius: 5px;
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+.admin-add-row button:hover,
+.faq-add-row   button:hover,
+.footer-add-row button:hover,
+.modelcard-add-row button:hover,
+.info-add-row  button:hover {
+  background: #135cc0;
+}
+
+/* 4) Убираем прежние нестандартные цвета */
+.modelcard-add-row button { background:#1a73e8; }
+.modelcard-add-row button:hover{ background:#135cc0; }
+
+
 /* ─── Адаптив для страницы Заказы ─── */
 @media (max-width: 768px) {
   /* 1) Восстанавливаем табличный режим и растягиваем на 100% */
