@@ -5,7 +5,7 @@ import { fetchProducts } from '../api.js';
 import { useCart } from '../context/CartContext.jsx';
 import './ProductList.css';
 import ModelScroll from '../components/ModelScroll.jsx';
-
+import HitsCarousel from '../components/HitsCarousel.jsx';
 /* ---------- helpers ---------- */
 function normalize(str = '') {
   return str
@@ -87,6 +87,7 @@ export default function ProductList({ onSearchChange }) {
   return (
     <>
       {/* выбор модели */}
+      <HitsCarousel /> 
       <ModelScroll
         onSelect={(modelsNorm, byName) => {
           setSelectedModel(modelsNorm);

@@ -17,7 +17,7 @@ class Product(SQLModel, table=True):
         sa_column=Column(JSON),
         default_factory=list
     )
-
+    is_hit: bool = False 
 class FAQ(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     question: str
@@ -88,3 +88,4 @@ class CartItem(SQLModel, table=True):
     user_id: int      = Field(primary_key=True)   # Telegram user
     product_id: int   = Field(primary_key=True)
     quantity: int     = 1
+

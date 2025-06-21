@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./Admin.css";
 import AdminHeader from "./AdminHeader";
+import { API_URL } from '../api.js';  
 
 const emptyProduct = {
   name: "",
@@ -35,7 +36,7 @@ useEffect(() => {
       return;
     }
     setLoading(true);
-    fetch("https://dkshopbot.ru/products", {
+    fetch(`${API_URL}/products`, {
       headers: { Authorization: `Basic ${token}` },
     })
       .then(async (r) => {
@@ -53,7 +54,19 @@ useEffect(() => {
       })
       .finally(() => setLoading(false));
   };
-
+/* ---------- 1. toggleHit ---------- */
+    const toggleHit = async (prod) => {
+      const token = localStorage.getItem('auth_token');
+      const updated = await fetch(`${API_URL}/products/${prod.id}`, {
+       method : 'PATCH',
+       headers: {
+         'Content-Type': 'application/json',
+         Authorization  : `Basic ${token}`,
+       },
+       body: JSON.stringify({ is_hit: !prod.is_hit }),
+      }).then(r => r.json());
+     setProducts(prev => prev.map(p => p.id === updated.id ? updated : p));
+   };
   const handleFileUpload = async (e) => {
     const files = Array.from(e.target.files);
     for (const file of files) {
@@ -92,6 +105,7 @@ useEffect(() => {
     const token = localStorage.getItem("auth_token");
     const body = {
       ...newProduct,
+      is_hit: newProduct.is_hit || false,
       price: Number(newProduct.price),
       stock: Number(newProduct.stock),
       images: newProduct.images
@@ -310,6 +324,7 @@ useEffect(() => {
               <th>Совместимость</th>
               <th>Тип</th>
               <th>Остаток</th>
+              <th>Хит продаж</th>
               <th>Картинки</th>
               <th>Описание</th>
               <th>Действия</th>
@@ -379,6 +394,13 @@ useEffect(() => {
                     />
                   </td>
                   <td>
+                  <input
+                  type="checkbox"
+                  checked={p.is_hit}
+                  onChange={() => toggleHit(p)}
+                  />
+                  </td>
+                  <td>
                     <input
                       value={editProduct.images}
                       onChange={(e) =>
@@ -437,6 +459,13 @@ useEffect(() => {
                   <td>{p.model_compat}</td>
                   <td>{p.type}</td>
                   <td>{p.stock}</td>
+                  <td>
+                  <input
+                  type="checkbox"
+                  checked={p.is_hit}
+                  onChange={() => toggleHit(p)}
+                  />
+                  </td>
                   <td>
                     {p.images && p.images.length > 0
                       ? renderImages(

@@ -529,3 +529,13 @@ def add_to_cart(body: CartAdd, db: Session = Depends(get_db)):
 def clear_cart(user_id: int, db: Session = Depends(get_db)):
     db.exec(delete(CartItem).where(CartItem.user_id == user_id))
     db.commit()
+
+@app.get("/hits", response_model=list[Product])
+def list_hits(limit: int = 8, db: Session = Depends(get_db)):
+    stmt = (
+        select(Product)
+        .where(Product.is_hit.is_(True))
+        .order_by(func.random())   # PostgreSQL random()
+        .limit(limit)
+    )
+    return db.exec(stmt).all()

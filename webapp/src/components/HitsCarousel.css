@@ -1,0 +1,11 @@
+/* webapp/src/components/HitsCarousel.css */
+.hits-wrapper { margin: 0 0 24px; }
+.hits-title   { margin: 0 0 12px; font-size: 24px; }
+.hits-grid    { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; }
+.hits-card    { background:#1e1e1f; border-radius:8px; padding:8px; cursor:pointer; text-align:center; }
+.hits-card img{ width:100%; aspect-ratio:1/1; object-fit:cover; border-radius:4px; }
+.hits-name    { font-size:14px; margin:6px 0 2px; }
+.hits-price   { font-weight:600; }
+@media(max-width:640px){
+  .hits-grid{ grid-template-columns: repeat(2,1fr); }
+}
