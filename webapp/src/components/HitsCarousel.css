@@ -66,12 +66,4 @@
     background: #262628;
     border-color: #e53935;
   }
-  @media (max-width: 640px) {
-    .hits-grid {
-      gap: 6px;
-    }
-    .hits-card {
-      width: 48px;
-    }
-  }
   
