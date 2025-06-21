@@ -33,8 +33,6 @@ export default function HitsCarousel() {
 
   const start = page * PAGE;
   const slice = hits.slice(start, start + PAGE);
-
-  // Ключ для анимации - используем страницу и id товаров
   const animKey = slice.map(p => p.id).join("-");
 
   return (
@@ -49,6 +47,7 @@ export default function HitsCarousel() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.45, ease: "easeInOut" }}
+            style={{ display: 'flex', gap: 8 }}
           >
             {slice.map(p => (
               <div key={p.id} className="hits-card" onClick={() => navigate(`/product/${p.id}`)}>
