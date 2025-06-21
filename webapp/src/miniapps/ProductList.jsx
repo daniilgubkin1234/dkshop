@@ -88,6 +88,8 @@ export default function ProductList({ onSearchChange }) {
     <>
       {/* выбор модели */}
       <HitsCarousel /> 
+      <h2 className="catalog-title">Каталог</h2>
+
       <ModelScroll
         onSelect={(modelsNorm, byName) => {
           setSelectedModel(modelsNorm);

@@ -20,7 +20,13 @@
   transition: transform 0.15s ease, box-shadow 0.15s ease;
   position: relative; /* Для корректного позиционирования кнопки */
 }
-
+.catalog-title {
+  font-size: 22px;
+  color: #fff;
+  font-weight: 600;
+  margin: 12px 0 8px 16px;
+  letter-spacing: 0.03em;
+}
 .product-card:hover {
   transform: translateY(-4px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);

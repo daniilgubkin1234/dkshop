@@ -40,7 +40,7 @@ export default function HitsCarousel() {
   return (
     <div className="hits-wrapper">
       <h2 className="hits-title">Хиты продаж</h2>
-      <div className="hits-grid" style={{ minHeight: 110, position: "relative" }}>
+      <div className="hits-grid">
         <AnimatePresence mode="wait">
           <motion.div
             key={animKey}
@@ -49,14 +49,6 @@ export default function HitsCarousel() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.45, ease: "easeInOut" }}
-            style={{
-              display: "flex",
-              gap: "12px",
-              width: "100%",
-              position: "absolute",
-              left: 0,
-              top: 0,
-            }}
           >
             {slice.map(p => (
               <div key={p.id} className="hits-card" onClick={() => navigate(`/product/${p.id}`)}>
