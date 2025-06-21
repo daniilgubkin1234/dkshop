@@ -1,11 +1,83 @@
-/* webapp/src/components/HitsCarousel.css */
-.hits-wrapper { margin: 0 0 24px; }
-.hits-title   { margin: 0 0 12px; font-size: 24px; }
-.hits-grid    { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; }
-.hits-card    { background:#1e1e1f; border-radius:8px; padding:8px; cursor:pointer; text-align:center; }
-.hits-card img{ width:100%; aspect-ratio:1/1; object-fit:cover; border-radius:4px; }
-.hits-name    { font-size:14px; margin:6px 0 2px; }
-.hits-price   { font-weight:600; }
-@media(max-width:640px){
-  .hits-grid{ grid-template-columns: repeat(2,1fr); }
-}
+.hits-grid {
+    display: flex;
+    gap: 12px;
+    padding: 0 16px 12px;
+    align-items: flex-start;
+    position: relative;
+    min-height: 110px; /* для красивого эффекта при смене */
+    overflow: hidden;
+  }
+  
+  /* Для плавности и правильного наложения анимированных групп */
+  .hits-anim-group {
+    width: 100%;
+    display: flex;
+    gap: 12px;
+    position: absolute;
+    left: 0;
+    top: 0;
+  }
+  /* webapp/src/components/HitsCarousel.css */
+.hits-wrapper {
+    margin: 0 0 24px;
+  }
+  
+  .hits-title {
+    margin: 0 0 12px;
+    font-size: 24px;
+  }
+  
+  .hits-grid {
+    display: flex;
+    gap: 12px;
+    padding: 0 16px 12px;
+    align-items: flex-start;
+  }
+  
+  .hits-card {
+    width: 72px;
+    flex-shrink: 0;
+    text-align: center;
+    cursor: pointer;
+    color: #fff;
+    font-size: 11px;
+    line-height: 1.2;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #1c1c1e;
+    border: 1px solid #333;
+    transition: all 0.2s ease;
+    padding: 0;
+    box-sizing: border-box;
+  }
+  
+  .hits-card img {
+    width: 100%;
+    height: 60px;
+    object-fit: cover;
+    border-bottom: 1px solid #333;
+    border-radius: 0;
+  }
+  
+  .hits-card .hits-name {
+    display: block;
+    padding: 4px 4px 0 4px;
+    font-size: 11px;
+    color: #fff;
+  }
+  
+  .hits-card .hits-price {
+    font-size: 11px;
+    font-weight: 600;
+    padding-bottom: 4px;
+  }
+  
+  .hits-card:hover, .hits-card:active {
+    background: #262628;
+    border-color: #e53935;
+  }
+  
+  @media(max-width:640px){
+    .hits-grid { gap: 8px; }
+  }
+  

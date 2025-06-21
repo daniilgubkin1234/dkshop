@@ -2,15 +2,16 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { API_URL } from "../api.js";
+import { AnimatePresence, motion } from "framer-motion";
 import "./HitsCarousel.css";
 
-const PAGE = 4;           // сколько карточек за раз
-const INTERVAL = 3000;    // мс
+const PAGE = 4;
+const INTERVAL = 3000;
 
 export default function HitsCarousel() {
-  const [hits, setHits]       = useState([]);
-  const [page, setPage]       = useState(0);
-  const navigate              = useNavigate();
+  const [hits, setHits] = useState([]);
+  const [page, setPage] = useState(0);
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetch(`${API_URL}/hits`)
@@ -33,21 +34,43 @@ export default function HitsCarousel() {
   const start = page * PAGE;
   const slice = hits.slice(start, start + PAGE);
 
+  // Ключ для анимации - используем страницу и id товаров
+  const animKey = slice.map(p => p.id).join("-");
+
   return (
     <div className="hits-wrapper">
       <h2 className="hits-title">Хиты продаж</h2>
-      <div className="hits-grid">
-        {slice.map(p => (
-          <div key={p.id} className="hits-card" onClick={() => navigate(`/product/${p.id}`)}>
-            <img
-              src={p.images?.[0] || "/static/no-image.png"}
-              alt={p.name}
-              onError={e => { e.currentTarget.src = "/static/no-image.png"; }}
-            />
-            <p className="hits-name">{p.name}</p>
-            <p className="hits-price">{p.price.toLocaleString()} ₽</p>
-          </div>
-        ))}
+      <div className="hits-grid" style={{ minHeight: 110, position: "relative" }}>
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={animKey}
+            className="hits-anim-group"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.45, ease: "easeInOut" }}
+            style={{
+              display: "flex",
+              gap: "12px",
+              width: "100%",
+              position: "absolute",
+              left: 0,
+              top: 0,
+            }}
+          >
+            {slice.map(p => (
+              <div key={p.id} className="hits-card" onClick={() => navigate(`/product/${p.id}`)}>
+                <img
+                  src={p.images?.[0] || "/static/no-image.png"}
+                  alt={p.name}
+                  onError={e => { e.currentTarget.src = "/static/no-image.png"; }}
+                />
+                <span className="hits-name">{p.name}</span>
+                <span className="hits-price">{p.price.toLocaleString()} ₽</span>
+              </div>
+            ))}
+          </motion.div>
+        </AnimatePresence>
       </div>
     </div>
   );
