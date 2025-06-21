@@ -6,7 +6,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import "./HitsCarousel.css";
 
 const PAGE = 4;
-const INTERVAL = 3000;
+const INTERVAL = 5000;
 
 export default function HitsCarousel() {
   const [hits, setHits] = useState([]);

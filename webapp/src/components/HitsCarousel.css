@@ -4,18 +4,17 @@
     padding: 0 16px 12px;
     align-items: flex-start;
     position: relative;
-    min-height: 110px; /* для красивого эффекта при смене */
+    min-height: 125px;
     overflow: hidden;
+    min-height: unset; /* убираем фиксированную высоту! */
   }
   
-  /* Для плавности и правильного наложения анимированных групп */
   .hits-anim-group {
     width: 100%;
     display: flex;
     gap: 12px;
-    position: absolute;
-    left: 0;
-    top: 0;
+    /* position: absolute;   убираем абсолют, чтобы высота считалась автоматически */
+    /* left: 0; top: 0; */
   }
   /* webapp/src/components/HitsCarousel.css */
 .hits-wrapper {
