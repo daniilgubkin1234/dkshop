@@ -37,6 +37,7 @@
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
+    /* height: 110px; можно добавить если хочешь жёстко фиксировать высоту */
   }
   .hits-card img {
     width: 100%;
@@ -46,11 +47,17 @@
     border-radius: 0;
   }
   .hits-card .hits-name {
-    display: block;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
     padding: 4px 4px 0 4px;
     font-size: 11px;
     color: #fff;
     word-break: break-word;
+    min-height: 33px;
+    max-height: 33px;
   }
   .hits-card .hits-price {
     font-size: 11px;
