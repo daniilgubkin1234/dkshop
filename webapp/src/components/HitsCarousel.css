@@ -61,9 +61,5 @@
     background: #262628;
     border-color: #e53935;
   }
-  @media (max-width: 640px) {
-    .hits-card {
-      width: 48px;
-    }
-  }
+  
   
