@@ -287,11 +287,11 @@ def get_orders(creds: HTTPBasicCredentials = Depends(check_admin)):
                     "quantity": it['quantity'],
                     "name": prod["name"] if prod else f"#{it['product_id']}",
                     "price": prod["price"] if prod else 0
-                    })
-        od = o.dict()
-        od['items'] = enriched_items
-        enriched.append(od)
-    return enriched
+                })
+            od = o.dict()
+            od['items'] = enriched_items
+            enriched.append(od)
+        return enriched
 
 @app.patch("/admin/orders/{order_id}")
 def update_order_status(order_id: int, new_status: str, creds: HTTPBasicCredentials = Depends(check_admin)):
