@@ -79,34 +79,45 @@ export default function AdminOrders() {
             <th>Статус</th>
             <th>Дата</th>
             <th>Содержимое</th>
+            <th>Сумма</th>
             <th>Действия</th>
           </tr>
         </thead>
-        <tbody>
-          {orders.map(o => (
-            <tr key={o.id}>
-              <td>{o.id}</td>
-              <td>{o.name}</td>
-              <td>{o.phone}</td>
-              <td>{o.status}</td>
-              <td>{new Date(o.created_at).toLocaleString()}</td>
-              <td style={{ whiteSpace: "pre-wrap", maxWidth: 300 }}>
-                {o.items.map(it => `${it.name} × ${it.quantity}`).join("\n")}
-              </td>
-              <td>
-                <button onClick={() => updateStatus(o.id, "Принят в работу")}>Принят</button>
-                <button onClick={() => updateStatus(o.id, "В доставке")}>В доставке</button>
-                <button onClick={() => updateStatus(o.id, "Завершён")}>Завершён</button>
-                <button
-                  onClick={() => deleteOrder(o.id)}
-                  style={{ marginLeft: 8, background: "#e53935", color: "#fff" }}
-                >
-                  🗑
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
+          <tbody>
+    {orders.map(o => {
+      // вычисляем сумму заказа
+      const total = (o.items || []).reduce(
+        (sum, it) => sum + (it.price || 0) * (it.quantity || 0),
+        0
+      );
+      return (
+        <tr key={o.id}>
+          <td>{o.id}</td>
+          <td>{o.name}</td>
+          <td>{o.phone}</td>
+          <td>{o.status}</td>
+          <td>{new Date(o.created_at).toLocaleString()}</td>
+          <td style={{ whiteSpace: "pre-wrap", maxWidth: 300 }}>
+            {o.items.map(it => `${it.name} × ${it.quantity}`).join("\n")}
+          </td>
+          <td>
+            {total ? total.toLocaleString() + " ₽" : "—"}
+          </td>
+          <td>
+            <button onClick={() => updateStatus(o.id, "Принят в работу")}>Принят</button>
+            <button onClick={() => updateStatus(o.id, "В доставке")}>В доставке</button>
+            <button onClick={() => updateStatus(o.id, "Завершён")}>Завершён</button>
+            <button
+              onClick={() => deleteOrder(o.id)}
+              style={{ marginLeft: 8, background: "#e53935", color: "#fff" }}
+            >
+              🗑
+            </button>
+          </td>
+        </tr>
+      );
+    })}
+  </tbody>
       </table>
     </div>
   );
