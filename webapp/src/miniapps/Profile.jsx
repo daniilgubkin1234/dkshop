@@ -60,28 +60,28 @@ export default function Profile() {
               </tr>
             </thead>
             <tbody>
-              {orders.map(o => (
-                <tr key={o.id}>
-                  <td>{o.id}</td>
-                  <td>{o.status}</td>
-                  <td>{new Date(o.created_at).toLocaleString()}</td>
-                  <td>{o.items?.length ?? 0}</td>
-                  <td>
-                    {o.items && o.items.length > 0 ? (
-                      <ul style={{ margin: 0, paddingLeft: 16 }}>
-                        {o.items.map((item, idx) => (
-                          <li key={idx}>
-                            {item.name || `#${item.product_id}`} × {item.quantity}
-                          </li>
-                        ))}
-                      </ul>
-                    ) : (
-                      "—"
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
+  {orders.map(o => (
+    <tr key={o.id}>
+      <td data-label="ID">{o.id}</td>
+      <td data-label="Статус">{o.status}</td>
+      <td data-label="Дата">{new Date(o.created_at).toLocaleString()}</td>
+      <td data-label="Позиций">{o.items?.length ?? 0}</td>
+      <td data-label="Состав заказа">
+        {o.items && o.items.length > 0 ? (
+          <ul>
+            {o.items.map((item, idx) => (
+              <li key={idx}>
+                {item.name || `#${item.product_id}`} × {item.quantity}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          "—"
+        )}
+      </td>
+    </tr>
+  ))}
+</tbody>
           </table>
         )}
       </section>

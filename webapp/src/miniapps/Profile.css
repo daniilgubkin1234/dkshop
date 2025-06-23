@@ -83,4 +83,49 @@
     font-weight: normal;
     color: #ddd;
   }
+  @media (max-width: 700px) {
+    .orders-table,
+    .orders-table thead,
+    .orders-table tbody,
+    .orders-table th,
+    .orders-table td,
+    .orders-table tr {
+      display: block;
+      width: 100%;
+    }
   
+    .orders-table thead {
+      display: none; /* Скрываем шапку на мобильных */
+    }
+  
+    .orders-table tr {
+      margin-bottom: 16px;
+      border-radius: 8px;
+      background: #222;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.25);
+      padding: 8px 0;
+    }
+  
+    .orders-table td {
+      padding: 8px 12px;
+      border: none;
+      position: relative;
+      min-width: 45vw;
+      word-break: break-word;
+    }
+  
+    .orders-table td:before {
+      content: attr(data-label);
+      display: block;
+      font-size: 0.95em;
+      color: #bbb;
+      font-weight: bold;
+      margin-bottom: 3px;
+    }
+  
+    .orders-table ul {
+      padding-left: 0;
+      margin-top: 6px;
+      margin-bottom: 0;
+    }
+  }
