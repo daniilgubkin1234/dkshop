@@ -10,22 +10,27 @@ export default function Header({ onSearch }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [infoTitle, setInfoTitle] = useState("");
   const [infoContent, setInfoContent] = useState("");
-  const [pages, setPages] = useState([]); // <- загружаемые пункты меню
+  const [pages, setPages] = useState([]);
+  const [officialChannelUrl, setOfficialChannelUrl] = useState("https://vk.com/dk_pro_tuning?from=groups"); // fallback по-умолчанию
 
   const navigate = useNavigate();
   const isAdmin = localStorage.getItem("auth_token") !== null;
   const user = JSON.parse(localStorage.getItem("dkshop_user") || "null");
   const isLoggedIn = Boolean(user?.id);
 
-  /* ─── Загружаем все статичные страницы ─── */
+  // Загружаем все статичные страницы (и URL для official_channel)
   useEffect(() => {
     fetch(`${API_URL}/info`)
       .then((r) => (r.ok ? r.json() : []))
-      .then(setPages)
+      .then((pages) => {
+        setPages(pages);
+        // ищем official_channel
+        const page = pages.find((p) => p.slug === "official_channel");
+        if (page && page.content) setOfficialChannelUrl(page.content);
+      })
       .catch(console.error);
   }, []);
 
-  /* ─── Telegram WebApp back-button ─── */
   useEffect(() => {
     if (window.TelegramWebApp) {
       window.TelegramWebApp.ready();
@@ -47,10 +52,9 @@ export default function Header({ onSearch }) {
   const toggleSidebar = () => setIsSidebarOpen((p) => !p);
   const handleLogoClick = () => navigate("/");
 
-  /* ─── Открываем выбранную страницу в модалке ─── */
   const openInfo = (slug) => {
     const page = pages.find((p) => p.slug === slug);
-    if (!page) return; // на случай, если slug ещё не создан
+    if (!page) return;
     setInfoTitle(page.title);
     setInfoContent(page.content);
     toggleSidebar();
@@ -68,7 +72,7 @@ export default function Header({ onSearch }) {
 
           <div className="header-top__right">
             <a
-              href="https://vk.com/dk_pro_tuning?from=groups"
+              href={officialChannelUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="header-official"
@@ -150,7 +154,7 @@ export default function Header({ onSearch }) {
                 <Link
                   to="/admin/orders"
                   className="admin-link"     
-                onClick={toggleSidebar}
+                  onClick={toggleSidebar}
                 >
                   Панель администратора
                 </Link>
