@@ -37,7 +37,7 @@ HTTP_TIMEOUT = aiohttp.ClientTimeout(total=10)
 MAIN_MENU = ReplyKeyboardMarkup(
     keyboard=[
         ["🛍 Открыть магазин"],
-        ["🔎 Поиск товара"],  
+        ["🔎 Поиск товара"],
         ["ℹ️ О компании", "📣 Группа Вконтакте"],
         ["🙋‍♂️ Пригласить друга"],
     ],
@@ -65,13 +65,10 @@ TOKEN_RE = re.compile(r"[a-zа-яё0-9]+", re.I)
 def tokenize(s: str) -> set[str]:
     return set(TOKEN_RE.findall(s.lower()))
 
-# ─── Унифицированная отправка товара + подсказки ───
-async def send_product_with_hint(update: Update, product: dict) -> None:
-    txt, kb = build_product_message(product)
-    await update.message.reply_text(txt, reply_markup=kb)
-    # дополнительное сообщение-подсказка
+# ─── Сообщение-подсказка ("Если я не нашёл ...") ───
+async def send_product_hint(update: Update) -> None:
     hint_text = (
-        "Если я не нашёл интересующий вас товар, вы можете найти конкретно то, что вам нужно в нашем магазине!"
+        "Если я не нашёл интересующий вас товар, попробуйте задать вопрос точнее, или вы можете найти конкретно то, что вам нужно в нашем магазине!"
     )
     hint_kb = InlineKeyboardMarkup([
         [InlineKeyboardButton("🛍 Открыть магазин", web_app=WebAppInfo(url=FRONT_URL))]
@@ -134,7 +131,7 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
             "• «коллектор ваз 2107»\n"
             "• «резонатор на 2109»\n"
             "• или просто введите модель автомобиля — например, «2108»\n\n"
-            "Чем точнее запрос, тем точнее ответ.\n"
+            "Чем точнее запрос, тем точнее будет поиск и, соответственно, ответ!\n"
             "Попробуйте задать свой вопрос, или откройте каталог для просмотра ассортимента 👇",
             reply_markup=InlineKeyboardMarkup([
                 [InlineKeyboardButton("Открыть магазин", web_app=WebAppInfo(url=FRONT_URL))]
@@ -176,10 +173,11 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
             return
 
         if products:
-            # повторно ранжируем внутри результатов модели по полному запросу
             best_prod = _rank_products(query, products)[0]
-            await send_product_with_hint(update, best_prod)
-            # --- Новое: выдача каталога модели ---
+            # 1. Показываем карточку товара
+            txt, kb = build_product_message(best_prod)
+            await update.message.reply_text(txt, reply_markup=kb)
+            # 2. Затем — каталог (если он есть)
             model_card = await find_model_card_link(query)
             if model_card:
                 label, model_val = model_card
@@ -189,6 +187,8 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
                     [InlineKeyboardButton(label or model_val, web_app=WebAppInfo(url=catalog_url))]
                 ])
                 await update.message.reply_text(msg, reply_markup=kb)
+            # 3. Затем — "Если не нашёл..."
+            await send_product_hint(update)
             return
 
     # 2) Общий поиск — сначала только по названиям
@@ -215,16 +215,15 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
             products = []
 
     if products:
-        # ШАГ «точное покрытие по названию»: все токены запроса должны быть в name
         q_toks = tokenize(query)
         exact_name = [p for p in products if q_toks.issubset(tokenize(p["name"]))]
-        pool = exact_name if exact_name else products  # если нет 100%‑покрытия, ранжируем весь список
+        pool = exact_name if exact_name else products
 
         best_prod, best_score = _rank_products(query, pool)
 
         if best_score >= 0.6:
-            await send_product_with_hint(update, best_prod)
-            # --- Новое: выдача каталога модели ---
+            txt, kb = build_product_message(best_prod)
+            await update.message.reply_text(txt, reply_markup=kb)
             model_card = await find_model_card_link(query)
             if model_card:
                 label, model_val = model_card
@@ -234,6 +233,7 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
                     [InlineKeyboardButton(label or model_val, web_app=WebAppInfo(url=catalog_url))]
                 ])
                 await update.message.reply_text(msg, reply_markup=kb)
+            await send_product_hint(update)
             return
         if best_score >= 0.4:
             top3 = _rank_products(query, pool, k=3, return_scores=False)
@@ -249,7 +249,6 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
                 "Нашёл несколько подходящих товаров, уточните, пожалуйста:",
                 reply_markup=InlineKeyboardMarkup([buttons]),
             )
-            # --- Новое: выдача каталога модели (можно убрать если не нужно после топ-3) ---
             model_card = await find_model_card_link(query)
             if model_card:
                 label, model_val = model_card
@@ -259,6 +258,7 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
                     [InlineKeyboardButton(label or model_val, web_app=WebAppInfo(url=catalog_url))]
                 ])
                 await update.message.reply_text(msg, reply_markup=kb)
+            await send_product_hint(update)
             return
 
     # 3) Поиск по типу (далее логика без изменений)
@@ -269,8 +269,8 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
                 all_products = await resp.json()
         type_matches = [p for p in all_products if query in p.get("type", "").lower()]
         if type_matches:
-            await send_product_with_hint(update, type_matches[0])
-            # --- Новое: выдача каталога модели ---
+            txt, kb = build_product_message(type_matches[0])
+            await update.message.reply_text(txt, reply_markup=kb)
             model_card = await find_model_card_link(query)
             if model_card:
                 label, model_val = model_card
@@ -280,6 +280,7 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
                     [InlineKeyboardButton(label or model_val, web_app=WebAppInfo(url=catalog_url))]
                 ])
                 await update.message.reply_text(msg, reply_markup=kb)
+            await send_product_hint(update)
             return
     except Exception:
         logging.exception("API request failed [type search]")
@@ -312,7 +313,7 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
         return
 
     # 4. Далее — ключевые слова (>=2)
-    def keywords(s): return set(re.findall(r"[a-zа-яё0-9\\-]+", s.lower()))
+    def keywords(s): return set(re.findall(r"[a-zа-я0-9\\-]+", s.lower()))
     query_words = keywords(query)
     faq_matches = []
     for idx, f in enumerate(faqs):
@@ -321,13 +322,11 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
         if len(inter) >= 2:
             faq_matches.append((len(inter), idx, f))
 
-    # Если найдено хотя бы 1 хороший match — предлагаем лучший или варианты
     if faq_matches:
-        faq_matches.sort(reverse=True)  # по количеству совпадений
+        faq_matches.sort(reverse=True)
         if len(faq_matches) == 1:
             await update.message.reply_text(faq_matches[0][2]["answer"])
             return
-        # Если есть несколько — вывести топ-3 кнопками
         buttons = [
             InlineKeyboardButton(
                 f[2]["question"],
