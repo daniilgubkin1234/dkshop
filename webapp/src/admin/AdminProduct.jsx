@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./Admin.css";
 import AdminHeader from "./AdminHeader";
-import { API_URL } from '../api.js';  
+import { API_URL } from '../api.js';
 
 const emptyProduct = {
   name: "",
@@ -23,12 +23,13 @@ export default function AdminProduct() {
   const navigate = useNavigate();
   const [modelCards, setModelCards] = useState([]);
 
-useEffect(() => {
-  fetch("/model_cards")
-    .then((r) => (r.ok ? r.json() : []))
-    .then(setModelCards)
-    .catch(() => setModelCards([]));
-}, []);
+  useEffect(() => {
+    fetch("/model_cards")
+      .then((r) => (r.ok ? r.json() : []))
+      .then(setModelCards)
+      .catch(() => setModelCards([]));
+  }, []);
+
   const loadProducts = () => {
     const token = localStorage.getItem("auth_token");
     if (!token) {
@@ -54,19 +55,20 @@ useEffect(() => {
       })
       .finally(() => setLoading(false));
   };
-/* ---------- 1. toggleHit ---------- */
-    const toggleHit = async (prod) => {
-      const token = localStorage.getItem('auth_token');
-      const updated = await fetch(`${API_URL}/products/${prod.id}`, {
-       method : 'PATCH',
-       headers: {
-         'Content-Type': 'application/json',
-         Authorization  : `Basic ${token}`,
-       },
-       body: JSON.stringify({ is_hit: !prod.is_hit }),
-      }).then(r => r.json());
-     setProducts(prev => prev.map(p => p.id === updated.id ? updated : p));
-   };
+
+  const toggleHit = async (prod) => {
+    const token = localStorage.getItem('auth_token');
+    const updated = await fetch(`${API_URL}/products/${prod.id}`, {
+      method : 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization  : `Basic ${token}`,
+      },
+      body: JSON.stringify({ is_hit: !prod.is_hit }),
+    }).then(r => r.json());
+    setProducts(prev => prev.map(p => p.id === updated.id ? updated : p));
+  };
+
   const handleFileUpload = async (e) => {
     const files = Array.from(e.target.files);
     for (const file of files) {
@@ -198,30 +200,28 @@ useEffect(() => {
       .map((url) => url.trim())
       .filter(Boolean)
       .map((url, i) => {
-             // если в url нет http(s) — делаем его абсолютным
-            const srcUrl = url.startsWith("http")
-              ? url
-              : `https://dkshopbot.ru${url.startsWith("/") ? "" : "/"}${url}`;
-            return (
-              <img
+        const srcUrl = url.startsWith("http")
+          ? url
+          : `https://dkshopbot.ru${url.startsWith("/") ? "" : "/"}${url}`;
+        return (
+          <img
             key={i}
             src={srcUrl}
-          alt="img"
-          onError={(e) => {
-            e.target.onerror = null;
-            e.target.src = "/static/no-image.png";
-          }}
-          style={{
-            height: 40,
-            borderRadius: 4,
-            marginRight: 4,
-            background: "#fff",
-            border: "1px solid #aaa",
-          }}
-        />
-      
-      );
-     })
+            alt="img"
+            onError={(e) => {
+              e.target.onerror = null;
+              e.target.src = "/static/no-image.png";
+            }}
+            style={{
+              height: 40,
+              borderRadius: 4,
+              marginRight: 4,
+              background: "#fff",
+              border: "1px solid #aaa",
+            }}
+          />
+        );
+      });
   }
 
   return (
@@ -236,30 +236,28 @@ useEffect(() => {
             setNewProduct((p) => ({ ...p, name: e.target.value }))
           }
         />
-       <div style={{ display: "flex", flexDirection: "column" }}>
-  
-    <select
-      multiple
-      value={newProduct.model_compat.split(',').map(x => x.trim()).filter(Boolean)}
-      onChange={e => {
-        const selected = Array.from(e.target.selectedOptions).map(opt => opt.value);
-        setNewProduct(p => ({
-          ...p,
-          model_compat: selected.join(", ")
-        }));
-      }}
-      className="product-multiselect"
-    >
-      {modelCards.flatMap(card =>
-        (card.models || []).map(model => (
-          <option key={card.label + model} value={model}>
-            {card.label}: {model}
-          </option>
-        ))
-      )}
-    </select>
-  </div>
-
+        <div style={{ display: "flex", flexDirection: "column" }}>
+          <select
+            multiple
+            value={newProduct.model_compat.split(',').map(x => x.trim()).filter(Boolean)}
+            onChange={e => {
+              const selected = Array.from(e.target.selectedOptions).map(opt => opt.value);
+              setNewProduct(p => ({
+                ...p,
+                model_compat: selected.join(", ")
+              }));
+            }}
+            className="product-multiselect"
+          >
+            {modelCards.flatMap(card =>
+              (card.models || []).map(model => (
+                <option key={card.label + model} value={model}>
+                  {card.label}: {model}
+                </option>
+              ))
+            )}
+          </select>
+        </div>
         <input
           placeholder="Совместимость (напр. 2101-07)"
           value={newProduct.model_compat}
@@ -394,11 +392,11 @@ useEffect(() => {
                     />
                   </td>
                   <td>
-                  <input
-                  type="checkbox"
-                  checked={p.is_hit}
-                  onChange={() => toggleHit(p)}
-                  />
+                    <input
+                      type="checkbox"
+                      checked={p.is_hit}
+                      onChange={() => toggleHit(p)}
+                    />
                   </td>
                   <td>
                     <input
@@ -417,28 +415,79 @@ useEffect(() => {
                       onChange={handleEditFileUpload}
                       style={{ marginTop: 6 }}
                     />
+                    {/* Список картинок с удалением */}
                     {editProduct.images && (
                       <div
                         style={{
                           display: "flex",
                           gap: 8,
                           marginTop: 6,
+                          flexWrap: "wrap"
                         }}
                       >
-                        {renderImages(editProduct.images)}
+                        {editProduct.images
+                          .split(",")
+                          .map((imgUrl, idx) => {
+                            const url = imgUrl.trim();
+                            if (!url) return null;
+                            const srcUrl = url.startsWith("http")
+                              ? url
+                              : `https://dkshopbot.ru${url.startsWith("/") ? "" : "/"}${url}`;
+                            return (
+                              <span key={idx} style={{ display: "inline-block", marginRight: 8, position: "relative" }}>
+                                <img
+                                  src={srcUrl}
+                                  alt=""
+                                  style={{ height: 40, borderRadius: 4, border: "1px solid #aaa", background: "#fff" }}
+                                />
+                                <button
+                                  type="button"
+                                  style={{
+                                    position: "absolute",
+                                    top: 0,
+                                    right: 0,
+                                    background: "#e53935",
+                                    color: "#fff",
+                                    border: "none",
+                                    borderRadius: "50%",
+                                    width: 22,
+                                    height: 22,
+                                    cursor: "pointer",
+                                    fontWeight: "bold",
+                                    padding: 0,
+                                    transform: "translate(35%,-35%)",
+                                  }}
+                                  title="Удалить картинку"
+                                  onClick={() => {
+                                    const arr = editProduct.images
+                                      .split(",")
+                                      .map(s => s.trim())
+                                      .filter(Boolean)
+                                      .filter((_, i) => i !== idx);
+                                    setEditProduct(v => ({
+                                      ...v,
+                                      images: arr.join(", ")
+                                    }));
+                                  }}
+                                >
+                                  ×
+                                </button>
+                              </span>
+                            );
+                          })}
                       </div>
                     )}
                   </td>
                   <td>
-                  <input
-                    value={editProduct.description}
-                    onChange={(e) =>
-                    setEditProduct((v) => ({
-                     ...v,
-                      description: e.target.value,
-                    }))
-                    }
-                  />
+                    <input
+                      value={editProduct.description}
+                      onChange={(e) =>
+                        setEditProduct((v) => ({
+                          ...v,
+                          description: e.target.value,
+                        }))
+                      }
+                    />
                   </td>
                   <td>
                     <button onClick={handleEditSave}>Сохранить</button>
@@ -460,25 +509,23 @@ useEffect(() => {
                   <td>{p.type}</td>
                   <td>{p.stock}</td>
                   <td>
-                  <input
-                  type="checkbox"
-                  checked={p.is_hit}
-                  onChange={() => toggleHit(p)}
-                  />
+                    <input
+                      type="checkbox"
+                      checked={p.is_hit}
+                      onChange={() => toggleHit(p)}
+                    />
                   </td>
                   <td>
                     {p.images && p.images.length > 0
                       ? renderImages(
-                          (Array.isArray(p.images) ? p.images : [p.images]).join(
-                            ","
-                          )
+                          (Array.isArray(p.images) ? p.images : [p.images]).join(",")
                         )
                       : ""}
                   </td>
                   <td>{p.description}</td>
-                  <td>                    
+                  <td>
                     <button onClick={() => handleEdit(p)}>
-                    ✎
+                      ✎
                     </button>
                     <button
                       style={{ background: "#e53935", color: "#fff" }}
