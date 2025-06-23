@@ -221,6 +221,8 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
             return
         if best_score >= 0.4:
             top3 = _rank_products(query, pool, k=3, return_scores=False)
+            if isinstance(top3, tuple):  # фикс для кортежа (список, None)
+                top3 = top3[0]
             buttons = [
                 InlineKeyboardButton(
                     p["name"], web_app=WebAppInfo(url=f"{FRONT_URL.rstrip('/')}/product/{p['id']}")
