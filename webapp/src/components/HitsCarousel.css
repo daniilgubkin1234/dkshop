@@ -16,7 +16,7 @@
   
   .hits-card {
     width: 72px;
-    flex-shrink: 0;    /* <-- даёт карточкам ужиматься на маленьких экранах */
+    flex-shrink: 1;    /* <-- даёт карточкам ужиматься на маленьких экранах */
     text-align: center;
     cursor: pointer;
     color: #fff;
