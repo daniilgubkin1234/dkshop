@@ -9,7 +9,6 @@ export default function Profile() {
     return raw ? JSON.parse(raw) : {};
   });
 
-  // Показать «назад» в Telegram и загрузить заказы
   useEffect(() => {
     if (window.TelegramWebApp) {
       window.TelegramWebApp.ready();
@@ -30,8 +29,6 @@ export default function Profile() {
     };
   }, [user.id]);
 
-  
-
   return (
     <div className="profile-container">
       <h1 className="profile-title">Личный кабинет</h1>
@@ -45,7 +42,6 @@ export default function Profile() {
           {user.username   && <div><span className="label">Username:</span> @{user.username}</div>}
           {user.phone      && <div><span className="label">Телефон:</span> {user.phone}</div>}
         </div>
-        
       </section>
 
       <section className="profile-card">
@@ -60,6 +56,7 @@ export default function Profile() {
                 <th>Статус</th>
                 <th>Дата</th>
                 <th>Позиций</th>
+                <th>Состав заказа</th>
               </tr>
             </thead>
             <tbody>
@@ -69,6 +66,19 @@ export default function Profile() {
                   <td>{o.status}</td>
                   <td>{new Date(o.created_at).toLocaleString()}</td>
                   <td>{o.items?.length ?? 0}</td>
+                  <td>
+                    {o.items && o.items.length > 0 ? (
+                      <ul style={{ margin: 0, paddingLeft: 16 }}>
+                        {o.items.map((item, idx) => (
+                          <li key={idx}>
+                            {item.name || `#${item.product_id}`} × {item.quantity}
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      "—"
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>

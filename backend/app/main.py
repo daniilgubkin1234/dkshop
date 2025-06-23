@@ -204,16 +204,28 @@ def orders_by_phone(phone: str):
         ).order_by(Order.created_at.desc())
         return session.exec(stmt).all()
 
-@app.get("/orders/by-user", response_model=list[Order])
+@app.get("/orders/by-user")
 def orders_by_user(user_id: int, db: Session = Depends(get_db)):
-    """
-    Возвращает список заказов пользователя по его Telegram ID,
-    упорядоченных от новых к старым.
-    """
-    stmt = select(Order) \
-             .where(Order.user_id == user_id) \
-             .order_by(Order.created_at.desc())
-    return db.exec(stmt).all()
+    orders = db.exec(
+        select(Order).where(Order.user_id == user_id).order_by(Order.created_at.desc())
+    ).all()
+    # Собираем все product_id во всех заказах
+    all_ids = {item['product_id'] for o in orders for item in o.items}
+    prods = db.exec(select(Product).where(Product.id.in_(all_ids))).all()
+    prod_map = {p.id: p.name for p in prods}
+    enriched = []
+    for o in orders:
+        enriched_items = []
+        for it in o.items:
+            enriched_items.append({
+                "product_id": it['product_id'],
+                "quantity": it['quantity'],
+                "name": prod_map.get(it['product_id'], f"#{it['product_id']}")
+            })
+        od = o.dict()
+        od['items'] = enriched_items
+        enriched.append(od)
+    return enriched
 # --- FAQ CRUD ---
 @app.get("/faq")
 def search_faq(q: str = Query("*", min_length=1)):
