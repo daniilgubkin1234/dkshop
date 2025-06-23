@@ -184,6 +184,7 @@ def create_order(order: Order):
                         f"<b>Имя:</b> {order.name}\n"
                         f"<b>Телефон:</b> {order.phone}\n"
                         f"<b>Позиций:</b> {len(order.items)}\n"
+                        f"Подробную информацию о заказе можно посмотреть в вашем личном кабинете\n"
                         f"📦 Ожидайте звонка для подтверждения."
                     ),
                     "parse_mode": "HTML"

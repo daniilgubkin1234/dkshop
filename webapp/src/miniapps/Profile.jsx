@@ -57,30 +57,41 @@ export default function Profile() {
                 <th>Дата</th>
                 <th>Позиций</th>
                 <th>Состав заказа</th>
+                <th>Сумма</th>
               </tr>
             </thead>
             <tbody>
-  {orders.map(o => (
-    <tr key={o.id}>
-      <td data-label="ID">{o.id}</td>
-      <td data-label="Статус">{o.status}</td>
-      <td data-label="Дата">{new Date(o.created_at).toLocaleString()}</td>
-      <td data-label="Позиций">{o.items?.length ?? 0}</td>
-      <td data-label="Состав заказа">
-        {o.items && o.items.length > 0 ? (
-          <ul>
-            {o.items.map((item, idx) => (
-              <li key={idx}>
-                {item.name || `#${item.product_id}`} × {item.quantity}
-              </li>
-            ))}
-          </ul>
-        ) : (
-          "—"
-        )}
-      </td>
-    </tr>
-  ))}
+  {orders.map(o => {
+    // Считаем сумму заказа
+    const total = (o.items || []).reduce(
+      (sum, item) => sum + (item.price || 0) * (item.quantity || 0),
+      0
+    );
+    return (
+      <tr key={o.id}>
+        <td data-label="ID">{o.id}</td>
+        <td data-label="Статус">{o.status}</td>
+        <td data-label="Дата">{new Date(o.created_at).toLocaleString()}</td>
+        <td data-label="Позиций">{o.items?.length ?? 0}</td>
+        <td data-label="Состав заказа">
+          {o.items && o.items.length > 0 ? (
+            <ul>
+              {o.items.map((item, idx) => (
+                <li key={idx}>
+                  {item.name || `#${item.product_id}`} × {item.quantity}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            "—"
+          )}
+        </td>
+        <td data-label="Сумма">
+          {total ? total.toLocaleString() + " ₽" : "—"}
+        </td>
+      </tr>
+    );
+  })}
 </tbody>
           </table>
         )}
