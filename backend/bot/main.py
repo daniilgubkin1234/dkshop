@@ -97,7 +97,7 @@ async def find_model_card_link(query: str) -> tuple[str, str] | None:
         for model in card.get("models", []):
             model_norm = re.sub(r"[^\wа-я0-9]+", "", model.lower())
             if model_norm and model_norm in normalized_query:
-                return (card.get("label", ""), model)
+                return (card.get("label", ""), ",".join(card.get("models", [])))
     return None
 
 # ─── /start ───

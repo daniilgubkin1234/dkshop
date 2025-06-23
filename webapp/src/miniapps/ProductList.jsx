@@ -6,6 +6,7 @@ import { useCart } from '../context/CartContext.jsx';
 import './ProductList.css';
 import ModelScroll from '../components/ModelScroll.jsx';
 import HitsCarousel from '../components/HitsCarousel.jsx';
+
 /* ---------- helpers ---------- */
 function normalize(str = '') {
   return str
@@ -16,19 +17,18 @@ function normalize(str = '') {
     .trim();
 }
 
-const PAGE_SIZE = 6;               // сколько карточек показывать за раз
+const PAGE_SIZE = 6; // сколько карточек показывать за раз
 
 export default function ProductList({ onSearchChange }) {
-  const [products, setProducts]           = useState([]);
-  const [filterQuery, setFilterQuery]     = useState('');
+  const [products, setProducts] = useState([]);
+  const [filterQuery, setFilterQuery] = useState('');
   const [selectedModel, setSelectedModel] = useState(null);
   const [selectedByName, setSelectedByName] = useState(false);
-  const [loading, setLoading]             = useState(true);
-  const [error, setError]                 = useState(null);
-  const [visibleCount, setVisibleCount]   = useState(PAGE_SIZE);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
   const navigate = useNavigate();
-  // [MODEL QUERY PATCH] используем useLocation
   const location = useLocation();
   const { addToCart } = useCart();
 
@@ -48,16 +48,18 @@ export default function ProductList({ onSearchChange }) {
     })();
   }, []);
 
-  /* ---------- [MODEL QUERY PATCH] обработка query-параметра model ---------- */
+  // [MODEL QUERY PATCH FIX] — поддержка множественных моделей из query-параметра
   useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const urlModel = params.get('model');
-    if (urlModel) {
-      setSelectedModel([normalize(urlModel)]);
-      setSelectedByName(false); // или true, если нужен поиск по названию
+    if (!loading && products.length > 0) {
+      const params = new URLSearchParams(location.search);
+      const urlModel = params.get('model');
+      if (urlModel) {
+        const modelsArr = urlModel.split(',').map(m => normalize(m));
+        setSelectedModel(modelsArr);
+        setSelectedByName(false);
+      }
     }
-  }, [location.search]);
-  // [конец PATCH]
+  }, [loading, products, location.search]);
 
   /* ---------- подписка на поиск сверху ---------- */
   useEffect(() => {
@@ -75,15 +77,19 @@ export default function ProductList({ onSearchChange }) {
   const filtered = products.filter(p => {
     const q      = normalize(filterQuery);
     const name   = normalize(p.name);
-    const model  = normalize(p.model_compat);
+    const model  = normalize(p.model_compat || '');
     const type   = normalize(p.type);
 
     const matchesText = !q || name.includes(q) || model.includes(q) || type.includes(q);
 
+    // --- исправленная фильтрация по моделям ---
+    // превращаем model_compat в массив, разбивая по пробелу, запятой и точке с запятой
+    const productModels = model.split(/[\s,;]+/).filter(Boolean);
+
     const matchesModel = !selectedModel || (
       Array.isArray(selectedModel)
-        ? selectedModel.some(m => (selectedByName ? name.includes(m) : model.includes(m)))
-        : selectedByName ? name.includes(normalize(selectedModel)) : model.includes(normalize(selectedModel))
+        ? selectedModel.some(m => productModels.includes(m))
+        : productModels.includes(normalize(selectedModel))
     );
 
     return matchesText && matchesModel;
@@ -92,15 +98,15 @@ export default function ProductList({ onSearchChange }) {
   const visible = filtered.slice(0, visibleCount);
 
   /* ---------- handlers ---------- */
-  const handleClick       = id         => navigate(`/product/${id}`);
-  const handleAddToCart   = (e, prod)  => { e.stopPropagation(); addToCart(prod); };
-  const handleShowMore    = ()         => setVisibleCount(v => Math.min(v + PAGE_SIZE, filtered.length));
+  const handleClick = id => navigate(`/product/${id}`);
+  const handleAddToCart = (e, prod) => { e.stopPropagation(); addToCart(prod); };
+  const handleShowMore = () => setVisibleCount(v => Math.min(v + PAGE_SIZE, filtered.length));
 
   /* ---------- render ---------- */
   return (
     <>
       {/* выбор модели */}
-      <HitsCarousel /> 
+      <HitsCarousel />
       <h2 className="catalog-title">Каталог</h2>
 
       <ModelScroll
@@ -112,7 +118,7 @@ export default function ProductList({ onSearchChange }) {
 
       {/* состояния загрузки / ошибки */}
       {loading && <p className="pl-status">Загрузка…</p>}
-      {error   && <p className="pl-status">{error}</p>}
+      {error && <p className="pl-status">{error}</p>}
       {!loading && !error && filtered.length === 0 && (
         <p className="pl-status">Ничего не найдено</p>
       )}
