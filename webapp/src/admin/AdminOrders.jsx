@@ -104,7 +104,7 @@ export default function AdminOrders() {
             {total ? total.toLocaleString() + " ₽" : "—"}
           </td>
           <td>
-            <button onClick={() => updateStatus(o.id, "Принят в работу")}>Принят</button>
+            <button onClick={() => updateStatus(o.id, "Принят в работу")}>Принят в работу</button>
             <button onClick={() => updateStatus(o.id, "В доставке")}>В доставке</button>
             <button onClick={() => updateStatus(o.id, "Завершён")}>Завершён</button>
             <button
