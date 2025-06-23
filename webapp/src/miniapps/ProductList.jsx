@@ -86,6 +86,13 @@ export default function ProductList({ onSearchChange }) {
     // превращаем model_compat в массив, разбивая по пробелу, запятой и точке с запятой
     const productModels = model.split(/[\s,;]+/).filter(Boolean);
 
+
+    console.log({
+      selectedModel, 
+      productModels, 
+      modelCompat: p.model_compat, 
+      productName: p.name
+    });
     const matchesModel = !selectedModel || (
       Array.isArray(selectedModel)
         ? selectedModel.some(m => productModels.includes(m))
