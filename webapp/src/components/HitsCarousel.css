@@ -16,7 +16,7 @@
   
   .hits-card {
     width: 72px;
-    flex-shrink: 1;    /* <-- даёт карточкам ужиматься на маленьких экранах */
+    flex-shrink: 0;    /* <-- даёт карточкам ужиматься на маленьких экранах */
     text-align: center;
     cursor: pointer;
     color: #fff;
@@ -49,7 +49,7 @@
     color: #fff;
     word-break: break-word;
     min-height: 22px;
-    max-height: 24px;
+    max-height: 36px;
     white-space: normal;
   }
   .hits-card .hits-price {
