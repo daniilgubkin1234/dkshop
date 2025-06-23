@@ -37,6 +37,7 @@ HTTP_TIMEOUT = aiohttp.ClientTimeout(total=10)
 MAIN_MENU = ReplyKeyboardMarkup(
     keyboard=[
         ["🛍 Открыть магазин"],
+        ["🔎 Поиск товара"],  
         ["ℹ️ О компании", "📣 Группа Вконтакте"],
         ["🙋‍♂️ Пригласить друга"],
     ],
@@ -124,6 +125,21 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
                 [InlineKeyboardButton("🛍Открыть магазин", web_app=WebAppInfo(url=FRONT_URL))]
             ]),
         )
+        return
+    if "поиск товара" in text_lower:
+        await update.message.reply_text(
+            "🔎 Я могу найти любой товар по названию, коду модели или даже по вопросу!\n\n"
+            "Например, вы можете написать:\n"
+            "• «глушитель 2112»\n"
+            "• «коллектор ваз 2107»\n"
+            "• «резонатор на 2109»\n"
+            "• или просто введите модель автомобиля — например, «2108»\n\n"
+            "Чем точнее запрос, тем точнее ответ.\n"
+            "Попробуйте задать свой вопрос, или откройте каталог для просмотра ассортимента 👇",
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton("Открыть магазин", web_app=WebAppInfo(url=FRONT_URL))]
+            ]),
+    )
         return
     if "о компании" in text_lower:
         await update.message.reply_text(
