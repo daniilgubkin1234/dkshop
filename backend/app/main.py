@@ -184,8 +184,9 @@ def create_order(order: Order):
                         f"<b>Имя:</b> {order.name}\n"
                         f"<b>Телефон:</b> {order.phone}\n"
                         f"<b>Позиций:</b> {len(order.items)}\n"
-                        f"Подробную информацию о заказе можно посмотреть в вашем личном кабинете\n"
-                        f"📦 Ожидайте звонка для подтверждения."
+                        f"📦 Ожидайте звонка для подтверждения.\n"
+                        f"\n"
+                        f"<b>Подробную информацию</b> о заказе можно посмотреть в вашем личном кабинете.\n"
                     ),
                     "parse_mode": "HTML"
                 },
@@ -275,20 +276,22 @@ def get_orders(creds: HTTPBasicCredentials = Depends(check_admin)):
         orders = s.exec(select(Order).order_by(Order.created_at.desc())).all()
         all_ids = {item['product_id'] for o in orders for item in o.items}
         prods = s.exec(select(Product).where(Product.id.in_(all_ids))).all()
-        prod_map = {p.id: p.name for p in prods}
+        prod_map = {p.id: {"name": p.name, "price": p.price} for p in prods}
         enriched = []
         for o in orders:
             enriched_items = []
             for it in o.items:
+                prod = prod_map.get(it['product_id'])
                 enriched_items.append({
                     "product_id": it['product_id'],
                     "quantity": it['quantity'],
-                    "name": prod_map.get(it['product_id'], f"#{it['product_id']}")
-                })
-            od = o.dict()
-            od['items'] = enriched_items
-            enriched.append(od)
-        return enriched
+                    "name": prod["name"] if prod else f"#{it['product_id']}",
+                    "price": prod["price"] if prod else 0
+                    })
+        od = o.dict()
+        od['items'] = enriched_items
+        enriched.append(od)
+    return enriched
 
 @app.patch("/admin/orders/{order_id}")
 def update_order_status(order_id: int, new_status: str, creds: HTTPBasicCredentials = Depends(check_admin)):
