@@ -1,6 +1,6 @@
-// webapp/src/miniapps/ProductList.jsx
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+// [MODEL QUERY PATCH] импортируем useLocation
+import { useNavigate, useLocation } from 'react-router-dom';
 import { fetchProducts } from '../api.js';
 import { useCart } from '../context/CartContext.jsx';
 import './ProductList.css';
@@ -28,6 +28,8 @@ export default function ProductList({ onSearchChange }) {
   const [visibleCount, setVisibleCount]   = useState(PAGE_SIZE);
 
   const navigate = useNavigate();
+  // [MODEL QUERY PATCH] используем useLocation
+  const location = useLocation();
   const { addToCart } = useCart();
 
   /* ---------- загрузка списка ---------- */
@@ -45,6 +47,17 @@ export default function ProductList({ onSearchChange }) {
       }
     })();
   }, []);
+
+  /* ---------- [MODEL QUERY PATCH] обработка query-параметра model ---------- */
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const urlModel = params.get('model');
+    if (urlModel) {
+      setSelectedModel([normalize(urlModel)]);
+      setSelectedByName(false); // или true, если нужен поиск по названию
+    }
+  }, [location.search]);
+  // [конец PATCH]
 
   /* ---------- подписка на поиск сверху ---------- */
   useEffect(() => {
