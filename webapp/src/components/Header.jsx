@@ -11,7 +11,7 @@ export default function Header({ onSearch }) {
   const [infoTitle, setInfoTitle] = useState("");
   const [infoContent, setInfoContent] = useState("");
   const [pages, setPages] = useState([]);
-  const [officialChannelUrl, setOfficialChannelUrl] = useState("https://vk.com/dk_pro_tuning?from=groups"); // fallback по-умолчанию
+  const [officialChannelUrl, setOfficialChannelUrl] = useState("https://vk.com/dk_pro_tuning?from=groups"); // fallback
 
   const navigate = useNavigate();
   const isAdmin = localStorage.getItem("auth_token") !== null;
@@ -59,6 +59,9 @@ export default function Header({ onSearch }) {
     setInfoContent(page.content);
     toggleSidebar();
   };
+
+  // ВЫБИРАЕМ ТОЛЬКО ОТКАЗЫВАЕМСЯ ОТ official_channel для меню
+  const sidebarPages = pages.filter((p) => p.slug !== "official_channel");
 
   return (
     <>
@@ -132,8 +135,8 @@ export default function Header({ onSearch }) {
 
         <nav className="sidebar-nav">
           <ul>
-            {/* динамически выводим все страницы */}
-            {pages.map((p) => (
+            {/* выводим все страницы КРОМЕ official_channel */}
+            {sidebarPages.map((p) => (
               <li key={p.slug}>
                 <a href="#" onClick={() => openInfo(p.slug)}>
                   {p.title}
@@ -153,7 +156,7 @@ export default function Header({ onSearch }) {
               <li>
                 <Link
                   to="/admin/orders"
-                  className="admin-link"     
+                  className="admin-link"
                   onClick={toggleSidebar}
                 >
                   Панель администратора
