@@ -94,7 +94,7 @@ export default function AdminOrders() {
                 {o.items.map(it => `${it.name} × ${it.quantity}`).join("\n")}
               </td>
               <td>
-                <button onClick={() => updateStatus(o.id, "Принят")}>Принят</button>
+                <button onClick={() => updateStatus(o.id, "Принят в работу")}>Принят</button>
                 <button onClick={() => updateStatus(o.id, "В доставке")}>В доставке</button>
                 <button onClick={() => updateStatus(o.id, "Завершён")}>Завершён</button>
                 <button
