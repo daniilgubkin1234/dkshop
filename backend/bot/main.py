@@ -77,6 +77,29 @@ async def send_product_with_hint(update: Update, product: dict) -> None:
     ])
     await update.message.reply_text(hint_text, reply_markup=hint_kb)
 
+# ─── Новый помощник: Поиск подходящей карточки модели ───
+async def find_model_card_link(query: str) -> tuple[str, str] | None:
+    """
+    Возвращает (label, model), если найдено совпадение по модели в тексте запроса.
+    """
+    try:
+        async with aiohttp.ClientSession(timeout=HTTP_TIMEOUT) as sess:
+            async with sess.get(f"{API_URL}/model_cards") as resp:
+                if not resp.ok:
+                    return None
+                cards = await resp.json()
+    except Exception as e:
+        logging.warning("Failed to fetch model_cards: %s", e)
+        return None
+
+    normalized_query = re.sub(r"[^\wа-я0-9]+", "", query.lower())
+    for card in cards:
+        for model in card.get("models", []):
+            model_norm = re.sub(r"[^\wа-я0-9]+", "", model.lower())
+            if model_norm and model_norm in normalized_query:
+                return (card.get("label", ""), model)
+    return None
+
 # ─── /start ───
 async def cmd_start(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text(
@@ -86,6 +109,7 @@ async def cmd_start(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
         "Пользуйтесь меню ниже для быстрого доступа к функциям 👇",
         reply_markup=MAIN_MENU,
     )
+
 # ─── Основной обработчик текста ───
 async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     text  = update.message.text or ""
@@ -139,6 +163,16 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
             # повторно ранжируем внутри результатов модели по полному запросу
             best_prod = _rank_products(query, products)[0]
             await send_product_with_hint(update, best_prod)
+            # --- Новое: выдача каталога модели ---
+            model_card = await find_model_card_link(query)
+            if model_card:
+                label, model_val = model_card
+                catalog_url = f"{FRONT_URL.rstrip('/')}/?model={model_val}"
+                msg = f"Возможно, то что вы ищете находится в этом каталоге:"
+                kb = InlineKeyboardMarkup([
+                    [InlineKeyboardButton(label or model_val, web_app=WebAppInfo(url=catalog_url))]
+                ])
+                await update.message.reply_text(msg, reply_markup=kb)
             return
 
     # 2) Общий поиск — сначала только по названиям
@@ -174,6 +208,16 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
 
         if best_score >= 0.6:
             await send_product_with_hint(update, best_prod)
+            # --- Новое: выдача каталога модели ---
+            model_card = await find_model_card_link(query)
+            if model_card:
+                label, model_val = model_card
+                catalog_url = f"{FRONT_URL.rstrip('/')}/?model={model_val}"
+                msg = f"Возможно, то что вы ищете находится в этом каталоге:"
+                kb = InlineKeyboardMarkup([
+                    [InlineKeyboardButton(label or model_val, web_app=WebAppInfo(url=catalog_url))]
+                ])
+                await update.message.reply_text(msg, reply_markup=kb)
             return
         if best_score >= 0.4:
             top3 = _rank_products(query, pool, k=3, return_scores=False)
@@ -187,6 +231,16 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
                 "Нашёл несколько подходящих товаров, уточните, пожалуйста:",
                 reply_markup=InlineKeyboardMarkup([buttons]),
             )
+            # --- Новое: выдача каталога модели (можно убрать если не нужно после топ-3) ---
+            model_card = await find_model_card_link(query)
+            if model_card:
+                label, model_val = model_card
+                catalog_url = f"{FRONT_URL.rstrip('/')}/?model={model_val}"
+                msg = f"Возможно, то что вы ищете находится в этом каталоге:"
+                kb = InlineKeyboardMarkup([
+                    [InlineKeyboardButton(label or model_val, web_app=WebAppInfo(url=catalog_url))]
+                ])
+                await update.message.reply_text(msg, reply_markup=kb)
             return
 
     # 3) Поиск по типу (далее логика без изменений)
@@ -198,6 +252,16 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
         type_matches = [p for p in all_products if query in p.get("type", "").lower()]
         if type_matches:
             await send_product_with_hint(update, type_matches[0])
+            # --- Новое: выдача каталога модели ---
+            model_card = await find_model_card_link(query)
+            if model_card:
+                label, model_val = model_card
+                catalog_url = f"{FRONT_URL.rstrip('/')}/?model={model_val}"
+                msg = f"Возможно, то что вы ищете находится в этом каталоге:"
+                kb = InlineKeyboardMarkup([
+                    [InlineKeyboardButton(label or model_val, web_app=WebAppInfo(url=catalog_url))]
+                ])
+                await update.message.reply_text(msg, reply_markup=kb)
             return
     except Exception:
         logging.exception("API request failed [type search]")
