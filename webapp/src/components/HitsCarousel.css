@@ -1,6 +1,6 @@
 .hits-grid {
     display: flex;
-    gap: 8px;
+    gap: 12px;
     padding: 0 16px 12px;
     align-items: flex-start;
     box-sizing: border-box;
@@ -10,10 +10,14 @@
   
   .hits-anim-group {
     display: flex;
-    gap: 8px;
+    gap: 12px;
     width: 100%;
   }
-  
+  .hits-title {
+    margin: 0 0 12px;
+    font-size: 24px;
+    padding-left: 16px; /* Делаем как у Каталога! */
+  }
   .hits-card {
     width: 72px;
     flex-shrink: 1;    /* <-- даёт карточкам ужиматься на маленьких экранах */
