@@ -43,7 +43,6 @@ export async function postOrder(orderData) {
   return await response.json();
 }
 
-
 /* ---------- MODEL CARDS ---------- */
 export async function fetchModelCards() {
   const r = await fetch(`${API_URL}/model_cards`);
@@ -51,38 +50,37 @@ export async function fetchModelCards() {
   return await r.json();
 }
 
-// Basic-auth: token = btoa("admin_user:admin_pass")
-export async function createModelCard(data, token) {
+// --- CRUD admin model_cards через cookie ---
+export async function createModelCard(data) {
   const r = await fetch(`${API_URL}/admin/model_cards`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Basic ${token}`,
     },
+    credentials: "include",
     body: JSON.stringify(data),
   });
   if (!r.ok) throw new Error("Не удалось создать карточку");
   return await r.json();
 }
 
-// При желании добавьте PATCH / DELETE
-export const updateModelCard = (id, data, token) =>
+export const updateModelCard = (id, data) =>
   fetch(`${API_URL}/admin/model_cards/${id}`, {
     method: "PATCH",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Basic ${token}`,
     },
+    credentials: "include",
     body: JSON.stringify(data),
   }).then(r => {
     if (!r.ok) throw new Error("Не удалось обновить карточку");
     return r.json();
   });
 
-export const deleteModelCard = (id, token) =>
+export const deleteModelCard = (id) =>
   fetch(`${API_URL}/admin/model_cards/${id}`, {
     method: "DELETE",
-    headers: { Authorization: `Basic ${token}` },
+    credentials: "include",
   }).then(r => {
     if (!r.ok) throw new Error("Не удалось удалить карточку");
   });

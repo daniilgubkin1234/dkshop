@@ -89,3 +89,11 @@ class CartItem(SQLModel, table=True):
     product_id: int   = Field(primary_key=True)
     quantity: int     = 1
 
+
+
+class AdminUser(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    username: str = Field(index=True, unique=True)
+    password_hash: str
+    is_super: bool = False  # True — суперадмин
+    created_at: datetime = Field(default_factory=datetime.utcnow)
