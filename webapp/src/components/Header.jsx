@@ -74,7 +74,7 @@ export default function Header({ onSearch }) {
     } catch {}
     setIsAdmin(false);
     setIsSidebarOpen(false);
-    window.location.href = "/"; // Можно заменить на navigate("/")
+    window.location.href = "/admin/login"; // Можно заменить на navigate("/")
   };
 
   // ВЫБИРАЕМ ТОЛЬКО ОТКАЗЫВАЕМСЯ ОТ official_channel для меню
