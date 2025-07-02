@@ -1,4 +1,3 @@
-// webapp/src/admin/AdminInfo.jsx
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import AdminHeader from "./AdminHeader.jsx";
@@ -7,28 +6,34 @@ import './AdminInfo.css';
 const empty = { slug: "", title: "", content: "" };
 
 export default function AdminInfo() {
-  const [pages, setPages]       = useState([]);
-  const [form,  setForm]        = useState(empty);
-  const [editId, setEditId]     = useState(null);
-  const [loading, setLoading]   = useState(false);
-  const nav  = useNavigate();
-  const tok  = localStorage.getItem("auth_token");
+  const [pages, setPages] = useState([]);
+  const [form, setForm] = useState(empty);
+  const [editId, setEditId] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const nav = useNavigate();
 
-  const api = (url, opt={}) =>
+  // универсальный API helper с куками
+  const api = (url, opt = {}) =>
     fetch(url, {
       ...opt,
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Basic ${tok}`,
         ...opt.headers,
       },
+      credentials: "include",
     });
 
+  // загрузка страниц info
   const load = () => {
-    if (!tok) return nav("/admin/login");
     setLoading(true);
-    api("https://dkshopbot.ru/admin/info")
-      .then(r => (r.status === 401 ? [] : r.json()))
+    api("/api/admin/info")
+      .then(r => {
+        if (r.status === 401) {
+          nav("/admin/login");
+          return [];
+        }
+        return r.json();
+      })
       .then(setPages)
       .finally(() => setLoading(false));
   };
@@ -41,9 +46,9 @@ export default function AdminInfo() {
     // upsert: если slug существует → PATCH, иначе → POST
     const existed = pages.find(p => p.slug === form.slug);
 
-    const url   = existed
-      ? `https://dkshopbot.ru/admin/info/${existed.id}`
-      : "https://dkshopbot.ru/admin/info";
+    const url = existed
+      ? `/api/admin/info/${existed.id}`
+      : "/api/admin/info";
     const method = existed ? "PATCH" : "POST";
 
     const res = await api(url, { method, body: JSON.stringify(form) }).then(r => r.json());
@@ -61,7 +66,7 @@ export default function AdminInfo() {
 
   const del = id =>
     window.confirm("Удалить страницу?") &&
-    api(`https://dkshopbot.ru/admin/info/${id}`, { method: "DELETE" })
+    api(`/api/admin/info/${id}`, { method: "DELETE" })
       .then(() => setPages(p => p.filter(x => x.id !== id)));
 
   useEffect(load, []); // eslint-disable-line
@@ -85,11 +90,11 @@ export default function AdminInfo() {
           onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
         />
         <textarea
-        placeholder="Контент"
-        value={form.content}
-        onChange={e => setForm(f => ({ ...f, content: e.target.value }))}
-        rows={4}
-        style={{ minWidth: 260, resize: "vertical" }}
+          placeholder="Контент"
+          value={form.content}
+          onChange={e => setForm(f => ({ ...f, content: e.target.value }))}
+          rows={4}
+          style={{ minWidth: 260, resize: "vertical" }}
         />
         <button onClick={save}>Добавить</button>
       </div>

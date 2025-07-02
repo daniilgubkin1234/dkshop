@@ -1,9 +1,10 @@
-// webapp/src/components/AdminFooter.jsx
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import AdminHeader from "./AdminHeader";
 import './AdminFooter.css';
-const API = "/admin/footer";          // ← все запросы идут на защищённый префикс
+
+const API = "/api/admin/footer"; // обновленный путь!
+const COMPANY_API = "/api/admin/company";
 
 export default function AdminFooter() {
   /* ------------- state ------------- */
@@ -19,26 +20,11 @@ export default function AdminFooter() {
   const [editIcon,  setEditIcon]  = useState("");
   const [newPhone, setNewPhone] = useState('');
   const navigate = useNavigate();
-  const token    = localStorage.getItem("auth_token");
-  const headers  = {
-    "Content-Type": "application/json",
-    Authorization: `Basic ${token}`,
-  };
 
-  /* ------------- helpers ------------ */
-  const authOrRedirect = () => {
-    if (!token) {
-      navigate("/admin/login", { replace: true });
-      return false;
-    }
-    return true;
-  };
-
+  // ----------------- Загрузка ссылок -----------------
   const loadLinks = async () => {
-    if (!authOrRedirect()) return;
-    const res = await fetch(API, { headers });
+    const res = await fetch(API, { credentials: "include" });
     if (res.status === 401) {
-      localStorage.removeItem("auth_token");
       navigate("/admin/login", { replace: true });
       return;
     }
@@ -46,36 +32,72 @@ export default function AdminFooter() {
   };
 
   useEffect(() => {
-    loadLinks(); 
-    fetch('/company').then(r=>r.ok?r.json():null).then(d=>d&&setNewPhone(d.phone));         // вызываем async-функцию
-  }, []);             // eslint-disable-line
+    loadLinks();
+    fetch('/api/company')
+      .then(r => r.ok ? r.json() : null)
+      .then(d => d && setNewPhone(d.phone));
+    // eslint-disable-next-line
+  }, []);
 
-  /* ------------- CRUD ------------- */
+  // ----------------- CRUD -----------------
   const handleAdd = async (e) => {
     e.preventDefault();
-    if (!authOrRedirect()) return;
-    await fetch(API, {
+    const res = await fetch(API, {
       method: "POST",
-      headers,
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify({ title: newTitle, url: newUrl, icon: newIcon }),
     });
+    if (res.status === 401) {
+      navigate("/admin/login", { replace: true });
+      return;
+    }
     setNewTitle(""); setNewUrl(""); setNewIcon("");
     loadLinks();
   };
 
   const handleDelete = (id) =>
-    authOrRedirect() &&
-    fetch(`${API}/${id}`, { method: "DELETE", headers }).then(loadLinks);
+    fetch(`${API}/${id}`, { method: "DELETE", credentials: "include" })
+      .then(r => {
+        if (r.status === 401) {
+          navigate("/admin/login", { replace: true });
+          return;
+        }
+        loadLinks();
+      });
 
   const handleSave = (id) =>
-    authOrRedirect() &&
     fetch(`${API}/${id}`, {
       method: "PATCH",
-      headers,
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify({ title: editTitle, url: editUrl, icon: editIcon }),
-    }).then(() => { setEditId(null); loadLinks(); });
+    }).then(r => {
+      if (r.status === 401) {
+        navigate("/admin/login", { replace: true });
+        return;
+      }
+      setEditId(null);
+      loadLinks();
+    });
 
-  /* ------------- UI ------------- */
+  const handleSavePhone = (e) => {
+    e.preventDefault();
+    fetch(COMPANY_API, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ phone: newPhone })
+    }).then(r => {
+      if (r.status === 401) {
+        navigate("/admin/login", { replace: true });
+        return;
+      }
+      alert('Телефон обновлён!');
+    });
+  };
+
+  // ----------------- UI -----------------
   return (
     <div className="admin-footer admin-container">
       <AdminHeader />
@@ -88,25 +110,17 @@ export default function AdminFooter() {
         <input value={newIcon} onChange={e=>setNewIcon(e.target.value)} placeholder="Иконка" style={{width:90}}/>
         <button type="submit">Добавить</button>
       </form>
-        <form onSubmit={e=>{
-      e.preventDefault();
-      if(!authOrRedirect()) return;
-      fetch('/admin/company',{
-        method:'POST',
-        headers,
-        body: JSON.stringify({ phone:newPhone })
-      }).then(()=>alert('Телефон обновлён!'));
-    }}
-    className="footer-add-row"
-  >
-    <input
-      placeholder="Контактный телефон"
-      value={newPhone}
-      onChange={e=>setNewPhone(e.target.value)}
-      style={{minWidth:220}}
-    />
-    <button>Сохранить</button>
-  </form>
+
+      <form onSubmit={handleSavePhone} className="footer-add-row">
+        <input
+          placeholder="Контактный телефон"
+          value={newPhone}
+          onChange={e=>setNewPhone(e.target.value)}
+          style={{minWidth:220}}
+        />
+        <button>Сохранить</button>
+      </form>
+
       {/* ── таблица ── */}
       <table style={{ width:"100%", borderCollapse:"collapse", color:"#fff" }}>
         <thead>
@@ -130,7 +144,12 @@ export default function AdminFooter() {
                 <td><a href={l.url} target="_blank" rel="noopener noreferrer" style={{color:"#6cb2ff"}}>{l.url}</a></td>
                 <td style={{textAlign:"center"}}>{l.icon || "🔗"}</td>
                 <td>
-                  <button onClick={()=>{setEditId(l.id); setEditTitle(l.title); setEditUrl(l.url); setEditIcon(l.icon||"");}}>✎</button>{" "}
+                  <button onClick={()=>{
+                    setEditId(l.id);
+                    setEditTitle(l.title);
+                    setEditUrl(l.url);
+                    setEditIcon(l.icon||"");
+                  }}>✎</button>{" "}
                   <button onClick={()=>handleDelete(l.id)}>🗑</button>
                 </td>
               </tr>

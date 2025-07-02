@@ -2,8 +2,10 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./Admin.css";
 import AdminHeader from "./AdminHeader";
-import { API_URL } from '../api.js';
 
+const API = "/api/products";
+const MODEL_CARDS_API = "/api/admin/model_cards";
+const UPLOAD_API = "/api/upload";
 const emptyProduct = {
   name: "",
   price: "",
@@ -23,47 +25,35 @@ export default function AdminProduct() {
   const navigate = useNavigate();
   const [modelCards, setModelCards] = useState([]);
 
+  // Получить карточки моделей
   useEffect(() => {
-    fetch("/model_cards")
+    fetch(MODEL_CARDS_API, { credentials: "include" })
       .then((r) => (r.ok ? r.json() : []))
       .then(setModelCards)
       .catch(() => setModelCards([]));
   }, []);
 
+  // Получить товары
   const loadProducts = () => {
-    const token = localStorage.getItem("auth_token");
-    if (!token) {
-      navigate("/admin/login");
-      return;
-    }
     setLoading(true);
-    fetch(`${API_URL}/products`, {
-      headers: { Authorization: `Basic ${token}` },
-    })
+    fetch(API, { credentials: "include" })
       .then(async (r) => {
         if (r.status === 401) {
-          localStorage.removeItem("auth_token");
           navigate("/admin/login");
           return [];
         }
         return r.json();
       })
       .then(setProducts)
-      .catch(() => {
-        localStorage.removeItem("auth_token");
-        navigate("/admin/login");
-      })
+      .catch(() => navigate("/admin/login"))
       .finally(() => setLoading(false));
   };
 
   const toggleHit = async (prod) => {
-    const token = localStorage.getItem('auth_token');
-    const updated = await fetch(`${API_URL}/products/${prod.id}`, {
-      method : 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization  : `Basic ${token}`,
-      },
+    const updated = await fetch(`${API}/${prod.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: "include",
       body: JSON.stringify({ is_hit: !prod.is_hit }),
     }).then(r => r.json());
     setProducts(prev => prev.map(p => p.id === updated.id ? updated : p));
@@ -74,9 +64,10 @@ export default function AdminProduct() {
     for (const file of files) {
       const formData = new FormData();
       formData.append("file", file);
-      const res = await fetch("https://dkshopbot.ru/upload", {
+      const res = await fetch(UPLOAD_API, {
         method: "POST",
         body: formData,
+        credentials: "include"
       });
       const data = await res.json();
       setNewProduct((p) => ({
@@ -91,9 +82,10 @@ export default function AdminProduct() {
     for (const file of files) {
       const formData = new FormData();
       formData.append("file", file);
-      const res = await fetch("https://dkshopbot.ru/upload", {
+      const res = await fetch(UPLOAD_API, {
         method: "POST",
         body: formData,
+        credentials: "include"
       });
       const data = await res.json();
       setEditProduct((p) => ({
@@ -104,7 +96,6 @@ export default function AdminProduct() {
   };
 
   const handleAdd = () => {
-    const token = localStorage.getItem("auth_token");
     const body = {
       ...newProduct,
       is_hit: newProduct.is_hit || false,
@@ -115,12 +106,10 @@ export default function AdminProduct() {
         .map((s) => s.trim())
         .filter(Boolean),
     };
-    fetch("https://dkshopbot.ru/products", {
+    fetch(API, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Basic ${token}`,
-      },
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify(body),
     })
       .then(async (r) => {
@@ -133,13 +122,10 @@ export default function AdminProduct() {
   };
 
   const handleDelete = (id) => {
-    const token = localStorage.getItem("auth_token");
     if (!window.confirm("Удалить этот товар?")) return;
-    fetch(`https://dkshopbot.ru/products/${id}`, {
+    fetch(`${API}/${id}`, {
       method: "DELETE",
-      headers: {
-        Authorization: `Basic ${token}`,
-      },
+      credentials: "include",
     })
       .then((r) => {
         if (!r.ok) throw new Error("Ошибка удаления");
@@ -157,7 +143,6 @@ export default function AdminProduct() {
   };
 
   const handleEditSave = () => {
-    const token = localStorage.getItem("auth_token");
     const body = {
       ...editProduct,
       price: Number(editProduct.price),
@@ -167,12 +152,10 @@ export default function AdminProduct() {
         .map((s) => s.trim())
         .filter(Boolean),
     };
-    fetch(`https://dkshopbot.ru/products/${editId}`, {
+    fetch(`${API}/${editId}`, {
       method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Basic ${token}`,
-      },
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify(body),
     })
       .then(async (r) => {
@@ -202,7 +185,7 @@ export default function AdminProduct() {
       .map((url, i) => {
         const srcUrl = url.startsWith("http")
           ? url
-          : `https://dkshopbot.ru${url.startsWith("/") ? "" : "/"}${url}`;
+          : `/static/${url.startsWith("/") ? url.slice(1) : url}`;
         return (
           <img
             key={i}
@@ -228,11 +211,12 @@ export default function AdminProduct() {
     <div className="admin-container admin-products">
       <AdminHeader />
       <h2>Товары — управление</h2>
+      {/* --- Форма добавления --- */}
       <div className="product-add-row" style={{ marginBottom: 24 }}>
         <input
           placeholder="Название"
           value={newProduct.name}
-          onChange={(e) =>
+          onChange={e =>
             setNewProduct((p) => ({ ...p, name: e.target.value }))
           }
         />
@@ -261,14 +245,14 @@ export default function AdminProduct() {
         <input
           placeholder="Совместимость (напр. 2101-07)"
           value={newProduct.model_compat}
-          onChange={(e) =>
+          onChange={e =>
             setNewProduct((p) => ({ ...p, model_compat: e.target.value }))
           }
         />
         <input
           placeholder="Тип (напр. глушитель)"
           value={newProduct.type}
-          onChange={(e) =>
+          onChange={e =>
             setNewProduct((p) => ({ ...p, type: e.target.value }))
           }
         />
@@ -276,21 +260,21 @@ export default function AdminProduct() {
           placeholder="Остаток"
           type="number"
           value={newProduct.stock}
-          onChange={(e) =>
+          onChange={e =>
             setNewProduct((p) => ({ ...p, stock: e.target.value }))
           }
         />
         <input
           placeholder="URL картинок (через запятую)"
           value={newProduct.images}
-          onChange={(e) =>
+          onChange={e =>
             setNewProduct((p) => ({ ...p, images: e.target.value }))
           }
         />
         <input
           placeholder="Описание"
           value={newProduct.description}
-          onChange={(e) =>
+          onChange={e =>
             setNewProduct((p) => ({ ...p, description: e.target.value }))
           }
         />
@@ -337,11 +321,8 @@ export default function AdminProduct() {
                   <td>
                     <input
                       value={editProduct.name}
-                      onChange={(e) =>
-                        setEditProduct((v) => ({
-                          ...v,
-                          name: e.target.value,
-                        }))
+                      onChange={e =>
+                        setEditProduct((v) => ({ ...v, name: e.target.value }))
                       }
                     />
                   </td>
@@ -349,33 +330,24 @@ export default function AdminProduct() {
                     <input
                       value={editProduct.price}
                       type="number"
-                      onChange={(e) =>
-                        setEditProduct((v) => ({
-                          ...v,
-                          price: e.target.value,
-                        }))
+                      onChange={e =>
+                        setEditProduct((v) => ({ ...v, price: e.target.value }))
                       }
                     />
                   </td>
                   <td>
                     <input
                       value={editProduct.model_compat}
-                      onChange={(e) =>
-                        setEditProduct((v) => ({
-                          ...v,
-                          model_compat: e.target.value,
-                        }))
+                      onChange={e =>
+                        setEditProduct((v) => ({ ...v, model_compat: e.target.value }))
                       }
                     />
                   </td>
                   <td>
                     <input
                       value={editProduct.type}
-                      onChange={(e) =>
-                        setEditProduct((v) => ({
-                          ...v,
-                          type: e.target.value,
-                        }))
+                      onChange={e =>
+                        setEditProduct((v) => ({ ...v, type: e.target.value }))
                       }
                     />
                   </td>
@@ -383,11 +355,8 @@ export default function AdminProduct() {
                     <input
                       value={editProduct.stock}
                       type="number"
-                      onChange={(e) =>
-                        setEditProduct((v) => ({
-                          ...v,
-                          stock: e.target.value,
-                        }))
+                      onChange={e =>
+                        setEditProduct((v) => ({ ...v, stock: e.target.value }))
                       }
                     />
                   </td>
@@ -401,11 +370,8 @@ export default function AdminProduct() {
                   <td>
                     <input
                       value={editProduct.images}
-                      onChange={(e) =>
-                        setEditProduct((v) => ({
-                          ...v,
-                          images: e.target.value,
-                        }))
+                      onChange={e =>
+                        setEditProduct((v) => ({ ...v, images: e.target.value }))
                       }
                     />
                     <input
@@ -432,7 +398,7 @@ export default function AdminProduct() {
                             if (!url) return null;
                             const srcUrl = url.startsWith("http")
                               ? url
-                              : `https://dkshopbot.ru${url.startsWith("/") ? "" : "/"}${url}`;
+                              : `/static/${url.startsWith("/") ? url.slice(1) : url}`;
                             return (
                               <span key={idx} style={{ display: "inline-block", marginRight: 8, position: "relative" }}>
                                 <img
@@ -481,11 +447,8 @@ export default function AdminProduct() {
                   <td>
                     <input
                       value={editProduct.description}
-                      onChange={(e) =>
-                        setEditProduct((v) => ({
-                          ...v,
-                          description: e.target.value,
-                        }))
+                      onChange={e =>
+                        setEditProduct((v) => ({ ...v, description: e.target.value }))
                       }
                     />
                   </td>

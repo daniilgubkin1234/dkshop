@@ -1,9 +1,10 @@
-// webapp/src/admin/AdminModelCards.jsx
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./Admin.css";
 import AdminHeader from "./AdminHeader";
-const API = "/admin/model_cards";
+
+const API = "/api/admin/model_cards"; // обновлённый путь!
+const UPLOAD_API = "/api/upload";
 const empty = { label: "", models: "", img: "", match_by_name: true };
 
 export default function AdminModelCards() {
@@ -15,28 +16,20 @@ export default function AdminModelCards() {
 
   const navigate = useNavigate();
 
-  /* ---------- helpers ---------- */
+  /* ---------- upload ---------- */
   const uploadFile = async file => {
     const fd = new FormData();
     fd.append("file", file);
-    const res  = await fetch("/upload", { method: "POST", body: fd });
+    const res  = await fetch(UPLOAD_API, { method: "POST", body: fd, credentials: "include" });
     const data = await res.json();
     return data.url;
   };
 
   /* ---------- загрузка списка ---------- */
   const loadCards = () => {
-    const token = localStorage.getItem("auth_token");
-    if (!token) {
-      navigate("/admin/login");
-      return;
-    }
-    fetch("/admin/model_cards", {
-      headers: { Authorization: `Basic ${token}` }
-    })
+    fetch(API, { credentials: "include" })
       .then(async r => {
         if (r.status === 401) {
-          localStorage.removeItem("auth_token");
           navigate("/admin/login");
           return [];
         }
@@ -44,27 +37,22 @@ export default function AdminModelCards() {
       })
       .then(setCards)
       .catch(() => {
-        localStorage.removeItem("auth_token");
         navigate("/admin/login");
       });
   };
 
   /* ---------- CRUD ---------- */
   const handleAdd = () => {
-    const token = localStorage.getItem("auth_token");
-    if (!token) return navigate("/admin/login");
-
     const body = {
       ...newCard,
       models: newCard.models.split(",").map(s => s.trim()).filter(Boolean),
     };
-
-    fetch("/admin/model_cards", {
+    fetch(API, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
-        Authorization: `Basic ${token}`,
+        "Content-Type": "application/json"
       },
+      credentials: "include",
       body: JSON.stringify(body),
     })
       .then(async r => {
@@ -78,10 +66,9 @@ export default function AdminModelCards() {
 
   const handleDelete = id => {
     if (!window.confirm("Удалить карточку?")) return;
-    const token = localStorage.getItem("auth_token");
-    fetch(`/admin/model_cards/${id}`, {
+    fetch(`${API}/${id}`, {
       method: "DELETE",
-      headers: { Authorization: `Basic ${token}` },
+      credentials: "include"
     })
       .then(r => {
         if (!r.ok) throw new Error("Ошибка удаления");
@@ -99,17 +86,16 @@ export default function AdminModelCards() {
   };
 
   const handleEditSave = () => {
-    const token = localStorage.getItem("auth_token");
     const body = {
       ...editCard,
       models: editCard.models.split(",").map(s => s.trim()).filter(Boolean),
     };
-    fetch(`/admin/model_cards/${editId}`, {
+    fetch(`${API}/${editId}`, {
       method: "PATCH",
       headers: {
-        "Content-Type": "application/json",
-        Authorization: `Basic ${token}`,
+        "Content-Type": "application/json"
       },
+      credentials: "include",
       body: JSON.stringify(body),
     })
       .then(async r => {

@@ -1,10 +1,17 @@
-// src/admin/AdminHeader.jsx
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import "./Admin.css";
 
 export default function AdminHeader() {
   const location = useLocation();
+  const [isSuper, setIsSuper] = useState(false);
+
+  useEffect(() => {
+    // Узнаём статус суперадмина
+    fetch("/api/admin/me", { credentials: "include" })
+      .then(r => r.ok ? r.json() : {})
+      .then(data => setIsSuper(!!data.is_super));
+  }, []);
 
   return (
     <div className="admin-header-nav">
@@ -30,18 +37,28 @@ export default function AdminHeader() {
         to="/admin/footer"
         className={location.pathname.includes("/footer") ? "active" : ""}
       >
-      Полезные ссылки
+        Полезные ссылки
       </Link>
-
       <Link
-      to="/admin/model_cards"
-      className={location.pathname.includes("/model_cards") ? "active" : ""}
+        to="/admin/model_cards"
+        className={location.pathname.includes("/model_cards") ? "active" : ""}
       >
-      Карточки каталога
+        Карточки каталога
       </Link>
-      <Link to="/admin/info" className={location.pathname.includes("/info") ? "active" : ""}>
+      <Link
+        to="/admin/info"
+        className={location.pathname.includes("/info") ? "active" : ""}
+      >
         Информация
       </Link>
+      {isSuper && (
+        <Link
+          to="/admin/users"
+          className={location.pathname.includes("/users") ? "active" : ""}
+        >
+          Пользователи
+        </Link>
+      )}
     </div>
   );
 }

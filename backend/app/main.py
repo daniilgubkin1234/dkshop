@@ -112,7 +112,13 @@ def admin_login(body: AdminLoginIn, response: Response, db: Session = Depends(ge
         "ok": True,
         "user": {"id": user.id, "username": user.username, "is_super": user.is_super}
     }
-
+@app.get("/admin/me")
+def get_current_me(user=Depends(get_current_admin)):
+    return {
+        "id": user.id,
+        "username": user.username,
+        "is_super": user.is_super
+    }
 @app.post("/admin/logout")
 def logout(response: Response):
     response.delete_cookie("access_token")

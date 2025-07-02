@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import AdminHeader from "./AdminHeader";
-
 import "./AdminFAQ.css";
+
 const empty = { question: "", answer: "" };
 
 export default function AdminFAQ() {
@@ -12,18 +12,11 @@ export default function AdminFAQ() {
   const [editQ, setEditQ] = useState(empty);
   const navigate = useNavigate();
 
+  // Загрузка FAQ
   const loadFAQ = () => {
-    const token = localStorage.getItem("auth_token");
-    if (!token) {
-      navigate("/admin/login");
-      return;
-    }
-    fetch("/faq", {
-      headers: { Authorization: `Basic ${token}` }
-    })
+    fetch("/api/faq", { credentials: "include" })
       .then(async r => {
         if (r.status === 401) {
-          localStorage.removeItem("auth_token");
           navigate("/admin/login");
           return [];
         }
@@ -31,19 +24,16 @@ export default function AdminFAQ() {
       })
       .then(setFaq)
       .catch(() => {
-        localStorage.removeItem("auth_token");
         navigate("/admin/login");
       });
   };
 
+  // Добавить FAQ
   const handleAdd = () => {
-    const token = localStorage.getItem("auth_token");
-    fetch("/faq", {
+    fetch("/api/faq", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Basic ${token}`,
-      },
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify(newQ),
     })
       .then(async r => {
@@ -55,12 +45,12 @@ export default function AdminFAQ() {
       .catch(e => alert(e.message));
   };
 
+  // Удалить FAQ
   const handleDelete = id => {
     if (!window.confirm("Удалить FAQ?")) return;
-    const token = localStorage.getItem("auth_token");
-    fetch(`/faq/${id}`, {
+    fetch(`/api/faq/${id}`, {
       method: "DELETE",
-      headers: { Authorization: `Basic ${token}` }
+      credentials: "include"
     })
       .then(r => {
         if (!r.ok) throw new Error("Ошибка удаления");
@@ -69,19 +59,18 @@ export default function AdminFAQ() {
       .catch(e => alert(e.message));
   };
 
+  // Включить редактирование
   const handleEdit = row => {
     setEditId(row.id);
     setEditQ(row);
   };
 
+  // Сохранить редактирование
   const handleEditSave = () => {
-    const token = localStorage.getItem("auth_token");
-    fetch(`/faq/${editId}`, {
+    fetch(`/api/faq/${editId}`, {
       method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Basic ${token}`,
-      },
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify(editQ),
     })
       .then(async r => {
@@ -110,10 +99,10 @@ export default function AdminFAQ() {
           onChange={e => setNewQ(q => ({ ...q, question: e.target.value }))}
         />
         <textarea
-        placeholder="Ответ"
-        value={newQ.answer}
-        onChange={e => setNewQ(q => ({ ...q, answer: e.target.value }))}
-        rows={3}
+          placeholder="Ответ"
+          value={newQ.answer}
+          onChange={e => setNewQ(q => ({ ...q, answer: e.target.value }))}
+          rows={3}
         />
         <button onClick={handleAdd}>Добавить</button>
       </div>
@@ -136,11 +125,11 @@ export default function AdminFAQ() {
                   />
                 </td>
                 <td>
-                 <textarea
-                value={editQ.answer}
-                onChange={e => setEditQ(q => ({ ...q, answer: e.target.value }))}
-                rows={3} 
-                />
+                  <textarea
+                    value={editQ.answer}
+                    onChange={e => setEditQ(q => ({ ...q, answer: e.target.value }))}
+                    rows={3}
+                  />
                 </td>
                 <td>
                   <button onClick={handleEditSave}>Сохранить</button>
