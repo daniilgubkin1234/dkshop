@@ -22,7 +22,7 @@ export default function ModelScroll({ onSelect }) {
   const [activeId, setActiveId] = useState(null);
 
   useEffect(() => {
-    fetch('/model_cards')
+    fetch('/api/model_cards')
       .then((r) => (r.ok ? r.json() : []))
       .then(setCards)
       .catch(() => setCards([]));

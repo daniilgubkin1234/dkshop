@@ -6,12 +6,12 @@ export default function Footer() {
   const [phone, setPhone]   = useState('');
 
   useEffect(() => {
-    fetch("/footer")
+    fetch("/api/footer")
       .then(r => r.ok ? r.json() : [])
       .then(setLinks)
       .catch(() => setLinks([]));
 
-    fetch("/company")
+    fetch("/api/company")
       .then(r => r.ok ? r.json() : null)
       .then(data => data && setPhone(data.phone))
       .catch(() => {});
