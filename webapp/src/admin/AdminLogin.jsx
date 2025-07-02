@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
+const API_URL = import.meta.env.VITE_API_URL || "/api";
+
 const AdminLogin = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -10,17 +12,16 @@ const AdminLogin = () => {
   const handleLogin = async () => {
     setError("");
     try {
-      const res = await fetch("/admin/login", {
+      const res = await fetch(`${API_URL}/admin/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        credentials: "include", // важно!
+        credentials: "include",
         body: JSON.stringify({ username, password }),
       });
       if (!res.ok) {
         setError("Неверный логин или пароль");
         return;
       }
-      // кука ставится автоматически, ответ содержит {ok, user}
       navigate("/admin/orders");
     } catch {
       setError("Ошибка соединения");
