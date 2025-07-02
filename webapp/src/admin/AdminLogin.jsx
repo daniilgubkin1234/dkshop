@@ -22,7 +22,7 @@ const AdminLogin = () => {
         setError("Неверный логин или пароль");
         return;
       }
-      navigate("/admin/orders");
+      window.location.href = "/admin/orders";
     } catch {
       setError("Ошибка соединения");
     }
