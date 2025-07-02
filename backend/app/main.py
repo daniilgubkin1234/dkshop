@@ -54,7 +54,7 @@ def get_current_admin(request: Request, access_token: str = Cookie(None), db: Se
     try:
         payload = jwt.decode(access_token, SECRET_KEY, algorithms=[ALGORITHM])
         print("JWT PAYLOAD:", payload)
-        user_id = payload.get("sub")
+        user_id = int(payload.get("sub"))
         is_super = payload.get("is_super")
     except JWTError as e:
         print("JWT ERROR:", e)
@@ -97,7 +97,7 @@ def admin_login(body: AdminLoginIn, response: Response, db: Session = Depends(ge
         raise HTTPException(401, "Invalid credentials")
 
     access_token = create_access_token({
-        "sub": user.id,
+        "sub": str(user.id),
         "is_super": user.is_super
     })
     response.set_cookie(
