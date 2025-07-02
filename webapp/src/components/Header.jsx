@@ -64,6 +64,19 @@ export default function Header({ onSearch }) {
     toggleSidebar();
   };
 
+  // Кнопка выхода
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/admin/logout", {
+        method: "POST",
+        credentials: "include",
+      });
+    } catch {}
+    setIsAdmin(false);
+    setIsSidebarOpen(false);
+    window.location.href = "/"; // Можно заменить на navigate("/")
+  };
+
   // ВЫБИРАЕМ ТОЛЬКО ОТКАЗЫВАЕМСЯ ОТ official_channel для меню
   const sidebarPages = pages.filter((p) => p.slug !== "official_channel");
 
@@ -148,26 +161,33 @@ export default function Header({ onSearch }) {
               </li>
             ))}
 
-            {/* профиль */}
-            {/* убери user из props, если он нигде не используется */}
-            {/* {isLoggedIn && (
-              <li>
-                <Link to="/profile" onClick={toggleSidebar}>
-                  Личный кабинет
-                </Link>
-              </li>
-            )} */}
-
             {isAdmin && (
-              <li>
-                <Link
-                  to="/admin/orders"
-                  className="admin-link"
-                  onClick={toggleSidebar}
+              <>
+                <li>
+                  <Link
+                    to="/admin/orders"
+                    className="admin-link"
+                    onClick={toggleSidebar}
+                  >
+                    Панель администратора
+                  </Link>
+                </li>
+                <li>
+                <button
+                  className="admin-logout-btn"
+                  onClick={handleLogout}
                 >
-                  Панель администратора
-                </Link>
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                      <path d="M16 17L21 12L16 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path d="M21 12H9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path d="M13 5V7C13 8.10457 12.1046 9 11 9H5C3.89543 9 3 8.10457 3 7V17C3 18.1046 3.89543 19 5 19H11C12.1046 19 13 18.1046 13 17V19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    Выйти из учётки
+                  </span>
+                </button>
               </li>
+              </>
             )}
           </ul>
         </nav>
