@@ -3,23 +3,19 @@ import { useNavigate } from "react-router-dom";
 import "./Admin.css";
 import AdminHeader from "./AdminHeader";
 
+const API_URL = import.meta.env.VITE_API_URL || "/api";
+
 export default function AdminOrders() {
   const [orders, setOrders] = useState([]);
   const navigate = useNavigate();
 
-  // Проверка токена и загрузка заказов
+  // Загрузка заказов с проверкой по access_token (кука)
   const loadOrders = () => {
-    const token = localStorage.getItem("auth_token");
-    if (!token) {
-      navigate("/admin/login");
-      return;
-    }
-    fetch("https://dkshopbot.ru/admin/orders", {
-      headers: { Authorization: `Basic ${token}` }
+    fetch(`${API_URL}/admin/orders`, {
+      credentials: "include"
     })
       .then(async res => {
         if (res.status === 401) {
-          localStorage.removeItem("auth_token");
           navigate("/admin/login");
           return [];
         }
@@ -27,21 +23,18 @@ export default function AdminOrders() {
       })
       .then(setOrders)
       .catch(() => {
-        localStorage.removeItem("auth_token");
         navigate("/admin/login");
       });
   };
 
   // Обновить статус заказа
   const updateStatus = (id, newStatus) => {
-    const token = localStorage.getItem("auth_token");
-    fetch(`https://dkshopbot.ru/admin/orders/${id}?new_status=${newStatus}`, {
+    fetch(`${API_URL}/admin/orders/${id}?new_status=${newStatus}`, {
       method: "PATCH",
-      headers: { Authorization: `Basic ${token}` }
+      credentials: "include"
     })
       .then(loadOrders)
       .catch(() => {
-        localStorage.removeItem("auth_token");
         navigate("/admin/login");
       });
   };
@@ -49,14 +42,12 @@ export default function AdminOrders() {
   // Удалить заказ
   const deleteOrder = (id) => {
     if (!window.confirm(`Удалить заказ #${id}?`)) return;
-    const token = localStorage.getItem("auth_token");
-    fetch(`https://dkshopbot.ru/admin/orders/${id}`, {
+    fetch(`${API_URL}/admin/orders/${id}`, {
       method: "DELETE",
-      headers: { Authorization: `Basic ${token}` }
+      credentials: "include"
     })
       .then(loadOrders)
       .catch(() => {
-        localStorage.removeItem("auth_token");
         navigate("/admin/login");
       });
   };
@@ -83,42 +74,42 @@ export default function AdminOrders() {
             <th>Действия</th>
           </tr>
         </thead>
-          <tbody>
-    {orders.map(o => {
-      // вычисляем сумму заказа
-      const total = (o.items || []).reduce(
-        (sum, it) => sum + (it.price || 0) * (it.quantity || 0),
-        0
-      );
-      return (
-        <tr key={o.id}>
-          <td>{o.id}</td>
-          <td>{o.name}</td>
-          <td>{o.phone}</td>
-          <td>{o.status}</td>
-          <td>{new Date(o.created_at).toLocaleString()}</td>
-          <td style={{ whiteSpace: "pre-wrap", maxWidth: 300 }}>
-            {o.items.map(it => `${it.name} × ${it.quantity}`).join("\n")}
-          </td>
-          <td>
-            {total ? total.toLocaleString() + " ₽" : "—"}
-          </td>
-          <td>
-            <button onClick={() => updateStatus(o.id, "Принят в работу")}>Принят в работу</button>
-            <button onClick={() => updateStatus(o.id, "Подтверждён")}>Подтверждён</button>
-            <button onClick={() => updateStatus(o.id, "В доставке")}>В доставке</button>
-            <button onClick={() => updateStatus(o.id, "Завершён")}>Завершён</button>
-            <button
-              onClick={() => deleteOrder(o.id)}
-              style={{ marginLeft: 8, background: "#e53935", color: "#fff" }}
-            >
-              🗑
-            </button>
-          </td>
-        </tr>
-      );
-    })}
-  </tbody>
+        <tbody>
+          {orders.map(o => {
+            // вычисляем сумму заказа
+            const total = (o.items || []).reduce(
+              (sum, it) => sum + (it.price || 0) * (it.quantity || 0),
+              0
+            );
+            return (
+              <tr key={o.id}>
+                <td>{o.id}</td>
+                <td>{o.name}</td>
+                <td>{o.phone}</td>
+                <td>{o.status}</td>
+                <td>{new Date(o.created_at).toLocaleString()}</td>
+                <td style={{ whiteSpace: "pre-wrap", maxWidth: 300 }}>
+                  {o.items.map(it => `${it.name} × ${it.quantity}`).join("\n")}
+                </td>
+                <td>
+                  {total ? total.toLocaleString() + " ₽" : "—"}
+                </td>
+                <td>
+                  <button onClick={() => updateStatus(o.id, "Принят в работу")}>Принят в работу</button>
+                  <button onClick={() => updateStatus(o.id, "Подтверждён")}>Подтверждён</button>
+                  <button onClick={() => updateStatus(o.id, "В доставке")}>В доставке</button>
+                  <button onClick={() => updateStatus(o.id, "Завершён")}>Завершён</button>
+                  <button
+                    onClick={() => deleteOrder(o.id)}
+                    style={{ marginLeft: 8, background: "#e53935", color: "#fff" }}
+                  >
+                    🗑
+                  </button>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
       </table>
     </div>
   );
