@@ -97,10 +97,15 @@ export default function Users() {
         />
         <input
           type="password"
-          placeholder={editId ? "Новый пароль" : "Пароль"}
+          placeholder={editId ? "Новый пароль (оставьте пустым чтобы не менять)" : "Пароль"}
           value={form.password}
           onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
         />
+        {editId && (
+          <small style={{ color: "#888", marginLeft: 8, marginTop: 2, display: "block" }}>
+            Если оставить поле пустым, пароль не изменится
+          </small>
+        )}
         <label>
           <input
             type="checkbox"

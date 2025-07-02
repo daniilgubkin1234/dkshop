@@ -607,7 +607,7 @@ def clear_cart(user_id: int, db: Session = Depends(get_db)):
     db.commit()
 
 @app.get("/hits", response_model=list[Product])
-def list_hits(limit: int = 8, db: Session = Depends(get_db)):
+def list_hits(limit: int = 12, db: Session = Depends(get_db)):
     stmt = (
         select(Product)
         .where(
@@ -686,7 +686,7 @@ def delete_admin_user(uid: int, user=Depends(super_required), db: Session = Depe
     db.commit()
 
 @app.post("/admin/recalc_hits")
-def recalc_hits(limit: int = 8, db: Session = Depends(get_db), user=Depends(get_current_admin)):
+def recalc_hits(limit: int = 12, db: Session = Depends(get_db), user=Depends(get_current_admin)):
     """Пересчитывает авто-хиты на основе продаж."""
     # 1. Считаем все product_id из заказов
     orders = db.exec(select(Order)).all()
