@@ -20,6 +20,8 @@ from pydantic import BaseModel
 from init_data_py import InitData
 import datetime
 from typing import Optional
+from collections import Counter
+
 
 app = FastAPI(title="DK API")
 BOT_TOKEN = os.getenv("BOT_TOKEN", "")
@@ -608,11 +610,13 @@ def clear_cart(user_id: int, db: Session = Depends(get_db)):
 def list_hits(limit: int = 8, db: Session = Depends(get_db)):
     stmt = (
         select(Product)
-        .where(Product.is_hit.is_(True))
-        .order_by(func.random())   # PostgreSQL random()
+        .where(
+            (Product.is_hit == True) | (Product.is_hit_auto == True)
+        )
         .limit(limit)
     )
     return db.exec(stmt).all()
+
 class AdminUserCreate(BaseModel):
     username: str
     password: str
@@ -680,3 +684,23 @@ def delete_admin_user(uid: int, user=Depends(super_required), db: Session = Depe
         raise HTTPException(404, "User not found")
     db.delete(obj)
     db.commit()
+
+@app.post("/admin/recalc_hits")
+def recalc_hits(limit: int = 8, db: Session = Depends(get_db), user=Depends(get_current_admin)):
+    """Пересчитывает авто-хиты на основе продаж."""
+    # 1. Считаем все product_id из заказов
+    orders = db.exec(select(Order)).all()
+    all_ids = []
+    for order in orders:
+        for item in order.items:
+            all_ids.extend([item["product_id"]] * int(item["quantity"]))
+    counter = Counter(all_ids)
+    # 2. Берём топ-N товаров
+    top_ids = [pid for pid, _ in counter.most_common(limit)]
+    # 3. Сбрасываем всем is_hit_auto
+    prods = db.exec(select(Product)).all()
+    for p in prods:
+        p.is_hit_auto = p.id in top_ids
+        db.add(p)
+    db.commit()
+    return {"updated": top_ids}
