@@ -1,4 +1,3 @@
-// webapp/src/components/Header.jsx
 import React, { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import CartLink from "./CartLink.jsx";
@@ -11,12 +10,18 @@ export default function Header({ onSearch }) {
   const [infoTitle, setInfoTitle] = useState("");
   const [infoContent, setInfoContent] = useState("");
   const [pages, setPages] = useState([]);
-  const [officialChannelUrl, setOfficialChannelUrl] = useState("https://vk.com/dk_pro_tuning?from=groups"); // fallback
+  const [officialChannelUrl, setOfficialChannelUrl] = useState("https://vk.com/dk_pro_tuning?from=groups");
+  const [isAdmin, setIsAdmin] = useState(false);
 
   const navigate = useNavigate();
-  const isAdmin = localStorage.getItem("auth_token") !== null;
-  const user = JSON.parse(localStorage.getItem("dkshop_user") || "null");
-  const isLoggedIn = Boolean(user?.id);
+
+  // Проверяем статус админа через /api/admin/me
+  useEffect(() => {
+    fetch("/api/admin/me", { credentials: "include" })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => setIsAdmin(!!data))
+      .catch(() => setIsAdmin(false));
+  }, []);
 
   // Загружаем все статичные страницы (и URL для official_channel)
   useEffect(() => {
@@ -24,7 +29,6 @@ export default function Header({ onSearch }) {
       .then((r) => (r.ok ? r.json() : []))
       .then((pages) => {
         setPages(pages);
-        // ищем official_channel
         const page = pages.find((p) => p.slug === "official_channel");
         if (page && page.content) setOfficialChannelUrl(page.content);
       })
@@ -144,13 +148,15 @@ export default function Header({ onSearch }) {
               </li>
             ))}
 
-            {isLoggedIn && (
+            {/* профиль */}
+            {/* убери user из props, если он нигде не используется */}
+            {/* {isLoggedIn && (
               <li>
                 <Link to="/profile" onClick={toggleSidebar}>
                   Личный кабинет
                 </Link>
               </li>
-            )}
+            )} */}
 
             {isAdmin && (
               <li>
