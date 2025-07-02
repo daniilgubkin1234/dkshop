@@ -45,18 +45,30 @@ def create_access_token(data: dict, expires_delta: int = ACCESS_TOKEN_EXPIRE_MIN
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
-def get_current_admin(access_token: str = Cookie(None), db: Session = Depends(get_db)):
+def get_current_admin(request: Request, access_token: str = Cookie(None), db: Session = Depends(get_db)):
+    print("COOKIES:", request.cookies)
+    print("COOKIE access_token:", access_token)
     if not access_token:
+        print("Нет access_token в куках!")
         raise HTTPException(401, "Not authenticated")
     try:
         payload = jwt.decode(access_token, SECRET_KEY, algorithms=[ALGORITHM])
+        print("JWT PAYLOAD:", payload)
         user_id = payload.get("sub")
         is_super = payload.get("is_super")
-    except JWTError:
+    except JWTError as e:
+        print("JWT ERROR:", e)
         raise HTTPException(401, "Invalid token")
     user = db.get(AdminUser, user_id)
+    print("ADMIN in DB:", user)
     if not user:
+        print("Не найден админ с id:", user_id)
         raise HTTPException(401, "Not found")
+    return user
+
+def super_required(user=Depends(get_current_admin)):
+    if not user.is_super:
+        raise HTTPException(403, "Super admin only")
     return user
 
 def super_required(user=Depends(get_current_admin)):
