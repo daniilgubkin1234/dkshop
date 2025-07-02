@@ -1,4 +1,4 @@
-from fastapi import FastAPI, status, Query, Path, UploadFile, File, HTTPException, Depends, Response, Cookie
+from fastapi import FastAPI, status, Query, Path, UploadFile, File, HTTPException, Depends, Response, Cookie, Request
 from sqlmodel import SQLModel, Session, select
 from fastapi.middleware.cors import CORSMiddleware
 from .db import engine, get_db
@@ -319,7 +319,8 @@ async def delete_faq(faq_id: int, user=Depends(get_current_admin)):
 
 # --- Admin Orders ---
 @app.get("/admin/orders")
-def get_orders(user=Depends(get_current_admin)):
+def get_orders(request: Request, user=Depends(get_current_admin)):
+    print("COOKIES:", request.cookies)
     with Session(engine) as s:
         orders = s.exec(select(Order).order_by(Order.created_at.desc())).all()
         all_ids = {item['product_id'] for o in orders for item in o.items}
