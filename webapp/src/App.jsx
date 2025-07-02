@@ -1,5 +1,4 @@
-// webapp/src/App.jsx
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 
 import Header          from './components/Header.jsx';
@@ -7,8 +6,6 @@ import Footer          from './components/Footer.jsx';
 import ProductList     from './miniapps/ProductList.jsx';
 import Product         from './miniapps/Product.jsx';
 import Cart            from './miniapps/Cart.jsx';
-
-// import MyOrders        from './miniapps/MyOrders.jsx';
 import Profile         from './miniapps/Profile.jsx';
 
 import AdminLogin      from './admin/AdminLogin.jsx';
@@ -26,7 +23,8 @@ export default function App() {
     return saved ? JSON.parse(saved) : null;
   });
 
-  const handleSearch = useRef(null);
+  // ---- глобальный поиск ----
+  const [search, setSearch] = useState("");
   const location = useLocation();
 
   // Telegram WebApp initData → /login → сохраняем в localStorage и React-стейт
@@ -50,31 +48,19 @@ export default function App() {
       .catch(err => console.error('Login error:', err));
   }, []);
 
-  // сбрасываем handler поиска при смене маршрута
-  useEffect(() => {
-    handleSearch.current = null;
-  }, [location.pathname]);
-
   return (
     <>
-      {/* Передаём user в Header, чтобы меню могло динамически обновиться */}
-      <Header user={user} onSearch={(q) => {
-        if (typeof handleSearch.current === 'function') {
-          handleSearch.current(q);
-        }
-      }} />
+      {/* Передаём user и onSearch */}
+      <Header user={user} onSearch={setSearch} />
 
       <main style={{ padding: '20px 16px', background: '#121212' }}>
         <Routes>
           <Route
             path="/"
-            element={<ProductList onSearchChange={(fn) => (handleSearch.current = fn)} />}
+            element={<ProductList filterQuery={search} />}
           />
-
-          {/* mini-apps */}
           <Route path="/product/:id" element={<Product />} />
           <Route path="/cart"        element={<Cart />} />
-          {/* Убираем отдельный MyOrders.jsx */}
           <Route path="/my-orders"   element={<Navigate to="/profile" replace />} />
           <Route path="/profile"     element={<Profile />} />
 
@@ -86,7 +72,6 @@ export default function App() {
           <Route path="/admin/footer"      element={<AdminFooter />} />
           <Route path="/admin/model_cards" element={<AdminModelCards />} />
           <Route path="/admin/info"        element={<AdminInfo />} />
-
 
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

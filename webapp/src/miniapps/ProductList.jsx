@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-// [MODEL QUERY PATCH] импортируем useLocation
 import { useNavigate, useLocation } from 'react-router-dom';
 import { fetchProducts } from '../api.js';
 import { useCart } from '../context/CartContext.jsx';
@@ -19,9 +18,8 @@ function normalize(str = '') {
 
 const PAGE_SIZE = 6; // сколько карточек показывать за раз
 
-export default function ProductList({ onSearchChange }) {
+export default function ProductList({ filterQuery }) {
   const [products, setProducts] = useState([]);
-  const [filterQuery, setFilterQuery] = useState('');
   const [selectedModel, setSelectedModel] = useState(null);
   const [selectedByName, setSelectedByName] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -61,13 +59,6 @@ export default function ProductList({ onSearchChange }) {
     }
   }, [loading, products, location.search]);
 
-  /* ---------- подписка на поиск сверху ---------- */
-  useEffect(() => {
-    if (!onSearchChange) return;
-    onSearchChange(q => setFilterQuery(q));
-    return () => onSearchChange(null);
-  }, [onSearchChange]);
-
   /* ---------- сброс видимого количества при любом фильтре ---------- */
   useEffect(() => {
     setVisibleCount(PAGE_SIZE);
@@ -83,16 +74,8 @@ export default function ProductList({ onSearchChange }) {
     const matchesText = !q || name.includes(q) || model.includes(q) || type.includes(q);
 
     // --- исправленная фильтрация по моделям ---
-    // превращаем model_compat в массив, разбивая по пробелу, запятой и точке с запятой
     const productModels = model.split(/[\s,;]+/).filter(Boolean);
 
-
-    console.log({
-      selectedModel, 
-      productModels, 
-      modelCompat: p.model_compat, 
-      productName: p.name
-    });
     const matchesModel = !selectedModel || (
       Array.isArray(selectedModel)
         ? selectedModel.some(m => productModels.includes(m))
@@ -112,7 +95,6 @@ export default function ProductList({ onSearchChange }) {
   /* ---------- render ---------- */
   return (
     <>
-      {/* выбор модели */}
       <HitsCarousel />
       <h2 className="catalog-title">Каталог</h2>
 
@@ -123,14 +105,12 @@ export default function ProductList({ onSearchChange }) {
         }}
       />
 
-      {/* состояния загрузки / ошибки */}
       {loading && <p className="pl-status">Загрузка…</p>}
       {error && <p className="pl-status">{error}</p>}
       {!loading && !error && filtered.length === 0 && (
         <p className="pl-status">Ничего не найдено</p>
       )}
 
-      {/* грид товаров */}
       {!loading && !error && visible.length > 0 && (
         <>
           <div className="product-grid">
@@ -152,8 +132,6 @@ export default function ProductList({ onSearchChange }) {
               </div>
             ))}
           </div>
-
-          {/* кнопка "показать ещё" */}
           {visibleCount < filtered.length && (
             <div style={{ textAlign: 'center', marginTop: 24 }}>
               <button className="btn-show-more" onClick={handleShowMore}>
