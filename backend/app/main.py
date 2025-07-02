@@ -71,9 +71,19 @@ class AdminLoginIn(BaseModel):
 
 @app.post("/admin/login")
 def admin_login(body: AdminLoginIn, response: Response, db: Session = Depends(get_db)):
+    print("===> ЛОГИН: ", repr(body.username), "ПАРОЛЬ: ", repr(body.password))
     user = db.exec(select(AdminUser).where(AdminUser.username == body.username)).first()
+    print("===> НАЙДЕН В БД: ", user)
+    if not user:
+        print("===> Нет такого пользователя в БД!")
+    elif not argon2.verify(body.password, user.password_hash):
+        print("===> Пароль не совпал!")
+    else:
+        print("===> АВТОРИЗАЦИЯ УСПЕШНА")
+
     if not user or not argon2.verify(body.password, user.password_hash):
         raise HTTPException(401, "Invalid credentials")
+
     access_token = create_access_token({
         "sub": user.id,
         "is_super": user.is_super
