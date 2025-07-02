@@ -13,6 +13,7 @@ export default function Users() {
   const [error, setError]     = useState("");
   const nav  = useNavigate();
 
+  // ВЕЗДЕ добавлен /api/
   const api = (url, opt={}) =>
     fetch(url, {
       ...opt,
@@ -20,13 +21,13 @@ export default function Users() {
         "Content-Type": "application/json",
         ...opt.headers,
       },
-      credentials: "include", // cookie!
+      credentials: "include",
     });
 
   const load = () => {
     setLoading(true);
     setError("");
-    api("/admin/users")
+    api("/api/admin/users")
       .then(r => {
         if (r.status === 401 || r.status === 403) {
           nav("/admin/login");
@@ -45,11 +46,11 @@ export default function Users() {
     if (!form.username.trim() || (!editId && !form.password.trim()))
       return alert("Введите логин и пароль");
     const url    = editId
-      ? `/admin/users/${editId}`
-      : "/admin/users";
+      ? `/api/admin/users/${editId}` // исправлено!
+      : "/api/admin/users";          // исправлено!
     const method = editId ? "PATCH" : "POST";
     const body   = { ...form };
-    if (!form.password) delete body.password; // не отправлять пустой пароль на PATCH
+    if (!form.password) delete body.password;
 
     try {
       const res = await api(url, { method, body: JSON.stringify(body) });
@@ -75,7 +76,7 @@ export default function Users() {
 
   const del = id =>
     window.confirm("Удалить пользователя?") &&
-    api(`/admin/users/${id}`, { method: "DELETE" })
+    api(`/api/admin/users/${id}`, { method: "DELETE" }) // исправлено!
       .then(r => {
         if (r.ok) setUsers(u => u.filter(x => x.id !== id));
         else setError("Ошибка удаления");

@@ -73,7 +73,7 @@ export default function App() {
           <Route path="/admin/footer"      element={<AdminFooter />} />
           <Route path="/admin/model_cards" element={<AdminModelCards />} />
           <Route path="/admin/info"        element={<AdminInfo />} />
-          <Route path="/admin/users"       element={<Users/>} />
+          <Route path="/admin/users"       element={<Users />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
