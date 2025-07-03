@@ -25,6 +25,10 @@ export default function AdminProduct() {
   const navigate = useNavigate();
   const [modelCards, setModelCards] = useState([]);
 
+  // Для кнопки пересчёта авто-хитов
+  const [recalcLoading, setRecalcLoading] = useState(false);
+  const [recalcResult, setRecalcResult] = useState(null);
+
   // Получить карточки моделей
   useEffect(() => {
     fetch(MODEL_CARDS_API, { credentials: "include" })
@@ -47,6 +51,26 @@ export default function AdminProduct() {
       .then(setProducts)
       .catch(() => navigate("/admin/login"))
       .finally(() => setLoading(false));
+  };
+
+  // Пересчёт авто-хитов
+  const handleRecalcHits = async () => {
+    if (!window.confirm("Пересчитать авто-хиты на основе свежих заказов?")) return;
+    setRecalcLoading(true);
+    setRecalcResult(null);
+    try {
+      const res = await fetch("/api/admin/recalc_hits", {
+        method: "POST",
+        credentials: "include"
+      });
+      const data = await res.json();
+      setRecalcResult(data.updated ? `Обновлено: ${data.updated.join(", ")}` : "Нет обновлений");
+      loadProducts();
+    } catch {
+      setRecalcResult("Ошибка при пересчёте");
+    } finally {
+      setRecalcLoading(false);
+    }
   };
 
   const toggleHit = async (prod) => {
@@ -211,6 +235,17 @@ export default function AdminProduct() {
     <div className="admin-container admin-products">
       <AdminHeader />
       <h2>Товары — управление</h2>
+
+      {/* Кнопка пересчёта авто-хитов */}
+      <div style={{ marginBottom: 16 }}>
+        <button onClick={handleRecalcHits} disabled={recalcLoading}>
+          {recalcLoading ? "Пересчёт..." : "Пересчитать авто-хиты"}
+        </button>
+        {recalcResult && (
+          <span style={{ marginLeft: 16, color: "#2a7" }}>{recalcResult}</span>
+        )}
+      </div>
+
       {/* --- Форма добавления --- */}
       <div className="product-add-row" style={{ marginBottom: 24 }}>
         <input
@@ -366,6 +401,18 @@ export default function AdminProduct() {
                       checked={p.is_hit}
                       onChange={() => toggleHit(p)}
                     />
+                    {p.is_hit_auto && (
+                      <span
+                        title="Популярный (авто-хит)"
+                        style={{
+                          marginLeft: 6,
+                          color: "#ffa800",
+                          fontWeight: "bold",
+                          fontSize: 20,
+                          verticalAlign: "middle"
+                        }}
+                      >★</span>
+                    )}
                   </td>
                   <td>
                     <input
@@ -477,6 +524,18 @@ export default function AdminProduct() {
                       checked={p.is_hit}
                       onChange={() => toggleHit(p)}
                     />
+                    {p.is_hit_auto && (
+                      <span
+                        title="Популярный (авто-хит)"
+                        style={{
+                          marginLeft: 6,
+                          color: "#ffa800",
+                          fontWeight: "bold",
+                          fontSize: 20,
+                          verticalAlign: "middle"
+                        }}
+                      >★</span>
+                    )}
                   </td>
                   <td>
                     {p.images && p.images.length > 0
