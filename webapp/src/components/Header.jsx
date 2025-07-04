@@ -4,7 +4,7 @@ import CartLink from "./CartLink.jsx";
 import { API_URL } from "../api.js";
 import "./Header.css";
 
-export default function Header({ onSearch }) {
+export default function Header({ user, onSearch }) {
   const [query, setQuery] = useState("");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [infoTitle, setInfoTitle] = useState("");
@@ -161,6 +161,14 @@ export default function Header({ onSearch }) {
               </li>
             ))}
 
+             {/* Кнопка личного кабинета для пользователя */}
+    {user && (
+      <li>
+        <Link to="/profile" onClick={toggleSidebar}>
+          Личный кабинет
+        </Link>
+      </li>
+    )}
             {isAdmin && (
               <>
                 <li>
