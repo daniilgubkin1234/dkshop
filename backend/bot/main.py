@@ -426,7 +426,6 @@ async def handle_show_more(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> No
     else:
         await query.message.reply_text(
             "Это все подходящие товары по вашему запросу. Выберите действие из меню:",
-            reply_markup=MAIN_MENU
         )
     model_card = await find_model_card_link(query.data)
     if model_card:
@@ -439,6 +438,8 @@ async def handle_show_more(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> No
         await query.message.reply_text(msg, reply_markup=kb)
     await send_product_hint(update)
     await query.answer()
+    
+
 def main() -> None:
     app = (
         ApplicationBuilder()
