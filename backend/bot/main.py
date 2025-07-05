@@ -225,8 +225,14 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
         best_prod, best_score = _rank_products(query, pool)
 
         if best_score >= 0.6:
-            txt, kb = build_product_message(best_prod)
-            await update.message.reply_text(txt, reply_markup=kb)
+            # Берём 3 лучших карточки (если есть), а не только одну!
+            top_products = _rank_products(query, pool, k=3, return_scores=False)
+            if isinstance(top_products, tuple):
+                top_products = top_products[0]
+            # Отправляем каждую карточку отдельным сообщением
+            for prod in top_products:
+                txt, kb = build_product_message(prod)
+                await update.message.reply_text(txt, reply_markup=kb)
             model_card = await find_model_card_link(query)
             if model_card:
                 label, model_val = model_card
