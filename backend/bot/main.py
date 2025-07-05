@@ -16,16 +16,13 @@ from telegram.ext import (
     ApplicationBuilder,
     CommandHandler,
     MessageHandler,
-    CallbackQueryHandler,
     filters,
     Defaults,
     ContextTypes,
 )
 
-MANAGER_CHAT_ID = -1002721283584  # ←
 
-# ─── Хранилище результатов поиска для кнопки "ещё" ───
-USER_SEARCH_RESULTS = {}
+MANAGER_CHAT_ID = -1002721283584  # ← 
 
 # ─── Настройка логирования ───
 logging.basicConfig(
@@ -67,6 +64,7 @@ def fuzzy(a: str, b: str) -> float:
 
 # токенизатор: буквы + цифры (нужны 2110‑2112)
 TOKEN_RE = re.compile(r"[a-zа-яё0-9]+", re.I)
+
 def tokenize(s: str) -> set[str]:
     return set(TOKEN_RE.findall(s.lower()))
 
@@ -178,9 +176,11 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
             return
 
         if products:
-            user_id = update.effective_user.id
-            USER_SEARCH_RESULTS[user_id] = products
-            await send_product_chunk(update, user_id, offset=0)
+            best_prod = _rank_products(query, products)[0]
+            # 1. Показываем карточку товара
+            txt, kb = build_product_message(best_prod)
+            await update.message.reply_text(txt, reply_markup=kb)
+            # 2. Затем — каталог (если он есть)
             model_card = await find_model_card_link(query)
             if model_card:
                 label, model_val = model_card
@@ -190,6 +190,7 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
                     [InlineKeyboardButton(label or model_val, web_app=WebAppInfo(url=catalog_url))]
                 ])
                 await update.message.reply_text(msg, reply_markup=kb)
+            # 3. Затем — "Если не нашёл..."
             await send_product_hint(update)
             return
 
@@ -217,10 +218,51 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
             products = []
 
     if products:
-        user_id = update.effective_user.id
-        USER_SEARCH_RESULTS[user_id] = products
-        await send_product_chunk(update, user_id, offset=0)
-        return
+        q_toks = tokenize(query)
+        exact_name = [p for p in products if q_toks.issubset(tokenize(p["name"]))]
+        pool = exact_name if exact_name else products
+
+        best_prod, best_score = _rank_products(query, pool)
+
+        if best_score >= 0.6:
+            txt, kb = build_product_message(best_prod)
+            await update.message.reply_text(txt, reply_markup=kb)
+            model_card = await find_model_card_link(query)
+            if model_card:
+                label, model_val = model_card
+                catalog_url = f"{FRONT_URL.rstrip('/')}/?model={model_val}"
+                msg = f"Возможно, то что вы ищете находится в этом каталоге:"
+                kb = InlineKeyboardMarkup([
+                    [InlineKeyboardButton(label or model_val, web_app=WebAppInfo(url=catalog_url))]
+                ])
+                await update.message.reply_text(msg, reply_markup=kb)
+            await send_product_hint(update)
+            return
+        if best_score >= 0.4:
+            top3 = _rank_products(query, pool, k=3, return_scores=False)
+            if isinstance(top3, tuple):  # фикс для кортежа (список, None)
+                top3 = top3[0]
+            buttons = [
+                InlineKeyboardButton(
+                    p["name"], web_app=WebAppInfo(url=f"{FRONT_URL.rstrip('/')}/product/{p['id']}")
+                )
+                for p in top3
+            ]
+            await update.message.reply_text(
+                "Нашёл несколько подходящих товаров, уточните, пожалуйста:",
+                reply_markup=InlineKeyboardMarkup([buttons]),
+            )
+            model_card = await find_model_card_link(query)
+            if model_card:
+                label, model_val = model_card
+                catalog_url = f"{FRONT_URL.rstrip('/')}/?model={model_val}"
+                msg = f"Возможно, то что вы ищете находится в этом каталоге:"
+                kb = InlineKeyboardMarkup([
+                    [InlineKeyboardButton(label or model_val, web_app=WebAppInfo(url=catalog_url))]
+                ])
+                await update.message.reply_text(msg, reply_markup=kb)
+            await send_product_hint(update)
+            return
 
     # 3) Поиск по типу (далее логика без изменений)
     try:
@@ -230,9 +272,8 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
                 all_products = await resp.json()
         type_matches = [p for p in all_products if query in p.get("type", "").lower()]
         if type_matches:
-            user_id = update.effective_user.id
-            USER_SEARCH_RESULTS[user_id] = type_matches
-            await send_product_chunk(update, user_id, offset=0)
+            txt, kb = build_product_message(type_matches[0])
+            await update.message.reply_text(txt, reply_markup=kb)
             model_card = await find_model_card_link(query)
             if model_card:
                 label, model_val = model_card
@@ -337,46 +378,6 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     except Exception:
         logging.exception("Failed to send question to manager API")
 
-# --- Новый обработчик: Показываем chunk товаров по 3 + кнопка ---
-async def send_product_chunk(update_or_query, user_id, offset=0):
-    """
-    Показывает пользователю очередную порцию товаров (по 3 шт).
-    update_or_query — Update.message или callback_query.
-    """
-    products = USER_SEARCH_RESULTS.get(user_id, [])
-    chunk = products[offset:offset+3]
-    for product in chunk:
-        txt, kb = build_product_message(product)
-        if hasattr(update_or_query, "message"):  # обычное сообщение
-            await update_or_query.message.reply_text(txt, reply_markup=kb)
-        else:  # callback_query
-            await update_or_query.answer()
-            await update_or_query.message.reply_text(txt, reply_markup=kb)
-    # Кнопка "Показать ещё"
-    if offset + 3 < len(products):
-        btn = InlineKeyboardMarkup([[
-            InlineKeyboardButton(
-                "Показать ещё",
-                callback_data=f"showmore_{user_id}_{offset+3}"
-            )
-        ]])
-        if hasattr(update_or_query, "message"):
-            await update_or_query.message.reply_text("Показать ещё товары?", reply_markup=btn)
-        else:
-            await update_or_query.message.reply_text("Показать ещё товары?", reply_markup=btn)
-
-# --- Callback для кнопки "Показать ещё" ---
-async def handle_show_more(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
-    query = update.callback_query
-    data = query.data
-    m = re.match(r"showmore_(\d+)_(\d+)", data)
-    if not m:
-        await query.answer("Ошибка данных.")
-        return
-    user_id = int(m.group(1))
-    offset = int(m.group(2))
-    await send_product_chunk(query, user_id, offset=offset)
-
 # ─── Вспомогательные функции ───
 
 def _rank_products(query: str, products: list[dict], *, k: int | None = 1, return_scores: bool = True):
@@ -403,9 +404,8 @@ def main() -> None:
     )
     app.add_handler(CommandHandler("start", cmd_start))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
-    app.add_handler(CallbackQueryHandler(handle_show_more, pattern=r"^showmore_\d+_\d+$"))
     logging.info("Bot started")
-    app.run_polling(allowed_updates=["message", "callback_query"])
+    app.run_polling(allowed_updates=["message"])
 
 if __name__ == "__main__":
     main()
