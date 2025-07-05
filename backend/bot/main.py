@@ -21,6 +21,9 @@ from telegram.ext import (
     ContextTypes,
 )
 
+
+MANAGER_CHAT_ID = -1002721283584  # ← 
+
 # ─── Настройка логирования ───
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -285,7 +288,7 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     except Exception:
         logging.exception("API request failed [type search]")
 
-        faqs = []
+    faqs = []
     try:
         async with aiohttp.ClientSession(timeout=HTTP_TIMEOUT) as sess:
             # 1. Пробуем точный поиск по API
@@ -342,6 +345,26 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
 
     # 5. Если ничего не нашли — эскалация менеджеру
     await update.message.reply_text("Передаю вопрос менеджеру 👨‍🔧")
+
+    # --- ОТПРАВКА ВОПРОСА В ГРУППУ ---
+    try:
+        user_info = f"<b>ID:</b> <code>{update.effective_user.id}</code>"
+        if update.effective_user.username:
+            user_info += f"\n<b>Username:</b> @{update.effective_user.username}"
+        question_msg = (
+            f"❓ <b>Новый вопрос от пользователя</b>\n"
+            f"{user_info}\n"
+            f"<b>Вопрос:</b> {text}"
+        )
+        await ctx.bot.send_message(
+            chat_id=MANAGER_CHAT_ID,
+            text=question_msg,
+            parse_mode="HTML",
+        )
+    except Exception as e:
+        logging.exception("Не удалось отправить вопрос менеджеру в чат: %s", e)
+
+    # --- Сохраняем вопрос через API (старое поведение) ---
     try:
         async with aiohttp.ClientSession(timeout=HTTP_TIMEOUT) as sess:
             await sess.post(
@@ -358,7 +381,7 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
 # ─── Вспомогательные функции ───
 
 def _rank_products(query: str, products: list[dict], *, k: int | None = 1, return_scores: bool = True):
-    """Возвращает лучший товар (или top‑k) по комбинированному рейтингу"""
+    """Возвращает лучший товар (или topk) по комбинированному рейтингу"""
     q_toks = tokenize(query)
     scored: list[tuple[float, dict]] = []
     for p in products:
