@@ -245,16 +245,6 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
         ]])
             await update.message.reply_text(f"Показать ещё подходящие товары ({remaining})?", reply_markup=btn)
 
-            model_card = await find_model_card_link(query)
-            if model_card:
-                label, model_val = model_card
-                catalog_url = f"{FRONT_URL.rstrip('/')}/?model={model_val}"
-                msg = f"Возможно, то что вы ищете находится в этом каталоге:"
-                kb = InlineKeyboardMarkup([
-                    [InlineKeyboardButton(label or model_val, web_app=WebAppInfo(url=catalog_url))]
-                ])
-                await update.message.reply_text(msg, reply_markup=kb)
-            await send_product_hint(update)
             return
 
         if best_score >= 0.4:
@@ -438,8 +428,17 @@ async def handle_show_more(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> No
             "Это все подходящие товары по вашему запросу. Выберите действие из меню:",
             reply_markup=MAIN_MENU
         )
+    model_card = await find_model_card_link(query.data)
+    if model_card:
+        label, model_val = model_card
+        catalog_url = f"{FRONT_URL.rstrip('/')}/?model={model_val}"
+        msg = f"Возможно, то что вы ищете находится в этом каталоге:"
+        kb = InlineKeyboardMarkup([
+            [InlineKeyboardButton(label or model_val, web_app=WebAppInfo(url=catalog_url))]
+        ])
+        await query.message.reply_text(msg, reply_markup=kb)
+    await send_product_hint(update)
     await query.answer()
-
 def main() -> None:
     app = (
         ApplicationBuilder()
