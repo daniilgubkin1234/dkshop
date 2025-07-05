@@ -441,15 +441,14 @@ async def handle_show_more(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> No
         ]])
         await query.message.reply_text(f"<b>Показать ещё подходящие товары ({remaining})?</b>", reply_markup=btn)
     else:
-        await query.message.reply_text(
-            "<b>Это все подходящие товары по вашему запросу.</b>",
-        )
-
         model_card = await find_model_card_link(orig_query)
         if model_card:
             label, model_val = model_card
             catalog_url = f"{FRONT_URL.rstrip('/')}/?model={model_val}"
-            msg = f"Возможно, то что вы ищете находится в этом <b>каталоге</b>:"
+            msg = (
+            "<b>Это все подходящие товары по вашему запросу.</b>\n"
+            "Возможно, то что вы ищете находится в этом <b>каталоге</b>:"
+            )
             kb = InlineKeyboardMarkup([
                 [InlineKeyboardButton(label or model_val, web_app=WebAppInfo(url=catalog_url))]
             ])
