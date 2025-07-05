@@ -66,14 +66,18 @@ TOKEN_RE = re.compile(r"[a-zа-яё0-9]+", re.I)
 def tokenize(s: str) -> set[str]:
     return set(TOKEN_RE.findall(s.lower()))
 
-async def send_product_hint(update: Update) -> None:
+async def send_product_hint(obj) -> None:
     hint_text = (
         "Если я не нашёл интересующий вас товар, попробуйте задать вопрос точнее, или вы можете найти конкретно то, что вам нужно в нашем магазине!"
     )
     hint_kb = InlineKeyboardMarkup([
         [InlineKeyboardButton("🛍 Открыть магазин", web_app=WebAppInfo(url=FRONT_URL))]
     ])
-    await update.message.reply_text(hint_text, reply_markup=hint_kb)
+    # Поддержка Update и CallbackQuery
+    if hasattr(obj, "message") and obj.message:
+        await obj.message.reply_text(hint_text, reply_markup=hint_kb)
+    elif hasattr(obj, "reply_text"):  # прямо message
+        await obj.reply_text(hint_text, reply_markup=hint_kb)
 
 async def find_model_card_link(query: str) -> tuple[str, str] | None:
     try:
@@ -451,7 +455,7 @@ async def handle_show_more(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> No
                 [InlineKeyboardButton(label or model_val, web_app=WebAppInfo(url=catalog_url))]
             ])
             await query.message.reply_text(msg, reply_markup=kb)
-        await send_product_hint(update)
+        await send_product_hint(query)
     await query.answer()
     
 
