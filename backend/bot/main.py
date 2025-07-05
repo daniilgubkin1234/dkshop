@@ -221,20 +221,29 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
             user_id = update.effective_user.id
             USER_SEARCH_RESULTS[user_id] = all_ranked
 
+            count = len(all_ranked)
+            if count == 1:
+                await update.message.reply_text("По вашему запросу найден 1 товар.")
+            elif 2 <= count <= 4:
+                await update.message.reply_text(f"По вашему запросу найдено {count} товара.")
+            else:
+                await update.message.reply_text(f"По вашему запросу найдено {count} товаров.")
+
             await update.message.reply_text(
                 "Вот что мне удалось найти по вашему запросу!\n"
                 "Нажмите «Открыть карточку», чтобы узнать подробнее о товаре, посмотреть характеристики и фото."
             )
 
-            for prod in all_ranked[:3]:
-                txt, kb = build_product_message(prod)
-                await update.message.reply_text(txt, reply_markup=kb)
+        for prod in all_ranked[:3]:
+            txt, kb = build_product_message(prod)
+        await update.message.reply_text(txt, reply_markup=kb)
 
-            if len(all_ranked) > 3:
-                btn = InlineKeyboardMarkup([[
-                    InlineKeyboardButton("Показать ещё", callback_data=f"showmore_{user_id}_3")
-                ]])
-                await update.message.reply_text("Показать ещё подходящие товары?", reply_markup=btn)
+        if len(all_ranked) > 3:
+            remaining = len(all_ranked) - 3
+            btn = InlineKeyboardMarkup([[
+            InlineKeyboardButton(f"Показать ещё ({remaining})", callback_data=f"showmore_{user_id}_3")
+        ]])
+            await update.message.reply_text(f"Показать ещё подходящие товары ({remaining})?", reply_markup=btn)
 
             model_card = await find_model_card_link(query)
             if model_card:
@@ -413,15 +422,22 @@ async def handle_show_more(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> No
     user_id = int(m.group(1))
     offset = int(m.group(2))
     products = USER_SEARCH_RESULTS.get(user_id, [])
+    await query.edit_message_reply_markup(reply_markup=None)
     # Показываем следующие 3 карточки
     for prod in products[offset:offset+3]:
         txt, kb = build_product_message(prod)
         await query.message.reply_text(txt, reply_markup=kb)
     if offset + 3 < len(products):
+        remaining = len(products) - (offset + 3)
         btn = InlineKeyboardMarkup([[
-            InlineKeyboardButton("Показать ещё", callback_data=f"showmore_{user_id}_{offset+3}")
+            InlineKeyboardButton(f"Показать ещё ({remaining})", callback_data=f"showmore_{user_id}_{offset+3}")
         ]])
-        await query.message.reply_text("Показать ещё подходящие товары?", reply_markup=btn)
+        await query.message.reply_text(f"Показать ещё подходящие товары ({remaining})?", reply_markup=btn)
+    else:
+        await query.message.reply_text(
+            "Это все подходящие товары по вашему запросу. Выберите действие из меню:",
+            reply_markup=MAIN_MENU
+        )
     await query.answer()
 
 def main() -> None:
