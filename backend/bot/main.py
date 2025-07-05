@@ -437,8 +437,7 @@ async def handle_show_more(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> No
             [InlineKeyboardButton(label or model_val, web_app=WebAppInfo(url=catalog_url))]
             ])
             await query.message.reply_text(msg, reply_markup=kb)
-
-    await send_product_hint(update)
+        await send_product_hint(update)
     await query.answer()
     
 
