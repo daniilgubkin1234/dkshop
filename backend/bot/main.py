@@ -68,7 +68,7 @@ def tokenize(s: str) -> set[str]:
 
 async def send_product_hint(obj) -> None:
     hint_text = (
-        "Если я не нашёл интересующий вас товар, попробуйте задать вопрос точнее, или вы можете найти конкретно то, что вам нужно в нашем магазине!"
+        "Если я не нашёл интересующий вас товар, попробуйте задать вопрос точнее, или вы можете найти конкретно то, что вам нужно в нашем <b>магазине</b>!"
     )
     hint_kb = InlineKeyboardMarkup([
         [InlineKeyboardButton("🛍 Открыть магазин", web_app=WebAppInfo(url=FRONT_URL))]
@@ -227,16 +227,15 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
 
             count = len(all_ranked)
             if count == 1:
-                await update.message.reply_text("По вашему запросу найден 1 товар.")
+                await update.message.reply_text("По вашему запросу найден <b>1</b> товар.\n"
+                                                "Нажмите <b>«Открыть карточку»</b>, чтобы узнать подробнее о товаре, посмотреть характеристики и фото.")
             elif 2 <= count <= 4:
-                await update.message.reply_text(f"По вашему запросу найдено {count} товара.")
+                await update.message.reply_text(f"По вашему запросу найдено <b>{count}</b> товара.\n"
+                                                "Нажмите <b>«Открыть карточку»</b>, чтобы узнать подробнее о товаре, посмотреть характеристики и фото.")
             else:
-                await update.message.reply_text(f"По вашему запросу найдено {count} товаров.")
+                await update.message.reply_text(f"По вашему запросу найдено <b>{count}</b> товаров.\n"
+                                                "Нажмите <b>«Открыть карточку»</b>, чтобы узнать подробнее о товаре, посмотреть характеристики и фото.")
 
-            await update.message.reply_text(
-                "Вот что мне удалось найти по вашему запросу!\n"
-                "Нажмите «Открыть карточку», чтобы узнать подробнее о товаре, посмотреть характеристики и фото."
-            )
 
             for prod in all_ranked[:3]:
                 txt, kb = build_product_message(prod)
@@ -247,14 +246,14 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
                 btn = InlineKeyboardMarkup([[
                     InlineKeyboardButton(f"Показать ещё ({remaining})", callback_data=f"showmore_{user_id}_3")
                 ]])
-                await update.message.reply_text(f"Показать ещё подходящие товары ({remaining})?", reply_markup=btn)
+                await update.message.reply_text(f"<b>Показать ещё подходящие товары ({remaining})?</b>", reply_markup=btn)
                 return
             # Если карточек <= 3, выводим каталог и магазин сразу
             model_card = await find_model_card_link(query)
             if model_card:
                 label, model_val = model_card
                 catalog_url = f"{FRONT_URL.rstrip('/')}/?model={model_val}"
-                msg = f"Возможно, то что вы ищете находится в этом каталоге:"
+                msg = f"Возможно, то что вы ищете находится в этом <b>каталоге</b>:"
                 kb = InlineKeyboardMarkup([
                     [InlineKeyboardButton(label or model_val, web_app=WebAppInfo(url=catalog_url))]
                 ])
@@ -440,17 +439,17 @@ async def handle_show_more(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> No
         btn = InlineKeyboardMarkup([[
             InlineKeyboardButton(f"Показать ещё ({remaining})", callback_data=f"showmore_{user_id}_{offset+3}")
         ]])
-        await query.message.reply_text(f"Показать ещё подходящие товары ({remaining})?", reply_markup=btn)
+        await query.message.reply_text(f"<b>Показать ещё подходящие товары ({remaining})?</b>", reply_markup=btn)
     else:
         await query.message.reply_text(
-            "Это все подходящие товары по вашему запросу.",
+            "<b>Это все подходящие товары по вашему запросу.</b>",
         )
 
         model_card = await find_model_card_link(orig_query)
         if model_card:
             label, model_val = model_card
             catalog_url = f"{FRONT_URL.rstrip('/')}/?model={model_val}"
-            msg = f"Возможно, то что вы ищете находится в этом каталоге:"
+            msg = f"Возможно, то что вы ищете находится в этом <b>каталоге</b>:"
             kb = InlineKeyboardMarkup([
                 [InlineKeyboardButton(label or model_val, web_app=WebAppInfo(url=catalog_url))]
             ])
