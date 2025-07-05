@@ -16,6 +16,7 @@ from telegram.ext import (
     ApplicationBuilder,
     CommandHandler,
     MessageHandler,
+    CallbackQueryHandler,
     filters,
     Defaults,
     ContextTypes,
@@ -23,6 +24,9 @@ from telegram.ext import (
 
 
 MANAGER_CHAT_ID = -1002721283584  # ← 
+
+# ─── Хранилище результатов для постраничного вывода ───
+USER_SEARCH_RESULTS = {}
 
 # ─── Настройка логирования ───
 logging.basicConfig(
@@ -48,10 +52,7 @@ MAIN_MENU = ReplyKeyboardMarkup(
     one_time_keyboard=False,
 )
 
-# ─── Помощники ───
-
 def build_product_message(product: dict) -> tuple[str, InlineKeyboardMarkup]:
-    """Формирует текст и inline‑кнопку для товара"""
     url  = f"{FRONT_URL.rstrip('/')}/product/{product['id']}"
     text = f"<b>{product['name']}</b>\nЦена: <b>{product['price']} ₽</b>"
     kb   = InlineKeyboardMarkup([[InlineKeyboardButton(
@@ -62,13 +63,10 @@ def build_product_message(product: dict) -> tuple[str, InlineKeyboardMarkup]:
 def fuzzy(a: str, b: str) -> float:
     return SequenceMatcher(None, a.lower(), b.lower()).ratio()
 
-# токенизатор: буквы + цифры (нужны 2110‑2112)
 TOKEN_RE = re.compile(r"[a-zа-яё0-9]+", re.I)
-
 def tokenize(s: str) -> set[str]:
     return set(TOKEN_RE.findall(s.lower()))
 
-# ─── Сообщение-подсказка ("Если я не нашёл ...") ───
 async def send_product_hint(update: Update) -> None:
     hint_text = (
         "Если я не нашёл интересующий вас товар, попробуйте задать вопрос точнее, или вы можете найти конкретно то, что вам нужно в нашем магазине!"
@@ -78,11 +76,7 @@ async def send_product_hint(update: Update) -> None:
     ])
     await update.message.reply_text(hint_text, reply_markup=hint_kb)
 
-# ─── Новый помощник: Поиск подходящей карточки модели ───
 async def find_model_card_link(query: str) -> tuple[str, str] | None:
-    """
-    Возвращает (label, model), если найдено совпадение по модели в тексте запроса.
-    """
     try:
         async with aiohttp.ClientSession(timeout=HTTP_TIMEOUT) as sess:
             async with sess.get(f"{API_URL}/model_cards") as resp:
@@ -101,7 +95,6 @@ async def find_model_card_link(query: str) -> tuple[str, str] | None:
                 return (card.get("label", ""), ",".join(card.get("models", [])))
     return None
 
-# ─── /start ───
 async def cmd_start(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text(
         "Добро пожаловать в DK PROduct! 👋\n\n"
@@ -111,7 +104,6 @@ async def cmd_start(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
         reply_markup=MAIN_MENU,
     )
 
-# ─── Основной обработчик текста ───
 async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     text  = update.message.text or ""
     query = text.strip()
@@ -177,10 +169,8 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
 
         if products:
             best_prod = _rank_products(query, products)[0]
-            # 1. Показываем карточку товара
             txt, kb = build_product_message(best_prod)
             await update.message.reply_text(txt, reply_markup=kb)
-            # 2. Затем — каталог (если он есть)
             model_card = await find_model_card_link(query)
             if model_card:
                 label, model_val = model_card
@@ -190,7 +180,6 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
                     [InlineKeyboardButton(label or model_val, web_app=WebAppInfo(url=catalog_url))]
                 ])
                 await update.message.reply_text(msg, reply_markup=kb)
-            # 3. Затем — "Если не нашёл..."
             await send_product_hint(update)
             return
 
@@ -225,16 +214,28 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
         best_prod, best_score = _rank_products(query, pool)
 
         if best_score >= 0.6:
-            # Берём 3 лучших карточки (если есть), а не только одну!
-            top_products = _rank_products(query, pool, k=3, return_scores=False)
-            if isinstance(top_products, tuple):
-                top_products = top_products[0]
-            await update.message.reply_text("Вот что мне удалось найти по вашему запросу!\n" 
-                                            "Нажмите «Открыть карточку», чтобы узнать подробнее о товаре, посмотреть характеристики и фото.")
-            # Отправляем каждую карточку отдельным сообщением
-            for prod in top_products:
+            # Постраничный вывод по 3 карточки с кнопкой "Показать ещё"
+            all_ranked = _rank_products(query, pool, k=len(pool), return_scores=False)
+            if isinstance(all_ranked, tuple):
+                all_ranked = all_ranked[0]
+            user_id = update.effective_user.id
+            USER_SEARCH_RESULTS[user_id] = all_ranked
+
+            await update.message.reply_text(
+                "Вот что мне удалось найти по вашему запросу!\n"
+                "Нажмите «Открыть карточку», чтобы узнать подробнее о товаре, посмотреть характеристики и фото."
+            )
+
+            for prod in all_ranked[:3]:
                 txt, kb = build_product_message(prod)
                 await update.message.reply_text(txt, reply_markup=kb)
+
+            if len(all_ranked) > 3:
+                btn = InlineKeyboardMarkup([[
+                    InlineKeyboardButton("Показать ещё", callback_data=f"showmore_{user_id}_3")
+                ]])
+                await update.message.reply_text("Показать ещё подходящие товары?", reply_markup=btn)
+
             model_card = await find_model_card_link(query)
             if model_card:
                 label, model_val = model_card
@@ -246,6 +247,7 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
                 await update.message.reply_text(msg, reply_markup=kb)
             await send_product_hint(update)
             return
+
         if best_score >= 0.4:
             top3 = _rank_products(query, pool, k=3, return_scores=False)
             if isinstance(top3, tuple):  # фикс для кортежа (список, None)
@@ -386,10 +388,7 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     except Exception:
         logging.exception("Failed to send question to manager API")
 
-# ─── Вспомогательные функции ───
-
 def _rank_products(query: str, products: list[dict], *, k: int | None = 1, return_scores: bool = True):
-    """Возвращает лучший товар (или topk) по комбинированному рейтингу"""
     q_toks = tokenize(query)
     scored: list[tuple[float, dict]] = []
     for p in products:
@@ -403,6 +402,28 @@ def _rank_products(query: str, products: list[dict], *, k: int | None = 1, retur
     top = [p for _, p in scored[:k]]
     return (top, None) if not return_scores else top
 
+# --- ОБРАБОТЧИК для кнопки "Показать ещё" ---
+async def handle_show_more(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
+    query = update.callback_query
+    data = query.data
+    m = re.match(r"showmore_(\d+)_(\d+)", data)
+    if not m:
+        await query.answer("Ошибка данных.")
+        return
+    user_id = int(m.group(1))
+    offset = int(m.group(2))
+    products = USER_SEARCH_RESULTS.get(user_id, [])
+    # Показываем следующие 3 карточки
+    for prod in products[offset:offset+3]:
+        txt, kb = build_product_message(prod)
+        await query.message.reply_text(txt, reply_markup=kb)
+    if offset + 3 < len(products):
+        btn = InlineKeyboardMarkup([[
+            InlineKeyboardButton("Показать ещё", callback_data=f"showmore_{user_id}_{offset+3}")
+        ]])
+        await query.message.reply_text("Показать ещё подходящие товары?", reply_markup=btn)
+    await query.answer()
+
 def main() -> None:
     app = (
         ApplicationBuilder()
@@ -412,8 +433,9 @@ def main() -> None:
     )
     app.add_handler(CommandHandler("start", cmd_start))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
+    app.add_handler(CallbackQueryHandler(handle_show_more, pattern=r"^showmore_\d+_\d+$"))
     logging.info("Bot started")
-    app.run_polling(allowed_updates=["message"])
+    app.run_polling(allowed_updates=["message", "callback_query"])
 
 if __name__ == "__main__":
     main()
