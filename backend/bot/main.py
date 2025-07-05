@@ -229,7 +229,8 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
             top_products = _rank_products(query, pool, k=3, return_scores=False)
             if isinstance(top_products, tuple):
                 top_products = top_products[0]
-            await update.message.reply_text("По вашему запросу я нашёл:")
+            await update.message.reply_text("Вот что мне удалось найти по вашему запросу!\n" 
+                                            "Нажмите «Открыть карточку», чтобы узнать подробнее о товаре, посмотреть характеристики и фото.")
             # Отправляем каждую карточку отдельным сообщением
             for prod in top_products:
                 txt, kb = build_product_message(prod)
