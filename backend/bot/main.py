@@ -22,7 +22,6 @@ from telegram.ext import (
     ContextTypes,
 )
 
-
 MANAGER_CHAT_ID = -1002721283584  # ← 
 
 # ─── Хранилище результатов для постраничного вывода ───
@@ -219,7 +218,8 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
             if isinstance(all_ranked, tuple):
                 all_ranked = all_ranked[0]
             user_id = update.effective_user.id
-            USER_SEARCH_RESULTS[user_id] = all_ranked
+            # -- ВАЖНО! Сохраняем и карточки, и исходный текст запроса --
+            USER_SEARCH_RESULTS[user_id] = {"products": all_ranked, "query": query}
 
             count = len(all_ranked)
             if count == 1:
@@ -234,17 +234,28 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
                 "Нажмите «Открыть карточку», чтобы узнать подробнее о товаре, посмотреть характеристики и фото."
             )
 
-        for prod in all_ranked[:3]:
-            txt, kb = build_product_message(prod)
-        await update.message.reply_text(txt, reply_markup=kb)
+            for prod in all_ranked[:3]:
+                txt, kb = build_product_message(prod)
+                await update.message.reply_text(txt, reply_markup=kb)
 
-        if len(all_ranked) > 3:
-            remaining = len(all_ranked) - 3
-            btn = InlineKeyboardMarkup([[
-            InlineKeyboardButton(f"Показать ещё ({remaining})", callback_data=f"showmore_{user_id}_3")
-        ]])
-            await update.message.reply_text(f"Показать ещё подходящие товары ({remaining})?", reply_markup=btn)
-
+            if len(all_ranked) > 3:
+                remaining = len(all_ranked) - 3
+                btn = InlineKeyboardMarkup([[
+                    InlineKeyboardButton(f"Показать ещё ({remaining})", callback_data=f"showmore_{user_id}_3")
+                ]])
+                await update.message.reply_text(f"Показать ещё подходящие товары ({remaining})?", reply_markup=btn)
+                return
+            # Если карточек <= 3, выводим каталог и магазин сразу
+            model_card = await find_model_card_link(query)
+            if model_card:
+                label, model_val = model_card
+                catalog_url = f"{FRONT_URL.rstrip('/')}/?model={model_val}"
+                msg = f"Возможно, то что вы ищете находится в этом каталоге:"
+                kb = InlineKeyboardMarkup([
+                    [InlineKeyboardButton(label or model_val, web_app=WebAppInfo(url=catalog_url))]
+                ])
+                await update.message.reply_text(msg, reply_markup=kb)
+            await send_product_hint(update)
             return
 
         if best_score >= 0.4:
@@ -411,7 +422,10 @@ async def handle_show_more(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> No
         return
     user_id = int(m.group(1))
     offset = int(m.group(2))
-    products = USER_SEARCH_RESULTS.get(user_id, [])
+    data_obj = USER_SEARCH_RESULTS.get(user_id, {})
+    products = data_obj.get("products", [])
+    orig_query = data_obj.get("query", "")
+
     await query.edit_message_reply_markup(reply_markup=None)
     # Показываем следующие 3 карточки
     for prod in products[offset:offset+3]:
@@ -428,13 +442,13 @@ async def handle_show_more(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> No
             "Это все подходящие товары по вашему запросу.",
         )
 
-        model_card = await find_model_card_link(query.data)
+        model_card = await find_model_card_link(orig_query)
         if model_card:
             label, model_val = model_card
             catalog_url = f"{FRONT_URL.rstrip('/')}/?model={model_val}"
             msg = f"Возможно, то что вы ищете находится в этом каталоге:"
             kb = InlineKeyboardMarkup([
-            [InlineKeyboardButton(label or model_val, web_app=WebAppInfo(url=catalog_url))]
+                [InlineKeyboardButton(label or model_val, web_app=WebAppInfo(url=catalog_url))]
             ])
             await query.message.reply_text(msg, reply_markup=kb)
         await send_product_hint(update)
