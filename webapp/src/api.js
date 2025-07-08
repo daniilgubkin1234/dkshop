@@ -1,5 +1,5 @@
 export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8001';
-
+console.log("API_URL =", API_URL);
 export async function fetchProducts({wholesale, user_id, username, ...params} = {}) {
   let url = `${API_URL}/products?`;
   if (wholesale) url += 'wholesale=1&';
