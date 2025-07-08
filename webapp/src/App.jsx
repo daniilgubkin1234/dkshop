@@ -17,6 +17,7 @@ import AdminFooter     from './admin/AdminFooter.jsx';
 import AdminModelCards from './admin/AdminModelCards.jsx';
 import AdminInfo       from './admin/AdminInfo.jsx';
 import Users           from './admin/Users.jsx';
+import WholesalesClient from './admin/WholesalesClient.jsx';
 import { API_URL } from './api.js';
 
 export default function App() {
