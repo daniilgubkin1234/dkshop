@@ -10,3 +10,4 @@ psycopg2-binary
 vk_api==11.9   
 init-data-py         
 python-jose[cryptography]
+pydantic==1.10.14
