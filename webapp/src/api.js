@@ -87,13 +87,13 @@ export const deleteModelCard = (id) =>
     if (!r.ok) throw new Error("Не удалось удалить карточку");
   });
   export async function fetchClients() {
-    const r = await fetch('/api/admin/clients', { credentials: "include" });
+    const r = await fetch(`${API_URL}/admin/clients`, { credentials: "include" });
     if (!r.ok) throw new Error("Ошибка загрузки клиентов");
     return await r.json();
   }
   
   export async function updateClientWholesale(user_id, is_wholesale) {
-    const r = await fetch(`/api/admin/clients/${user_id}`, {
+    const r = await fetch(`${API_URL}/admin/clients/${user_id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
@@ -102,8 +102,9 @@ export const deleteModelCard = (id) =>
     if (!r.ok) throw new Error("Ошибка обновления статуса опта");
     return await r.json();
   }
+  
   export async function updateClientWholesalePrices(user_id, wholesale_prices) {
-    const r = await fetch(`/api/admin/clients/${user_id}/prices`, {
+    const r = await fetch(`${API_URL}/admin/clients/${user_id}/prices`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
