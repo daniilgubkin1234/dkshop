@@ -7,6 +7,7 @@ import ProductList     from './miniapps/ProductList.jsx';
 import Product         from './miniapps/Product.jsx';
 import Cart            from './miniapps/Cart.jsx';
 import Profile         from './miniapps/Profile.jsx';
+import WholesaleProductList from './miniapps/WholesaleProductList.jsx';
 
 import AdminLogin      from './admin/AdminLogin.jsx';
 import AdminOrders     from './admin/AdminOrders.jsx';
@@ -56,15 +57,26 @@ export default function App() {
 
       <main style={{ padding: '20px 16px', background: '#121212' }}>
         <Routes>
-          <Route
-            path="/"
-            element={<ProductList filterQuery={search} />}
-          />
+        <Route
+        path="/"
+        element={
+        user?.is_wholesale
+          ? <Navigate to="/wholesale" replace />
+          : <ProductList filterQuery={search} />
+        }
+        />
           <Route path="/product/:id" element={<Product />} />
           <Route path="/cart"        element={<Cart />} />
           <Route path="/my-orders"   element={<Navigate to="/profile" replace />} />
           <Route path="/profile"     element={<Profile />} />
-
+          <Route
+    path="/wholesale"
+    element={
+      user?.is_wholesale
+        ? <WholesaleProductList user={user} />
+        : <Navigate to="/" replace />
+    }
+  />
           {/* admin */}
           <Route path="/admin/login"       element={<AdminLogin />} />
           <Route path="/admin/orders"      element={<AdminOrders />} />
@@ -74,6 +86,7 @@ export default function App() {
           <Route path="/admin/model_cards" element={<AdminModelCards />} />
           <Route path="/admin/info"        element={<AdminInfo />} />
           <Route path="/admin/users"       element={<Users />} />
+          <Route path="/admin/wholesale_clients" element={<WholesalesClient />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>

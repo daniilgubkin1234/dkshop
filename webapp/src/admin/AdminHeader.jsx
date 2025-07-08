@@ -58,7 +58,15 @@ export default function AdminHeader() {
         >
           Пользователи
         </Link>
+        
       )}
+      <Link
+  to="/admin/wholesale_clients"
+  className={location.pathname.includes("/wholesale_clients") ? "active" : ""}
+>
+  Оптовики
+</Link>
+
     </div>
   );
 }

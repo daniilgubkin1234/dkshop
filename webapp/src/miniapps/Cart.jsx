@@ -27,7 +27,7 @@ export default function Cart() {
   const [phone, setPhone] = useState('');
   const [status, setStatus] = useState('');
   const [orderInfo, setOrderInfo] = useState(null);
-
+  const isWholesaleOrder = window.location.pathname === "/wholesale";
   /* ───── подставляем данные авторизованного пользователя ───── */
   const storedUser = JSON.parse(localStorage.getItem('dkshop_user') || 'null');
   const userId     = storedUser?.id;
@@ -52,6 +52,7 @@ export default function Cart() {
         name:    name.trim(),
         phone:   phone.trim(),
         items:   cartItems.map(i => ({ product_id: i.id, quantity: i.quantity })),
+        is_wholesale: isWholesaleOrder,
       });
       setOrderInfo({
         orderId: resp.order_id,

@@ -5,7 +5,7 @@ from .db import engine, get_db
 from .models import (
     Product, FAQ, Question, Order,
     FooterLink, ModelCard, StaticPage,
-    CompanyInfo, CartItem, AdminUser
+    CompanyInfo, CartItem, AdminUser, User
 )
 from sqlalchemy import or_, func, delete 
 from fastapi.responses import JSONResponse
@@ -77,7 +77,15 @@ def super_required(user=Depends(get_current_admin)):
     if not user.is_super:
         raise HTTPException(403, "Super admin only")
     return user
-
+def get_current_user(request: Request, db: Session = Depends(get_db)):
+    user_id = request.query_params.get("user_id")
+    username = request.query_params.get("username")
+    user = None
+    if user_id:
+        user = db.exec(select(User).where(User.id == int(user_id))).first()
+    elif username:
+        user = db.exec(select(User).where(User.username == username)).first()
+    return user
 # --- Admin Login / Logout ---
 class AdminLoginIn(BaseModel):
     username: str
@@ -158,7 +166,7 @@ class LoginRequest(BaseModel):
     initData: str
 
 @app.post("/login")
-async def login(body: LoginRequest):
+async def login(body: LoginRequest, db: Session = Depends(get_db)):
     init_data = InitData.parse(body.initData)
     if not init_data.validate(BOT_TOKEN):
         raise HTTPException(status_code=401, detail="Invalid auth data")
@@ -170,14 +178,43 @@ async def login(body: LoginRequest):
             user_data = user_obj.dict()
         except Exception:
             user_data = vars(user_obj)
-    # TODO: сохранить или обновить User в БД
+    user = db.get(User, user_data["id"])
+    if not user:
+        user = User(
+            id=user_data["id"],
+            username=user_data.get("username"),
+            first_name=user_data.get("first_name", ""),
+            last_name=user_data.get("last_name"),
+            # phone можно не трогать — из Telegram не приходит
+        )
+        db.add(user)
+    else:
+        # Обновить username, first_name, last_name если вдруг изменились
+        user.username = user_data.get("username")
+        user.first_name = user_data.get("first_name", "")
+        user.last_name = user_data.get("last_name")
+        db.add(user)
+    db.commit()
+    db.refresh(user)
     return {"status": "ok", "user": user_data}
 
 # --- Products CRUD ---
 @app.get("/products")
-def list_products(q: str | None = None):
+def list_products(
+    q: str | None = None, 
+    wholesale: bool = False,
+    request: Request = None,
+    db: Session = Depends(get_db)
+):
+    user = get_current_user(request, db)
     with Session(engine) as session:
         stmt = select(Product)
+        # Фильтр по оптовым
+        if wholesale:
+            if not user or not getattr(user, "is_wholesale", False):
+                # Вернуть ошибку или пустой список
+                raise HTTPException(403, "Нет доступа к оптовому каталогу")
+            stmt = stmt.where(Product.is_wholesale == True)
         if q:
             tokens = q.lower().split()
             cleaned = [tok.replace("-", "") for tok in tokens]
@@ -704,3 +741,44 @@ def recalc_hits(limit: int = 12, db: Session = Depends(get_db), user=Depends(get
         db.add(p)
     db.commit()
     return {"updated": top_ids}
+#Оптовики 
+@app.get("/api/admin/clients")
+def list_clients(user=Depends(get_current_admin), db: Session = Depends(get_db)):
+    return db.exec(select(User)).all()
+
+class UpdateWholesaleStatus(BaseModel):
+    is_wholesale: bool
+
+@app.patch("/api/admin/clients/{user_id}")
+def set_wholesale_flag(
+    user_id: int,
+    data: UpdateWholesaleStatus,
+    user=Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    client = db.get(User, user_id)
+    if not client:
+        raise HTTPException(404, "User not found")
+    client.is_wholesale = data.is_wholesale
+    db.add(client)
+    db.commit()
+    db.refresh(client)
+    return client
+class UpdateWholesalePrices(BaseModel):
+    wholesale_prices: dict
+
+@app.patch("/api/admin/clients/{user_id}/prices")
+def set_wholesale_prices(
+    user_id: int,
+    data: UpdateWholesalePrices,
+    user=Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    client = db.get(User, user_id)
+    if not client:
+        raise HTTPException(404, "User not found")
+    client.wholesale_prices = data.wholesale_prices
+    db.add(client)
+    db.commit()
+    db.refresh(client)
+    return client

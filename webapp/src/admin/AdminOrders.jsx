@@ -71,7 +71,9 @@ export default function AdminOrders() {
             <th>Дата</th>
             <th>Содержимое</th>
             <th>Сумма</th>
+            <th>Тип заказа</th>
             <th>Действия</th>
+            
           </tr>
         </thead>
         <tbody>
@@ -94,6 +96,12 @@ export default function AdminOrders() {
                 <td>
                   {total ? total.toLocaleString() + " ₽" : "—"}
                 </td>
+                <td>
+  {o.is_wholesale
+    ? <span style={{ color: "#008000", fontWeight: 600 }}>Оптовый</span>
+    : <span style={{ color: "#aaa" }}>Розница</span>
+  }
+</td>
                 <td>
                   <button onClick={() => updateStatus(o.id, "Принят в работу")}>Принят в работу</button>
                   <button onClick={() => updateStatus(o.id, "Подтверждён")}>Подтверждён</button>

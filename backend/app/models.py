@@ -19,7 +19,7 @@ class Product(SQLModel, table=True):
     )
     is_hit: bool = False 
     is_hit_auto: bool = False 
-
+    is_wholesale: bool = False
     
 class FAQ(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -45,6 +45,7 @@ class Order(SQLModel, table=True):
     phone: str
     created_at: datetime = Field(default_factory=datetime.utcnow)
     status: str = "Принят в работу"
+    is_wholesale: bool = False 
 
 
 class FooterLink(SQLModel, table=True):
@@ -77,6 +78,8 @@ class User(SQLModel, table=True):
     username: Optional[str] = None
     phone: Optional[str] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
+    is_wholesale: bool = False
+    wholesale_prices: Optional[dict] = Field(default_factory=dict, sa_column=Column(JSON))
 
 class StaticPage(SQLModel, table=True):
     id:        int | None = Field(default=None, primary_key=True)

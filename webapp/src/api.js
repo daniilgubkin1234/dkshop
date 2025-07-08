@@ -1,13 +1,15 @@
 export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8001';
 
-export async function fetchProducts() {
-  const response = await fetch(`${API_URL}/products`);
-  if (!response.ok) {
-    throw new Error(`Ошибка при загрузке товаров: ${response.status}`);
-  }
+export async function fetchProducts({wholesale, user_id, username, ...params} = {}) {
+  let url = `${API_URL}/products?`;
+  if (wholesale) url += 'wholesale=1&';
+  if (user_id) url += `user_id=${user_id}&`;
+  if (username) url += `username=${username}&`;
+  // ...другие параметры
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`Ошибка при загрузке товаров: ${response.status}`);
   return await response.json();
 }
-
 export async function fetchProductById(id) {
   let response = await fetch(`${API_URL}/products/${id}`);
   if (response.ok) {
@@ -84,3 +86,29 @@ export const deleteModelCard = (id) =>
   }).then(r => {
     if (!r.ok) throw new Error("Не удалось удалить карточку");
   });
+  export async function fetchClients() {
+    const r = await fetch('/api/admin/clients', { credentials: "include" });
+    if (!r.ok) throw new Error("Ошибка загрузки клиентов");
+    return await r.json();
+  }
+  
+  export async function updateClientWholesale(user_id, is_wholesale) {
+    const r = await fetch(`/api/admin/clients/${user_id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ is_wholesale })
+    });
+    if (!r.ok) throw new Error("Ошибка обновления статуса опта");
+    return await r.json();
+  }
+  export async function updateClientWholesalePrices(user_id, wholesale_prices) {
+    const r = await fetch(`/api/admin/clients/${user_id}/prices`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ wholesale_prices })
+    });
+    if (!r.ok) throw new Error("Ошибка обновления индивидуальных цен");
+    return await r.json();
+  }

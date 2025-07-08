@@ -58,6 +58,7 @@ export default function Profile() {
                 <th>Позиций</th>
                 <th>Состав заказа</th>
                 <th>Сумма</th>
+                <th>Тип заказа</th>
               </tr>
             </thead>
             <tbody>
@@ -89,6 +90,12 @@ export default function Profile() {
         <td data-label="Сумма">
           {total ? total.toLocaleString() + " ₽" : "—"}
         </td>
+        <td data-label="Тип заказа">
+  {o.is_wholesale
+    ? <span style={{ color: "#008000", fontWeight: 600 }}>Оптовый</span>
+    : <span style={{ color: "#aaa" }}>Розница</span>
+  }
+</td>
       </tr>
     );
   })}

@@ -14,6 +14,7 @@ const emptyProduct = {
   stock: 10,
   description: "",
   images: "",
+  is_wholesale: false, // ← добавлено
 };
 
 export default function AdminProduct() {
@@ -123,6 +124,7 @@ export default function AdminProduct() {
     const body = {
       ...newProduct,
       is_hit: newProduct.is_hit || false,
+      is_wholesale: newProduct.is_wholesale || false, // обязательно!
       price: Number(newProduct.price),
       stock: Number(newProduct.stock),
       images: newProduct.images
@@ -163,12 +165,14 @@ export default function AdminProduct() {
     setEditProduct({
       ...p,
       images: (p.images || []).join(", "),
+      is_wholesale: p.is_wholesale || false, // ← обязательно!
     });
   };
 
   const handleEditSave = () => {
     const body = {
       ...editProduct,
+      is_wholesale: editProduct.is_wholesale || false, // обязательно!
       price: Number(editProduct.price),
       stock: Number(editProduct.stock),
       images: editProduct.images
@@ -320,6 +324,16 @@ export default function AdminProduct() {
           onChange={handleFileUpload}
           style={{ minWidth: 120 }}
         />
+        {/* Чекбокс оптового товара */}
+        <label style={{ marginLeft: 8 }}>
+          <input
+            type="checkbox"
+            checked={newProduct.is_wholesale}
+            onChange={e =>
+              setNewProduct((p) => ({ ...p, is_wholesale: e.target.checked }))
+            }
+          /> Оптовый товар
+        </label>
         <button onClick={handleAdd}>Добавить товар</button>
       </div>
 
@@ -342,6 +356,7 @@ export default function AdminProduct() {
               <th>Тип</th>
               <th>Остаток</th>
               <th>Хит продаж</th>
+              <th>Опт</th>
               <th>Картинки</th>
               <th>Описание</th>
               <th>Действия</th>
@@ -413,6 +428,21 @@ export default function AdminProduct() {
                         }}
                       >★</span>
                     )}
+                  </td>
+                  {/* Чекбокс оптового товара в режиме редактирования */}
+                  <td>
+                    <label>
+                      <input
+                        type="checkbox"
+                        checked={editProduct.is_wholesale}
+                        onChange={e =>
+                          setEditProduct((p) => ({
+                            ...p,
+                            is_wholesale: e.target.checked
+                          }))
+                        }
+                      /> Опт
+                    </label>
                   </td>
                   <td>
                     <input
@@ -536,6 +566,10 @@ export default function AdminProduct() {
                         }}
                       >★</span>
                     )}
+                  </td>
+                  {/* Отображение статуса оптового товара */}
+                  <td>
+                    {p.is_wholesale && <span style={{ color: "#008000", fontWeight: 600 }}>Опт</span>}
                   </td>
                   <td>
                     {p.images && p.images.length > 0
