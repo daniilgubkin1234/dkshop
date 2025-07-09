@@ -14,7 +14,11 @@ export default function WholesaleProductList() {
   const { addToCart } = useCart();
   const user = JSON.parse(localStorage.getItem('dkshop_user') || '{}');
   useEffect(() => {
-    fetchProducts(`?wholesale=1&user_id=${user.id}&username=${user.username || ""}`)
+    fetchProducts({
+      wholesale: 1,
+      user_id: user.id,
+      username: user.username || ""
+    })
       .then(setProducts)
       .catch(() => setError("Не удалось загрузить оптовые товары"))
       .finally(() => setLoading(false));
