@@ -114,9 +114,7 @@ export const deleteModelCard = (id) =>
     return await r.json();
   }
   export async function fetchUserById(userId) {
-    const response = await fetch(`${API_URL}/admin/clients`);
-    if (!response.ok) throw new Error("Ошибка загрузки пользователей");
-    const users = await response.json();
-    // Находим пользователя по id
-    return users.find(u => u.id === userId);
+    const response = await fetch(`${API_URL}/user/${userId}`);
+    if (!response.ok) throw new Error("Ошибка загрузки пользователя");
+    return await response.json();
   }

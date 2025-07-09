@@ -91,6 +91,14 @@ class AdminLoginIn(BaseModel):
     username: str
     password: str
 
+
+@app.get("/user/{user_id}")
+def get_user(user_id: int, db: Session = Depends(get_db)):
+    user = db.get(User, user_id)
+    if not user:
+        raise HTTPException(404, "User not found")
+    return user
+
 @app.post("/admin/login")
 def admin_login(body: AdminLoginIn, response: Response, db: Session = Depends(get_db)):
     print("===> ЛОГИН: ", repr(body.username), "ПАРОЛЬ: ", repr(body.password))
