@@ -220,7 +220,6 @@ def list_products(
         # Фильтр по оптовым
         if wholesale:
             if not user or not getattr(user, "is_wholesale", False):
-                # Вернуть ошибку или пустой список
                 raise HTTPException(403, "Нет доступа к оптовому каталогу")
             stmt = stmt.where(Product.is_wholesale == True)
         if q:
@@ -237,7 +236,21 @@ def list_products(
                     )
                 )
             )
-        return session.exec(stmt).all()
+        products = session.exec(stmt).all()
+
+        # --- ДОБАВЛЯЕМ персональные цены ---
+        result = []
+        user_prices = getattr(user, "wholesale_prices", {}) if user else {}
+        # Если почему-то wholesale_prices int-ключи, приводим к строке
+        user_prices = {str(k): v for k, v in (user_prices or {}).items()}
+
+        for p in products:
+            d = p.dict()
+            if user and user_prices:
+                if str(p.id) in user_prices:
+                    d["personal_price"] = user_prices[str(p.id)]
+            result.append(d)
+        return result
 
 @app.get("/products/{product_id}", response_model=Product)
 def get_product(product_id: int = Path(...)):
