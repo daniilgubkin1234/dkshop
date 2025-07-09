@@ -742,14 +742,14 @@ def recalc_hits(limit: int = 12, db: Session = Depends(get_db), user=Depends(get
     db.commit()
     return {"updated": top_ids}
 #Оптовики 
-@app.get("/api/admin/clients")
+@app.get("/admin/clients")
 def list_clients(user=Depends(get_current_admin), db: Session = Depends(get_db)):
     return db.exec(select(User)).all()
 
 class UpdateWholesaleStatus(BaseModel):
     is_wholesale: bool
 
-@app.patch("/api/admin/clients/{user_id}")
+@app.patch("/admin/clients/{user_id}")
 def set_wholesale_flag(
     user_id: int,
     data: UpdateWholesaleStatus,
@@ -767,7 +767,7 @@ def set_wholesale_flag(
 class UpdateWholesalePrices(BaseModel):
     wholesale_prices: dict
 
-@app.patch("/api/admin/clients/{user_id}/prices")
+@app.patch("/admin/clients/{user_id}/prices")
 def set_wholesale_prices(
     user_id: int,
     data: UpdateWholesalePrices,
