@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 
-import Header          from './components/Header.jsx';
-import Footer          from './components/Footer.jsx';
-import ProductList     from './miniapps/ProductList.jsx';
-import Product         from './miniapps/Product.jsx';
-import Cart            from './miniapps/Cart.jsx';
-import Profile         from './miniapps/Profile.jsx';
-import WholesaleProductList from './miniapps/WholesaleProductList.jsx';
+import Header                from './components/Header.jsx';
+import Footer                from './components/Footer.jsx';
+import ProductList           from './miniapps/ProductList.jsx';
+import Product               from './miniapps/Product.jsx';
+import Cart                  from './miniapps/Cart.jsx';
+import Profile               from './miniapps/Profile.jsx';
+import WholesaleProductList  from './miniapps/WholesaleProductList.jsx';
 
 import AdminLogin      from './admin/AdminLogin.jsx';
 import AdminOrders     from './admin/AdminOrders.jsx';
@@ -18,7 +18,8 @@ import AdminModelCards from './admin/AdminModelCards.jsx';
 import AdminInfo       from './admin/AdminInfo.jsx';
 import Users           from './admin/Users.jsx';
 import WholesalesClient from './admin/WholesalesClient.jsx';
-import { API_URL } from './api.js';
+
+import { API_URL, fetchUserById } from './api.js';
 
 export default function App() {
   const [user, setUser] = useState(() => {
@@ -26,7 +27,6 @@ export default function App() {
     return saved ? JSON.parse(saved) : null;
   });
 
-  // ---- глобальный поиск ----
   const [search, setSearch] = useState("");
   const location = useLocation();
 
@@ -51,33 +51,47 @@ export default function App() {
       .catch(err => console.error('Login error:', err));
   }, []);
 
+  // Автоматически обновлять данные пользователя при любом переходе по страницам
+  useEffect(() => {
+    if (user?.id) {
+      fetchUserById(user.id)
+        .then(fresh => {
+          if (fresh) {
+            localStorage.setItem('dkshop_user', JSON.stringify(fresh));
+            setUser(fresh);
+          }
+        })
+        .catch(() => {});
+    }
+    // eslint-disable-next-line
+  }, [location.pathname]);
+
   return (
     <>
-      {/* Передаём user и onSearch */}
       <Header user={user} onSearch={setSearch} />
 
       <main style={{ padding: '20px 16px', background: '#121212' }}>
         <Routes>
-        <Route
-        path="/"
-        element={
-        user?.is_wholesale
-          ? <Navigate to="/wholesale" replace />
-          : <ProductList filterQuery={search} />
-        }
-        />
+          <Route
+            path="/"
+            element={
+              user?.is_wholesale
+                ? <Navigate to="/wholesale" replace />
+                : <ProductList filterQuery={search} />
+            }
+          />
           <Route path="/product/:id" element={<Product />} />
           <Route path="/cart"        element={<Cart />} />
           <Route path="/my-orders"   element={<Navigate to="/profile" replace />} />
           <Route path="/profile"     element={<Profile />} />
           <Route
-    path="/wholesale"
-    element={
-      user?.is_wholesale
-        ? <WholesaleProductList user={user} />
-        : <Navigate to="/" replace />
-    }
-  />
+            path="/wholesale"
+            element={
+              user?.is_wholesale
+                ? <WholesaleProductList user={user} />
+                : <Navigate to="/" replace />
+            }
+          />
           {/* admin */}
           <Route path="/admin/login"       element={<AdminLogin />} />
           <Route path="/admin/orders"      element={<AdminOrders />} />

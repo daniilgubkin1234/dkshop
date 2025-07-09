@@ -113,3 +113,10 @@ export const deleteModelCard = (id) =>
     if (!r.ok) throw new Error("Ошибка обновления индивидуальных цен");
     return await r.json();
   }
+  export async function fetchUserById(userId) {
+    const response = await fetch(`${API_URL}/admin/clients`);
+    if (!response.ok) throw new Error("Ошибка загрузки пользователей");
+    const users = await response.json();
+    // Находим пользователя по id
+    return users.find(u => u.id === userId);
+  }
