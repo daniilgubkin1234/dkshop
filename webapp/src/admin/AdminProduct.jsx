@@ -14,7 +14,7 @@ const emptyProduct = {
   stock: 10,
   description: "",
   images: "",
-  is_wholesale: false, // ← добавлено
+  is_wholesale: false,
 };
 
 export default function AdminProduct() {
@@ -30,7 +30,6 @@ export default function AdminProduct() {
   const [recalcLoading, setRecalcLoading] = useState(false);
   const [recalcResult, setRecalcResult] = useState(null);
 
-  // Получить карточки моделей
   useEffect(() => {
     fetch(MODEL_CARDS_API, { credentials: "include" })
       .then((r) => (r.ok ? r.json() : []))
@@ -38,7 +37,6 @@ export default function AdminProduct() {
       .catch(() => setModelCards([]));
   }, []);
 
-  // Получить товары
   const loadProducts = () => {
     setLoading(true);
     fetch(API, { credentials: "include" })
@@ -54,7 +52,6 @@ export default function AdminProduct() {
       .finally(() => setLoading(false));
   };
 
-  // Пересчёт авто-хитов
   const handleRecalcHits = async () => {
     if (!window.confirm("Пересчитать авто-хиты на основе свежих заказов?")) return;
     setRecalcLoading(true);
@@ -80,6 +77,17 @@ export default function AdminProduct() {
       headers: { 'Content-Type': 'application/json' },
       credentials: "include",
       body: JSON.stringify({ is_hit: !prod.is_hit }),
+    }).then(r => r.json());
+    setProducts(prev => prev.map(p => p.id === updated.id ? updated : p));
+  };
+
+  // --------- Новый toggle для поля Опт (is_wholesale) ---------
+  const toggleWholesale = async (prod) => {
+    const updated = await fetch(`${API}/${prod.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: "include",
+      body: JSON.stringify({ is_wholesale: !prod.is_wholesale }),
     }).then(r => r.json());
     setProducts(prev => prev.map(p => p.id === updated.id ? updated : p));
   };
@@ -124,7 +132,7 @@ export default function AdminProduct() {
     const body = {
       ...newProduct,
       is_hit: newProduct.is_hit || false,
-      is_wholesale: newProduct.is_wholesale || false, // обязательно!
+      is_wholesale: newProduct.is_wholesale || false,
       price: Number(newProduct.price),
       stock: Number(newProduct.stock),
       images: newProduct.images
@@ -165,14 +173,14 @@ export default function AdminProduct() {
     setEditProduct({
       ...p,
       images: (p.images || []).join(", "),
-      is_wholesale: p.is_wholesale || false, // ← обязательно!
+      is_wholesale: p.is_wholesale || false,
     });
   };
 
   const handleEditSave = () => {
     const body = {
       ...editProduct,
-      is_wholesale: editProduct.is_wholesale || false, // обязательно!
+      is_wholesale: editProduct.is_wholesale || false,
       price: Number(editProduct.price),
       stock: Number(editProduct.stock),
       images: editProduct.images
@@ -257,6 +265,14 @@ export default function AdminProduct() {
           value={newProduct.name}
           onChange={e =>
             setNewProduct((p) => ({ ...p, name: e.target.value }))
+          }
+        />
+        <input
+          placeholder="Цена (₽)"
+          type="number"
+          value={newProduct.price}
+          onChange={e =>
+            setNewProduct((p) => ({ ...p, price: e.target.value }))
           }
         />
         <div style={{ display: "flex", flexDirection: "column" }}>
@@ -567,9 +583,13 @@ export default function AdminProduct() {
                       >★</span>
                     )}
                   </td>
-                  {/* Отображение статуса оптового товара */}
+                  {/* Новый интерактивный чекбокс Опт */}
                   <td>
-                    {p.is_wholesale && <span style={{ color: "#008000", fontWeight: 600 }}>Опт</span>}
+                    <input
+                      type="checkbox"
+                      checked={p.is_wholesale}
+                      onChange={() => toggleWholesale(p)}
+                    /> Опт
                   </td>
                   <td>
                     {p.images && p.images.length > 0
