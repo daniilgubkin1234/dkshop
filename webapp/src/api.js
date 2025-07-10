@@ -1,17 +1,15 @@
 export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8001';
 console.log("API_URL =", API_URL);
-export async function fetchProducts({wholesale, user_id, username, ...params} = {}) {
-  let url = `${API_URL}/products?`;
-  if (wholesale) url += 'wholesale=1&';
-  if (user_id) url += `user_id=${user_id}&`;
-  if (username) url += `username=${username}&`;
-  // ...другие параметры
-  const response = await fetch(url);
-  if (!response.ok) throw new Error(`Ошибка при загрузке товаров: ${response.status}`);
-  return await response.json();
-}
+
+
 export async function fetchProductById(id) {
-  let response = await fetch(`${API_URL}/products/${id}`);
+  // Всегда добавляем user_id и username если есть!
+  const user = JSON.parse(localStorage.getItem('dkshop_user') || '{}');
+  const params = [];
+  if (user?.id) params.push(`user_id=${user.id}`);
+  if (user?.username) params.push(`username=${user.username}`);
+  const paramStr = params.length ? `?${params.join('&')}` : '';
+  let response = await fetch(`${API_URL}/products/${id}${paramStr}`);
   if (response.ok) {
     return await response.json();
   }
