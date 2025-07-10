@@ -67,7 +67,25 @@ export default function WholesalesClient() {
                 <td>{u.username || <span style={{color:"#aaa"}}>—</span>}</td>
                 <td>{u.first_name} {u.last_name}</td>
                 <td style={{ textAlign: "center" }}>
-                  {u.is_wholesale ? <span style={{color:"#008000",fontWeight:600}}>✔️</span> : <span style={{color:"#aaa"}}>—</span>}
+                {u.is_wholesale
+  ? (
+      <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+        <svg width="20" height="20" viewBox="0 0 20 20">
+          <polyline
+            points="4,11 9,16 16,5"
+            style={{
+              fill: "none",
+              stroke: "#fff",
+              strokeWidth: 2,
+              strokeLinecap: "round",
+              strokeLinejoin: "round"
+            }}
+          />
+        </svg>
+      </span>
+    )
+  : <span style={{color:"#aaa"}}>—</span>
+}
                 </td>
                 <td style={{ display: "flex", gap: 6 }}>
                   <button
