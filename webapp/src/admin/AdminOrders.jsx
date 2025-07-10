@@ -61,6 +61,19 @@ export default function AdminOrders() {
     <div className="admin-container admin-orders">
       <AdminHeader />
       <h2>Заказы</h2>
+      <div style={{ marginBottom: 16 }}>
+      <button onClick={loadOrders} style={{
+        background: "#1a73e8",
+        color: "#fff",
+        fontWeight: 500,
+        border: "none",
+        borderRadius: 5,
+        padding: "8px 16px",
+        cursor: "pointer"
+      }}>
+        ⟳ Обновить заказы
+      </button>
+    </div>
       <table className="admin-table" cellPadding="8">
         <thead>
           <tr>
