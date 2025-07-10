@@ -39,7 +39,7 @@ export default function EditWholesalePrices({ user, onClose, onSaved }) {
           <thead>
             <tr>
               <th>Товар</th>
-              <th>Опт. цена</th>
+              <th>Стандартная цена</th>
               <th>Персональная цена</th>
             </tr>
           </thead>

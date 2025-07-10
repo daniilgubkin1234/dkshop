@@ -40,7 +40,7 @@ export default function WholesalesClient() {
   return (
     <div className="admin-container">
       <AdminHeader />
-      <h2>Оптовики / Пользователи</h2>
+      <h2>База клиентов</h2>
       <input
         placeholder="Поиск по username…"
         value={search}
@@ -56,7 +56,7 @@ export default function WholesalesClient() {
               <th>ID (Telegram)</th>
               <th>Username</th>
               <th>Имя</th>
-              <th>Оптовик</th>
+              <th>Оптовый клиент</th>
               <th>Действия</th>
             </tr>
           </thead>

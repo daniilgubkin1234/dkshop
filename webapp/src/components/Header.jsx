@@ -169,7 +169,7 @@ export default function Header({ user, onSearch }) {
   {/* Показывать только для оптовиков */}
   {user && user.is_wholesale && (
     <li>
-      <Link to="/wholesale" onClick={toggleSidebar}>Опт</Link>
+      <Link to="/wholesale" onClick={toggleSidebar}>Каталог</Link>
     </li>
   )}
              {/* Кнопка личного кабинета для пользователя */}

@@ -306,7 +306,15 @@ def delete_product(product_id: int):
 
 # --- Orders ---
 @app.post("/orders")
-def create_order(order: Order):
+def create_order(order: Order, db: Session = Depends(get_db)):
+    # Найти пользователя по user_id
+    user = db.get(User, order.user_id)
+    is_wholesale = False
+    if user and getattr(user, "is_wholesale", False):
+        is_wholesale = True
+    # Принудительно выставляем флаг в объекте заказа:
+    order.is_wholesale = is_wholesale
+
     with Session(engine) as session:
         session.add(order)
         session.commit()
