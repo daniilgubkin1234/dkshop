@@ -3,7 +3,7 @@ from sqlmodel import SQLModel, Session, select
 from fastapi.middleware.cors import CORSMiddleware
 from .db import engine, get_db
 from .models import (
-    Product, FAQ, Question, Order,
+    Product, FAQ, Question, Order, OrderCreate,
     FooterLink, ModelCard, StaticPage,
     CompanyInfo, CartItem, AdminUser, User
 )
@@ -306,19 +306,25 @@ def delete_product(product_id: int):
 
 # --- Orders ---
 @app.post("/orders")
-def create_order(order: Order, db: Session = Depends(get_db)):
+def create_order(order: OrderCreate, db: Session = Depends(get_db)):
     # Найти пользователя по user_id
     user = db.get(User, order.user_id)
-    is_wholesale = False
-    if user and getattr(user, "is_wholesale", False):
-        is_wholesale = True
-    # Принудительно выставляем флаг в объекте заказа:
-    order.is_wholesale = is_wholesale
+    is_wholesale = user.is_wholesale if user else False
+
+    # Создаем Order (SQLModel) для сохранения в БД
+    order_obj = Order(
+        user_id=order.user_id,
+        name=order.name,
+        phone=order.phone,
+        items=[item.dict() for item in order.items],  # <- обязательно .dict()!
+        is_wholesale=is_wholesale
+    )
 
     with Session(engine) as session:
-        session.add(order)
+        session.add(order_obj)
         session.commit()
-        session.refresh(order)
+        session.refresh(order_obj)
+
     bot_token = os.getenv("BOT_TOKEN")
     if bot_token:
         try:
@@ -327,7 +333,7 @@ def create_order(order: Order, db: Session = Depends(get_db)):
                 json={
                     "chat_id": order.user_id,
                     "text": (
-                        f"✅ Ваш заказ #{order.id} принят!\n\n"
+                        f"✅ Ваш заказ #{order_obj.id} принят!\n\n"
                         f"<b>Имя:</b> {order.name}\n"
                         f"<b>Телефон:</b> {order.phone}\n"
                         f"<b>Позиций:</b> {len(order.items)}\n"
@@ -341,8 +347,7 @@ def create_order(order: Order, db: Session = Depends(get_db)):
             )
         except Exception as e:
             print("Ошибка при отправке сообщения в Telegram:", e)
-    return {"status": "ok", "order_id": order.id}
-
+    return {"status": "ok", "order_id": order_obj.id}
 @app.get("/orders/by-phone")
 def orders_by_phone(phone: str):
     normalized = phone.strip().replace(" ", "").replace("-", "").lstrip("+").replace("+7", "8").replace("+", "")

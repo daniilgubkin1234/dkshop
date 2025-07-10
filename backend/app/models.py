@@ -4,6 +4,19 @@ from datetime import datetime
 from sqlalchemy import JSON
 from pydantic import BaseModel
 
+class OrderItemCreate(BaseModel):
+    product_id: int
+    name: str
+    quantity: int
+    price: int
+
+class OrderCreate(BaseModel):
+    user_id: int
+    name: str
+    phone: str
+    items: List[OrderItemCreate]
+    is_wholesale: bool = False
+
 class Product(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     name: str
