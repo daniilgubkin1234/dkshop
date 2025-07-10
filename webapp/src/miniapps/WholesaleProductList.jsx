@@ -1,40 +1,58 @@
-// webapp/src/miniapps/WholesaleProductList.jsx
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { fetchProducts } from "../api.js";
 import { useCart } from "../context/CartContext.jsx";
-import { fetchClients, updateClientWholesale } from "../api.js";
 import "./ProductList.css";
 
-export default function WholesaleProductList() {
+// Добавим функцию нормализации для поиска
+function normalize(str = '') {
+  return (str || "")
+    .toLowerCase()
+    .replace(/[ё]/g, 'е')
+    .replace(/[^\wа-я0-9]+/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+export default function WholesaleProductList({ user, filterQuery }) {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
   const { addToCart } = useCart();
-  const user = JSON.parse(localStorage.getItem('dkshop_user') || '{}');
+
   useEffect(() => {
     fetchProducts({
       wholesale: 1,
-      user_id: user.id,
-      username: user.username || ""
+      user_id: user?.id,
+      username: user?.username || ""
     })
       .then(setProducts)
       .catch(() => setError("Не удалось загрузить оптовые товары"))
       .finally(() => setLoading(false));
-  }, []);
+  }, [user]);
+
+  // Фильтрация по поисковой строке
+  const filtered = products.filter((p) => {
+    const q = normalize(filterQuery);
+    const name = normalize(p.name);
+    const model = normalize(p.model_compat || '');
+    const type = normalize(p.type);
+
+    return !q || name.includes(q) || model.includes(q) || type.includes(q);
+  });
 
   return (
     <>
-      <h2 className="catalog-title">Каталог (Опт)</h2>
+      <h2 className="catalog-title">Каталог</h2>
       {loading && <p className="pl-status">Загрузка…</p>}
       {error && <p className="pl-status">{error}</p>}
-      {!loading && !error && products.length === 0 && (
+      {!loading && !error && filtered.length === 0 && (
         <p className="pl-status">Нет оптовых товаров</p>
       )}
-      {!loading && !error && products.length > 0 && (
+      {!loading && !error && filtered.length > 0 && (
         <div className="product-grid">
-          {products.map((p) => (
+          {filtered.map((p) => (
             <div key={p.id} className="product-card" onClick={() => navigate(`/product/${p.id}`)}>
               <img
                 src={p.images?.[0] || '/static/no-image.png'}
@@ -45,7 +63,7 @@ export default function WholesaleProductList() {
               <div className="product-info">
                 <h3 className="product-title">{p.name}</h3>
                 <p className="product-price">
-                {(p.personal_price ?? p.price).toLocaleString()} ₽
+                  {(p.personal_price ?? p.price).toLocaleString()} ₽
                 </p>
               </div>
               <button className="btn-add-cart" onClick={e => { e.stopPropagation(); addToCart(p); }}>

@@ -88,7 +88,7 @@ export default function App() {
             path="/wholesale"
             element={
               user?.is_wholesale
-                ? <WholesaleProductList user={user} />
+                ? <WholesaleProductList user={user} filterQuery={search} />
                 : <Navigate to="/" replace />
             }
           />
