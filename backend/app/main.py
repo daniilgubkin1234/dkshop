@@ -603,7 +603,12 @@ class CartItemFull(BaseModel):
     quantity: int
     class Config: orm_mode = True
 
-def _enrich(user_id: int, db: Session) -> list[CartItemFull]:
+def _enrich(user_id: int, db: Session) -> list[dict]:
+    # Получить пользователя
+    user = db.get(User, user_id)
+    # Если есть — взять словарь персональных цен, если нет — пустой словарь
+    wholesale_prices = getattr(user, "wholesale_prices", {}) if user else {}
+    wholesale_prices = {str(k): v for k, v in (wholesale_prices or {}).items()}
     rows = db.exec(
         select(CartItem).where(CartItem.user_id == user_id)
     ).all()
@@ -615,21 +620,24 @@ def _enrich(user_id: int, db: Session) -> list[CartItemFull]:
             select(Product).where(Product.id.in_(prod_ids))
         )
     }
-    enriched: list[CartItemFull] = []
+    enriched = []
     for r in rows:
         p = prods.get(r.product_id)
         if not p:
-            continue                # товар удалён из каталога
-        enriched.append(
-            CartItemFull(
-                id       = p.id,
-                name     = p.name,
-                price    = p.price,
-                image    = (p.images or [None])[0],
-                quantity = r.quantity,
-            )
-        )
+            continue
+        price = p.price
+        # --- добавляем логику персональных цен ---
+        if str(p.id) in wholesale_prices:
+            price = wholesale_prices[str(p.id)]
+        enriched.append({
+            "id": p.id,
+            "name": p.name,
+            "price": price,
+            "image": (p.images or [None])[0],
+            "quantity": r.quantity,
+        })
     return enriched
+
 
 @app.get("/cart", response_model=list[CartItemFull])
 def get_cart(user_id: int, db: Session = Depends(get_db)):
