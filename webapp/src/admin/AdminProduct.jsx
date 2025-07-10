@@ -53,7 +53,7 @@ export default function AdminProduct() {
   };
 
   const handleRecalcHits = async () => {
-    if (!window.confirm("Пересчитать авто-хиты на основе свежих заказов?")) return;
+    if (!window.confirm("Пересчитать товары-хиты на основе свежих заказов?")) return;
     setRecalcLoading(true);
     setRecalcResult(null);
     try {
@@ -251,7 +251,7 @@ export default function AdminProduct() {
       {/* Кнопка пересчёта авто-хитов */}
       <div style={{ marginBottom: 16 }}>
         <button onClick={handleRecalcHits} disabled={recalcLoading}>
-          {recalcLoading ? "Пересчёт..." : "Пересчитать авто-хиты"}
+          {recalcLoading ? "Пересчёт..." : "Пересчитать хиты продаж"}
         </button>
         {recalcResult && (
           <span style={{ marginLeft: 16, color: "#2a7" }}>{recalcResult}</span>
@@ -572,7 +572,7 @@ export default function AdminProduct() {
                     />
                     {p.is_hit_auto && (
                       <span
-                        title="Популярный (авто-хит)"
+                        title="Популярный товар"
                         style={{
                           marginLeft: 6,
                           color: "#ffa800",

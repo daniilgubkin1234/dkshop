@@ -51,7 +51,12 @@ export default function Cart() {
         user_id: userId || null,
         name:    name.trim(),
         phone:   phone.trim(),
-        items:   cartItems.map(i => ({ product_id: i.id, quantity: i.quantity })),
+        items: cartItems.map(i => ({
+          product_id: i.id,
+          name: i.name,
+          quantity: i.quantity,
+          price: i.price
+        })),
         is_wholesale: isWholesaleOrder,
       });
       setOrderInfo({

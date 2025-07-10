@@ -357,20 +357,16 @@ def orders_by_user(user_id: int, db: Session = Depends(get_db)):
     orders = db.exec(
         select(Order).where(Order.user_id == user_id).order_by(Order.created_at.desc())
     ).all()
-    all_ids = {item['product_id'] for o in orders for item in o.items}
-    prods = db.exec(select(Product).where(Product.id.in_(all_ids))).all()
-    prod_map = {p.id: {"name": p.name, "price": p.price} for p in prods}
     enriched = []
     for o in orders:
         enriched_items = []
         for it in o.items:
-            prod = prod_map.get(it['product_id'])
             enriched_items.append({
-            "product_id": it['product_id'],
-            "quantity": it['quantity'],
-            "name": prod["name"] if prod else f"#{it['product_id']}",
-            "price": prod["price"] if prod else 0
-         })
+                "product_id": it.get('product_id'),
+                "quantity": it.get('quantity', 1),
+                "name": it.get('name', f"#{it.get('product_id')}"),
+                "price": it.get('price', 0)
+            })
         od = o.dict()
         od['items'] = enriched_items
         enriched.append(od)
@@ -428,12 +424,11 @@ def get_orders(request: Request, user=Depends(get_current_admin)):
         for o in orders:
             enriched_items = []
             for it in o.items:
-                prod = prod_map.get(it['product_id'])
                 enriched_items.append({
-                    "product_id": it['product_id'],
-                    "quantity": it['quantity'],
-                    "name": prod["name"] if prod else f"#{it['product_id']}",
-                    "price": prod["price"] if prod else 0
+                    "product_id": it.get('product_id'),
+                    "quantity": it.get('quantity', 1),
+                    "name": it.get('name', f"#{it.get('product_id')}"),
+                    "price": it.get('price', 0)
                 })
             od = o.dict()
             od['items'] = enriched_items
