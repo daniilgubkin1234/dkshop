@@ -604,9 +604,7 @@ class CartItemFull(BaseModel):
     class Config: orm_mode = True
 
 def _enrich(user_id: int, db: Session) -> list[dict]:
-    # Получить пользователя
     user = db.get(User, user_id)
-    # Если есть — взять словарь персональных цен, если нет — пустой словарь
     wholesale_prices = getattr(user, "wholesale_prices", {}) if user else {}
     wholesale_prices = {str(k): v for k, v in (wholesale_prices or {}).items()}
     rows = db.exec(
@@ -626,8 +624,8 @@ def _enrich(user_id: int, db: Session) -> list[dict]:
         if not p:
             continue
         price = p.price
-        # --- добавляем логику персональных цен ---
-        if str(p.id) in wholesale_prices:
+        # --- используем персональную цену ТОЛЬКО для оптовиков! ---
+        if getattr(user, "is_wholesale", False) and str(p.id) in wholesale_prices:
             price = wholesale_prices[str(p.id)]
         enriched.append({
             "id": p.id,
