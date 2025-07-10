@@ -1,7 +1,8 @@
 from sqlmodel import SQLModel, Field, Column
-from typing import Optional, List
+from typing import Optional, List, Dict
 from datetime import datetime
 from sqlalchemy import JSON
+from pydantic import BaseModel
 
 class Product(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -20,7 +21,7 @@ class Product(SQLModel, table=True):
     is_hit: bool = False 
     is_hit_auto: bool = False 
     is_wholesale: bool = False
-    
+
 class FAQ(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     question: str
@@ -34,10 +35,18 @@ class Question(SQLModel, table=True):
     created_at: datetime = Field(default_factory=datetime.utcnow)
     status: str = "open"      # open / answered
 
+# --- Новая строгая модель для позиции заказа ---
+class OrderItem(BaseModel):
+    product_id: int
+    name: str
+    quantity: int
+    price: int
+
 class Order(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     user_id: Optional[int] = Field(default=None)
-    items: List[dict] = Field(
+    # теперь строгое описание структуры items:
+    items: List[OrderItem] = Field(
         sa_column=Column(JSON),
         default_factory=list
     )
@@ -47,30 +56,22 @@ class Order(SQLModel, table=True):
     status: str = "Принят в работу"
     is_wholesale: bool = False 
 
-
 class FooterLink(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
-
-    # то, что выводим в таблице
     title: str
-
-    # куда ведёт ссылка
     url: str
-
-    # код / имя иконки (можно None)
     icon: Optional[str] = None
-
 
 class ModelCard(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
-
-    label: str                     # видимый заголовок карточки
-    models: List[str] = Field(     # список «масок» моделей (2101-07 и т.д.)
-    sa_column=Column(JSON),
-    default_factory=list
+    label: str
+    models: List[str] = Field(
+        sa_column=Column(JSON),
+        default_factory=list
     )
-    img: str                       # URL картинки
-    match_by_name: bool = True    # искать подстроку в названии товара?
+    img: str
+    match_by_name: bool = True
+
 class User(SQLModel, table=True):
     id: int = Field(primary_key=True)            # = Telegram user ID
     first_name: str
@@ -79,13 +80,14 @@ class User(SQLModel, table=True):
     phone: Optional[str] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
     is_wholesale: bool = False
-    wholesale_prices: Optional[dict] = Field(default_factory=dict, sa_column=Column(JSON))
+    wholesale_prices: Optional[Dict] = Field(default_factory=dict, sa_column=Column(JSON))
 
 class StaticPage(SQLModel, table=True):
     id:        int | None = Field(default=None, primary_key=True)
     slug:      str        # 'payment' / 'refund' / 'delivery' / 'contacts'
     title:     str
-    content:   str        # многострочный markdown / plain-text
+    content:   str
+
 class CompanyInfo(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     phone: str
@@ -94,8 +96,6 @@ class CartItem(SQLModel, table=True):
     user_id: int      = Field(primary_key=True)   # Telegram user
     product_id: int   = Field(primary_key=True)
     quantity: int     = 1
-
-
 
 class AdminUser(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
