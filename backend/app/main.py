@@ -252,13 +252,25 @@ def list_products(
             result.append(d)
         return result
 
-@app.get("/products/{product_id}", response_model=Product)
-def get_product(product_id: int = Path(...)):
+@app.get("/products/{product_id}")
+def get_product(
+    product_id: int = Path(...),
+    request: Request = None,
+    db: Session = Depends(get_db)
+):
+    user = get_current_user(request, db)
     with Session(engine) as session:
         product = session.get(Product, product_id)
         if not product:
             raise HTTPException(status_code=404, detail="Product not found")
-        return product
+        data = product.dict()
+        # Добавим персональную цену, если пользователь — оптовик и она есть
+        user_prices = getattr(user, "wholesale_prices", {}) if user else {}
+        user_prices = {str(k): v for k, v in (user_prices or {}).items()}
+        if user and getattr(user, "is_wholesale", False):
+            if str(product_id) in user_prices:
+                data["personal_price"] = user_prices[str(product_id)]
+        return JSONResponse(content=data)
 
 @app.post("/products", response_model=Product, status_code=status.HTTP_201_CREATED)
 def create_product(item: Product):

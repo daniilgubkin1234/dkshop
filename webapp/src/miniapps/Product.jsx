@@ -82,7 +82,7 @@ export default function Product() {
           )}
 
           <p className="product-page__price">
-            {item.price.toLocaleString()} ₽
+            {(item.personal_price ?? item.price).toLocaleString()} ₽
           </p>
 
           {item.type && (
