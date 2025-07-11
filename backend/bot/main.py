@@ -238,7 +238,7 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
         q_toks = tokenize(query)
         exact_name = [p for p in products if q_toks.issubset(tokenize(p["name"]))]
         pool = exact_name if exact_name else products
-
+        pool = get_list_from_ranked(pool)
         best_prod, best_score = _rank_products(query, pool)
 
         if best_score >= 0.6:
