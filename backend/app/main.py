@@ -316,7 +316,7 @@ def create_order(order: OrderCreate, db: Session = Depends(get_db)):
         user_id=order.user_id,
         name=order.name,
         phone=order.phone,
-        items=[item.dict() for item in order.items],  # <- обязательно .dict()!
+        items=[item.dict() for item in order.items],
         is_wholesale=is_wholesale
     )
 
@@ -326,6 +326,9 @@ def create_order(order: OrderCreate, db: Session = Depends(get_db)):
         session.refresh(order_obj)
 
     bot_token = os.getenv("BOT_TOKEN")
+    ACCOUNTANT_CHAT_ID = os.getenv("ACCOUNTANT_CHAT_ID", None)
+
+    # Отправка клиенту
     if bot_token:
         try:
             requests.post(
@@ -347,6 +350,31 @@ def create_order(order: OrderCreate, db: Session = Depends(get_db)):
             )
         except Exception as e:
             print("Ошибка при отправке сообщения в Telegram:", e)
+    # --- УВЕДОМЛЕНИЕ БУХГАЛТЕРУ ---
+    if bot_token and ACCOUNTANT_CHAT_ID and is_wholesale:
+        try:
+            requests.post(
+                f"https://api.telegram.org/bot{bot_token}/sendMessage",
+                json={
+                    "chat_id": ACCOUNTANT_CHAT_ID,
+                    "text": (
+                        f"💼 <b>Новый оптовый заказ</b>\n"
+                        f"ID заказа: <b>#{order_obj.id}</b>\n"
+                        f"Имя: <b>{order.name}</b>\n"
+                        f"Телефон: <b>{order.phone}</b>\n"
+                        f"Клиент: <a href='tg://user?id={order.user_id}'>@{user.username or user.first_name}</a>\n"
+                        f"Позиций: <b>{len(order.items)}</b>\n"
+                        f"Состав:\n" + '\n'.join(
+                            [f"- {it['name']} × {it['quantity']}" for it in order.items]
+                        ) + "\n"
+                        f"Время: {order_obj.created_at.strftime('%d.%m.%Y %H:%M')}\n"
+                    ),
+                    "parse_mode": "HTML"
+                },
+                timeout=5
+            )
+        except Exception as e:
+            print("Ошибка при отправке сообщения бухгалтеру:", e)
     return {"status": "ok", "order_id": order_obj.id}
 @app.get("/orders/by-phone")
 def orders_by_phone(phone: str):
@@ -452,9 +480,40 @@ def update_order_status(order_id: int, new_status: str, user=Depends(get_current
         order = s.get(Order, order_id)
         if not order:
             raise HTTPException(status_code=404, detail="Order not found")
+        old_status = order.status
         order.status = new_status
         s.add(order)
         s.commit()
+         # === Уведомляем бухгалтерию ===
+        bot_token = os.getenv("BOT_TOKEN")
+        ACCOUNTANT_CHAT_ID = os.getenv("ACCOUNTANT_CHAT_ID")
+        ACCOUNTANT_TOPIC_ID = os.getenv("ACCOUNTANT_TOPIC_ID")
+        # Отправлять только для оптовых заказов (или по желанию — для всех)
+        if bot_token and ACCOUNTANT_CHAT_ID and ACCOUNTANT_TOPIC_ID and getattr(order, "is_wholesale", False):
+            try:
+                user_info = s.get(User, order.user_id)
+                msg = (
+                    f"🔄 <b>Статус заказа изменён</b>\n"
+                    f"ID заказа: <b>#{order.id}</b>\n"
+                    f"Имя: <b>{order.name}</b>\n"
+                    f"Телефон: <b>{order.phone}</b>\n"
+                    f"Клиент: <a href='tg://user?id={order.user_id}'>@{getattr(user_info, 'username', '') or getattr(user_info, 'first_name', '')}</a>\n"
+                    f"Старый статус: <b>{old_status}</b>\n"
+                    f"Новый статус: <b>{new_status}</b>\n"
+                    f"Время: {order.created_at.strftime('%d.%m.%Y %H:%M')}\n"
+                )
+                requests.post(
+                    f"https://api.telegram.org/bot{bot_token}/sendMessage",
+                    json={
+                        "chat_id": int(ACCOUNTANT_CHAT_ID),
+                        "message_thread_id": int(ACCOUNTANT_TOPIC_ID),
+                        "text": msg,
+                        "parse_mode": "HTML"
+                    },
+                    timeout=5
+                )
+            except Exception as e:
+                print("Ошибка при отправке статуса заказа в топик:", e)
         return order
 
 @app.delete("/admin/orders/{order_id}")
