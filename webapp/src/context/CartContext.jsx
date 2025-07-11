@@ -1,18 +1,10 @@
-/**
- * webapp/src/context/CartContext.jsx
- *
- * 1. Читает корзину из localStorage, а если пользователь авторизован –
- *    догружает актуальные позиции с бэкенда (`GET /cart?user_id=`).
- * 2. Любое изменение корзины мгновенно отражается в state и localStorage
- *    + параллельно шлёт запрос на сервер, чтобы синхронизировать БД.
- */
-
 import React, {
   createContext,
   useContext,
   useEffect,
   useRef,
   useState,
+  useCallback,
 } from 'react';
 import { API_URL } from '../api.js';
 
@@ -24,16 +16,12 @@ export const useCart = () => {
 };
 
 export function CartProvider({ children }) {
-  /* ------------------------------------------------------------
-     0) базовые данные
-  ------------------------------------------------------------ */
+  // 0) Базовые данные
   const storedUser = JSON.parse(localStorage.getItem('dkshop_user') || 'null');
-  const userId     = storedUser?.id;          // undefined → гость
+  const userId     = storedUser?.id;
   const isGuest    = !userId;
 
-  /* ------------------------------------------------------------
-     1) локальная инициализация из localStorage (мгновенно)
-  ------------------------------------------------------------ */
+  // 1) Локальная инициализация из localStorage
   const [cartItems, setCartItems] = useState(() => {
     try {
       const raw = localStorage.getItem('dkshop_cart');
@@ -43,9 +31,7 @@ export function CartProvider({ children }) {
     }
   });
 
-  /* ------------------------------------------------------------
-     2) загрузка корзины с сервера (если userId) – once on mount
-  ------------------------------------------------------------ */
+  // 2) Загрузка корзины с сервера (если userId) – once on mount
   const fetchedFromServer = useRef(false);
   useEffect(() => {
     if (isGuest || fetchedFromServer.current) return;
@@ -55,7 +41,6 @@ export function CartProvider({ children }) {
         const data = await fetch(
           `${API_URL}/cart?user_id=${userId}`
         ).then(r => (r.ok ? r.json() : []));
-        // Если сервер вернул что-то, подменяем локальный state
         if (Array.isArray(data) && data.length) setCartItems(data);
       } catch {/* silent */}
       fetchedFromServer.current = true;
@@ -63,37 +48,31 @@ export function CartProvider({ children }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
 
-  /* ------------------------------------------------------------
-     3) синхронизация в localStorage при любом изменении
-  ------------------------------------------------------------ */
+  // 3) Синхронизация в localStorage при любом изменении
   useEffect(() => {
     try {
       localStorage.setItem('dkshop_cart', JSON.stringify(cartItems));
     } catch {/* ignore */}
   }, [cartItems]);
 
-  /* ------------------------------------------------------------
-     4) helpers для запросов к API
-  ------------------------------------------------------------ */
-  const postDelta = (productId, delta) => {
+  // 4) Helpers для запросов к API
+  const postDelta = useCallback((productId, delta) => {
     if (isGuest) return;
     fetch(`${API_URL}/cart`, {
       method : 'POST',
       headers: { 'Content-Type': 'application/json' },
       body   : JSON.stringify({ user_id: userId, product_id: productId, delta })
     }).catch(() => {/* ignore network error */});
-  };
+  }, [isGuest, userId]);
 
-  const clearServerCart = () => {
+  const clearServerCart = useCallback(() => {
     if (isGuest) return;
     fetch(`${API_URL}/cart/clear?user_id=${userId}`, { method: 'DELETE' })
       .catch(() => {/* ignore */});
-  };
+  }, [isGuest, userId]);
 
-  /* ------------------------------------------------------------
-     5) операции с корзиной
-  ------------------------------------------------------------ */
-  const addToCart = product => {
+  // 5) Операции с корзиной
+  const addToCart = useCallback(product => {
     setCartItems(prev => {
       const idx = prev.findIndex(it => it.id === product.id);
       let updated;
@@ -112,9 +91,9 @@ export function CartProvider({ children }) {
       return updated;
     });
     postDelta(product.id, +1);
-  };
+  }, [postDelta]);
 
-  const removeOneFromCart = productId => {
+  const removeOneFromCart = useCallback(productId => {
     setCartItems(prev => {
       const idx = prev.findIndex(it => it.id === productId);
       if (idx === -1) return prev;
@@ -127,59 +106,55 @@ export function CartProvider({ children }) {
       return updated;
     });
     postDelta(productId, -1);
-  };
+  }, [postDelta]);
 
-  const removeFromCart = productId => {
-      setCartItems(prev => {
-          const qty = prev.find(it => it.id === productId)?.quantity || 0;
-          postDelta(productId, -qty);
-          return prev.filter(it => it.id !== productId);
-        });
-  };
+  const removeFromCart = useCallback(productId => {
+    setCartItems(prev => {
+      const qty = prev.find(it => it.id === productId)?.quantity || 0;
+      postDelta(productId, -qty);
+      return prev.filter(it => it.id !== productId);
+    });
+  }, [postDelta]);
 
-  const updateQuantity = (productId, newQty) => {
+  const updateQuantity = useCallback((productId, newQty) => {
     setCartItems(prev => {
       const idx = prev.findIndex(it => it.id === productId);
       if (idx === -1) return prev;
-  
+
       const oldQty  = prev[idx].quantity;
       const updated = [...prev];
-  
-      /* #1: если newQty <= 0 — нужно удалить позицию                */
+
       if (newQty <= 0) {
-        postDelta(productId, -oldQty);   // отправляем «-oldQty»
-        updated.splice(idx, 1);          // убираем из списка (#1 fix)
+        postDelta(productId, -oldQty);
+        updated.splice(idx, 1);
         return updated;
       }
-  
-      /* #2: normal case — просто меняем qty и отправляем δ          */
+
       updated[idx].quantity = newQty;
-      postDelta(productId, newQty - oldQty);   // (#2 fix)
+      postDelta(productId, newQty - oldQty);
       return updated;
     });
-  };
+  }, [postDelta]);
 
-  const clearCart = () => {
+  const clearCart = useCallback(() => {
     setCartItems([]);
     clearServerCart();
-  };
+  }, [clearServerCart]);
 
-  /* ------------------------------------------------------------
-     6) агрегаты
-  ------------------------------------------------------------ */
+  // 6) Агрегаты
   const totalCount = cartItems.reduce((s, it) => s + it.quantity, 0);
   const totalPrice = cartItems.reduce((s, it) => s + it.price * it.quantity, 0);
-  const reloadFromServer = async () => {
+
+  // 7) Релоад из сервера (СТАБИЛЬНАЯ!)
+  const reloadFromServer = useCallback(async () => {
     if (!userId) return;
     try {
       const fresh = await fetch(`${API_URL}/cart?user_id=${userId}`)
                           .then(r => r.ok ? r.json() : []);
       setCartItems(fresh);
     } catch {/* ignore */}
-  };
-  /* ------------------------------------------------------------
-     7) provider
-  ------------------------------------------------------------ */
+  }, [userId]);
+
   return (
     <CartContext.Provider value={{
       cartItems,
@@ -190,7 +165,7 @@ export function CartProvider({ children }) {
       clearCart,
       totalCount,
       totalPrice,
-      reloadFromServer, 
+      reloadFromServer,
     }}>
       {children}
     </CartContext.Provider>

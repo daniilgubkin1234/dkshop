@@ -353,22 +353,33 @@ def create_order(order: OrderCreate, db: Session = Depends(get_db)):
     # --- УВЕДОМЛЕНИЕ БУХГАЛТЕРУ ---
     if bot_token and ACCOUNTANT_CHAT_ID and is_wholesale:
         try:
-            requests.post(
+            print(">>> Попытка отправки оптового заказа в Telegram...")
+            print(">>> bot_token:", bot_token)
+            print(">>> ACCOUNTANT_CHAT_ID:", ACCOUNTANT_CHAT_ID)
+            user_link = ""
+            if user:
+                username = getattr(user, "username", None)
+                first_name = getattr(user, "first_name", None)
+                user_link = f"@{username or first_name or ''}"
+            else:
+                user_link = "(Не найден)"
+            msg_text = (
+                f"💼 <b>Новый оптовый заказ</b>\n"
+                f"ID заказа: <b>#{order_obj.id}</b>\n"
+                f"Имя: <b>{order.name}</b>\n"
+                f"Телефон: <b>{order.phone}</b>\n"
+                f"Клиент: <a href='tg://user?id={order.user_id}'>{user_link}</a>\n"
+                f"Позиций: <b>{len(order.items)}</b>\n"
+                f"Состав:\n" + '\n'.join(
+                    [f"- {it['name']} × {it['quantity']}" for it in order.items]
+                ) + "\n"
+                f"Время: {order_obj.created_at.strftime('%d.%m.%Y %H:%M')}\n"
+            )
+            resp = requests.post(
                 f"https://api.telegram.org/bot{bot_token}/sendMessage",
                 json={
                     "chat_id": ACCOUNTANT_CHAT_ID,
-                    "text": (
-                        f"💼 <b>Новый оптовый заказ</b>\n"
-                        f"ID заказа: <b>#{order_obj.id}</b>\n"
-                        f"Имя: <b>{order.name}</b>\n"
-                        f"Телефон: <b>{order.phone}</b>\n"
-                        f"Клиент: <a href='tg://user?id={order.user_id}'>@{user.username or user.first_name}</a>\n"
-                        f"Позиций: <b>{len(order.items)}</b>\n"
-                        f"Состав:\n" + '\n'.join(
-                            [f"- {it['name']} × {it['quantity']}" for it in order.items]
-                        ) + "\n"
-                        f"Время: {order_obj.created_at.strftime('%d.%m.%Y %H:%M')}\n"
-                    ),
+                    "text": msg_text,
                     "parse_mode": "HTML"
                 },
                 timeout=5
