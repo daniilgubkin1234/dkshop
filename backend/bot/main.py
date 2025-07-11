@@ -24,22 +24,18 @@ from telegram.ext import (
 
 MANAGER_CHAT_ID = -1002721283584  # ← 
 
-# ─── Хранилище результатов для постраничного вывода ───
 USER_SEARCH_RESULTS = {}
 
-# ─── Настройка логирования ───
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     level=logging.INFO,
 )
 
-# ─── Переменные окружения ───
 BOT_TOKEN    = os.getenv("BOT_TOKEN")
-API_URL      = os.getenv("API_URL")     # Например https://dkshopbot.ru/api
-FRONT_URL    = os.getenv("FRONT_URL")   # Например https://dkshopbot.ru
+API_URL      = os.getenv("API_URL")
+FRONT_URL    = os.getenv("FRONT_URL")
 HTTP_TIMEOUT = aiohttp.ClientTimeout(total=10)
 
-# ─── Постоянное меню ───
 MAIN_MENU = ReplyKeyboardMarkup(
     keyboard=[
         ["🛍 Открыть магазин"],
@@ -66,39 +62,52 @@ TOKEN_RE = re.compile(r"[a-zа-яё0-9]+", re.I)
 def tokenize(s: str) -> set[str]:
     return set(TOKEN_RE.findall(s.lower()))
 
+def get_list_from_ranked(res):
+    print('DEBUG: get_list_from_ranked called, initial type:', type(res))
+    while isinstance(res, tuple):
+        print('DEBUG: get_list_from_ranked: unwrapping tuple...')
+        res = res[0]
+    print('DEBUG: get_list_from_ranked result type:', type(res))
+    return res
+
 async def send_product_hint(obj) -> None:
+    print('DEBUG: send_product_hint called')
     hint_text = (
         "Если я не нашёл интересующий вас товар, попробуйте задать вопрос точнее, или вы можете найти конкретно то, что вам нужно в нашем <b>магазине</b>!"
     )
     hint_kb = InlineKeyboardMarkup([
         [InlineKeyboardButton("🛍 Открыть магазин", web_app=WebAppInfo(url=FRONT_URL))]
     ])
-    # Поддержка Update и CallbackQuery
     if hasattr(obj, "message") and obj.message:
         await obj.message.reply_text(hint_text, reply_markup=hint_kb)
-    elif hasattr(obj, "reply_text"):  # прямо message
+    elif hasattr(obj, "reply_text"):
         await obj.reply_text(hint_text, reply_markup=hint_kb)
 
 async def find_model_card_link(query: str) -> tuple[str, str] | None:
+    print('DEBUG: find_model_card_link called')
     try:
         async with aiohttp.ClientSession(timeout=HTTP_TIMEOUT) as sess:
             async with sess.get(f"{API_URL}/model_cards") as resp:
                 if not resp.ok:
+                    print('DEBUG: find_model_card_link: response not ok')
                     return None
                 cards = await resp.json()
     except Exception as e:
+        print('DEBUG: find_model_card_link: exception', e)
         logging.warning("Failed to fetch model_cards: %s", e)
         return None
-
     normalized_query = re.sub(r"[^\wа-я0-9]+", "", query.lower())
     for card in cards:
         for model in card.get("models", []):
             model_norm = re.sub(r"[^\wа-я0-9]+", "", model.lower())
             if model_norm and model_norm in normalized_query:
+                print('DEBUG: find_model_card_link: match found')
                 return (card.get("label", ""), ",".join(card.get("models", [])))
+    print('DEBUG: find_model_card_link: no match')
     return None
 
 async def cmd_start(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
+    print('DEBUG: cmd_start called')
     await update.message.reply_text(
         "Добро пожаловать в DK PROduct! 👋\n\n"
         "Я помогу вам найти нужный товар по запросу — просто напишите, что ищете, например: «глушитель 2112» или «паук 2110-2112».\n\n"
@@ -107,31 +116,28 @@ async def cmd_start(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
         reply_markup=MAIN_MENU,
     )
 
-# >>> NEW: Строгое подстрочное совпадение для поиска по названию
 def match_exact_substr(query, name):
     q = re.sub(r"[^\w\dа-яё-]+", "", query.lower().replace("ё", "е"))
     n = re.sub(r"[^\w\dа-яё-]+", "", name.lower().replace("ё", "е"))
     return q in n
 
-# >>> NEW: обработчик кнопки "Вернуться в меню"
 async def handle_main_menu(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+    print('DEBUG: handle_main_menu called')
     await update.callback_query.message.reply_text(
         "Выберите пункт меню:",
         reply_markup=MAIN_MENU
     )
     await update.callback_query.answer()
-def get_list_from_ranked(res):
-    # "раскручиваем" tuple, пока не получим список (list)
-    while isinstance(res, tuple):
-        res = res[0]
-    return res
+
 async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
+    print('DEBUG: handle_text called')
     text  = update.message.text or ""
     query = text.strip()
     text_lower = query.lower()
+    print('DEBUG: handle_text: received text:', query)
 
-    # 0) обработка пунктов меню (оставил без изменений)
     if "открыть магазин" in text_lower:
+        print('DEBUG: handle_text: Открыть магазин')
         await update.message.reply_text(
             "🚀 Перейдите в магазин:",
             reply_markup=InlineKeyboardMarkup([
@@ -140,6 +146,7 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
         )
         return
     if "поиск товара" in text_lower:
+        print('DEBUG: handle_text: Поиск товара')
         await update.message.reply_text(
             "🔎 Я могу найти любой товар по названию, коду модели или даже по вопросу!\n\n"
             "Например, вы можете написать:\n"
@@ -152,31 +159,35 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
             reply_markup=InlineKeyboardMarkup([
                 [InlineKeyboardButton("Открыть магазин", web_app=WebAppInfo(url=FRONT_URL))]
             ]),
-    )
+        )
         return
     if "о компании" in text_lower:
+        print('DEBUG: handle_text: О компании')
         await update.message.reply_text(
             "ℹ️ DK PROduct — это ваш надёжный партнёр по запчастям и аксессуарами."
         )
         return
     if "группа вконтакте" in text_lower:
+        print('DEBUG: handle_text: Группа ВКонтакте')
         await update.message.reply_text(
             "📣 Наша группа: https://vk.com/dk_pro_tuning?from=groups"
         )
         return
     if "пригласить друга" in text_lower:
+        print('DEBUG: handle_text: Пригласить друга')
         await update.message.reply_text(
             "🙋‍♂️ Приглашайте друзей по ссылке:\nhttps://t.me/DK_PROduct_bot"
         )
         return
 
     if not query:
+        print('DEBUG: handle_text: пустой запрос')
         await update.message.reply_text("Напишите, пожалуйста, запрос.")
         return
 
-    # 1) Поиск по шаблону модели (2101‑07) (оставляем как было)
     model_match = re.search(r"\b\d{4}-\d{2}\b", text_lower)
     if model_match:
+        print('DEBUG: handle_text: model_match:', model_match.group(0))
         q_model = model_match.group(0)
         try:
             async with aiohttp.ClientSession(timeout=HTTP_TIMEOUT) as sess:
@@ -184,11 +195,13 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
                     resp.raise_for_status()
                     products = await resp.json()
         except Exception:
+            print('DEBUG: handle_text: Exception in model search')
             logging.exception("API request failed [search by model]")
             await update.message.reply_text("Сервис временно недоступен, попробуйте позже 🙏")
             return
 
         if products:
+            print('DEBUG: handle_text: products found by model:', len(products))
             best_prod = _rank_products(query, products)[0]
             txt, kb = build_product_message(best_prod)
             await update.message.reply_text(txt, reply_markup=kb)
@@ -204,7 +217,7 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
             await send_product_hint(update)
             return
 
-    # 2) Общий поиск — сначала только по названиям
+    print('DEBUG: handle_text: General product search')
     products = []
     try:
         async with aiohttp.ClientSession(timeout=HTTP_TIMEOUT) as sess:
@@ -212,49 +225,56 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
                 resp.raise_for_status()
                 products = await resp.json()
     except Exception:
+        print('DEBUG: handle_text: Exception in general search')
         logging.exception("API request failed [general search]")
         await update.message.reply_text("Сервис временно недоступен, попробуйте позже 🙏")
         return
 
-    # 2a) Если API не вернуло ничего — загружаем весь список
     if not products:
+        print('DEBUG: handle_text: No products found, loading all')
         try:
             async with aiohttp.ClientSession(timeout=HTTP_TIMEOUT) as sess:
                 async with sess.get(f"{API_URL}/products") as resp:
                     resp.raise_for_status()
                     products = await resp.json()
         except Exception:
+            print('DEBUG: handle_text: Exception in fallback load all')
             logging.exception("API request failed [fallback load all]")
             products = []
 
-    # >>> NEW: Строгая фильтрация по подстроке запроса для товаров
     if products:
+        print('DEBUG: handle_text: Products before filter:', len(products))
         filtered_products = [p for p in products if match_exact_substr(query, p["name"])]
+        print('DEBUG: handle_text: Filtered products:', len(filtered_products))
         if filtered_products:
             products = filtered_products
-        # если фильтр ничего не дал — используем старую логику pool
 
     if products:
+        print('DEBUG: handle_text: Products after filter:', len(products))
         q_toks = tokenize(query)
         exact_name = [p for p in products if q_toks.issubset(tokenize(p["name"]))]
+        print('DEBUG: handle_text: exact_name:', len(exact_name))
         pool = exact_name if exact_name else products
+        print('DEBUG: handle_text: pool before get_list_from_ranked:', type(pool))
         pool = get_list_from_ranked(pool)
+        print('DEBUG: handle_text: pool after get_list_from_ranked:', type(pool))
         best_prod, best_score = _rank_products(query, pool)
+        print('DEBUG: handle_text: best_score:', best_score)
 
         if best_score >= 0.6:
-            # Постраничный вывод по 3 карточки с кнопкой "Показать ещё"
+            print('DEBUG: handle_text: Processing all_ranked for score >= 0.6')
             all_ranked = _rank_products(query, pool, k=len(pool), return_scores=False)
             all_ranked = get_list_from_ranked(all_ranked)
             if not isinstance(all_ranked, list):
+                print('DEBUG: all_ranked NOT a list, re-unwrapping...')
                 all_ranked = get_list_from_ranked(all_ranked)
-                
             print('DEBUG: all_ranked type:', type(all_ranked))
             print('DEBUG: all_ranked repr:', repr(all_ranked))
             user_id = update.effective_user.id
-            # -- ВАЖНО! Сохраняем и карточки, и исходный текст запроса --
             USER_SEARCH_RESULTS[user_id] = {"products": all_ranked, "query": query}
 
             count = len(all_ranked)
+            print('DEBUG: all_ranked count:', count)
             if count == 1:
                 await update.message.reply_text("По вашему запросу найден <b>1</b> товар.\n"
                                                 "Нажмите <b>«Открыть карточку»</b>, чтобы узнать подробнее о товаре, посмотреть характеристики и фото.")
@@ -264,12 +284,12 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
             else:
                 await update.message.reply_text(f"По вашему запросу найдено <b>{count}</b> товаров.\n"
                                                 "Нажмите <b>«Открыть карточку»</b>, чтобы узнать подробнее о товаре, посмотреть характеристики и фото.")
-            
+
             for prod in all_ranked[:3]:
+                print('DEBUG: Iterating product:', prod.get("name"))
                 txt, kb = build_product_message(prod)
                 await update.message.reply_text(txt, reply_markup=kb)
 
-            # >>> NEW: Кнопка "Показать еще" + "Вернуться в меню"
             if len(all_ranked) > 3:
                 remaining = len(all_ranked) - 3
                 btn = InlineKeyboardMarkup([
@@ -278,7 +298,6 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
                 ])
                 await update.message.reply_text(f"<b>Показать ещё подходящие товары ({remaining})?</b>", reply_markup=btn)
                 return
-            # Если карточек <= 3, выводим каталог и магазин сразу
             model_card = await find_model_card_link(query)
             if model_card:
                 label, model_val = model_card
@@ -292,11 +311,12 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
             return
 
         if best_score >= 0.4:
+            print('DEBUG: handle_text: Processing top3 for score >= 0.4')
             top3 = _rank_products(query, pool, k=3, return_scores=False)
             top3 = get_list_from_ranked(top3)
             if not isinstance(top3, list):
+                print('DEBUG: top3 NOT a list, re-unwrapping...')
                 top3 = get_list_from_ranked(top3)
-            
             print('DEBUG: top3 type:', type(top3))
             print('DEBUG: top3 repr:', repr(top3))
             buttons = [
@@ -321,13 +341,14 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
             await send_product_hint(update)
             return
 
-    # 3) Поиск по типу (далее логика без изменений)
+    print('DEBUG: handle_text: Поиск по типу')
     try:
         async with aiohttp.ClientSession(timeout=HTTP_TIMEOUT) as sess:
             async with sess.get(f"{API_URL}/products") as resp:
                 resp.raise_for_status()
                 all_products = await resp.json()
         type_matches = [p for p in all_products if query in p.get("type", "").lower()]
+        print('DEBUG: handle_text: type_matches:', len(type_matches))
         if type_matches:
             txt, kb = build_product_message(type_matches[0])
             await update.message.reply_text(txt, reply_markup=kb)
@@ -343,36 +364,37 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
             await send_product_hint(update)
             return
     except Exception:
+        print('DEBUG: handle_text: Exception in type search')
         logging.exception("API request failed [type search]")
 
+    print('DEBUG: handle_text: Поиск по FAQ')
     faqs = []
     try:
         async with aiohttp.ClientSession(timeout=HTTP_TIMEOUT) as sess:
-            # 1. Пробуем точный поиск по API
             async with sess.get(f"{API_URL}/faq", params={"q": query}) as resp:
                 resp.raise_for_status()
                 faqs = await resp.json()
                 if faqs:
+                    print('DEBUG: handle_text: FAQ found')
                     await update.message.reply_text(faqs[0]["answer"])
                     return
-            # 2. Если не нашли — загружаем все FAQ
             async with sess.get(f"{API_URL}/faq") as resp:
                 resp.raise_for_status()
                 faqs = await resp.json()
     except Exception:
+        print('DEBUG: handle_text: Exception in FAQ')
         logging.exception("FAQ API error")
 
-    # 3. Сначала поиск по SequenceMatcher
     best_faq, best_ratio = None, 0.0
     for f in faqs:
         r = SequenceMatcher(None, query.lower(), f["question"].lower()).ratio()
         if r > best_ratio:
             best_ratio, best_faq = r, f
+    print('DEBUG: handle_text: best_faq ratio:', best_ratio)
     if best_faq and best_ratio >= 0.65:
         await update.message.reply_text(best_faq["answer"])
         return
 
-    # 4. Далее — ключевые слова (>=2)
     def keywords(s): return set(re.findall(r"[a-zа-я0-9\\-]+", s.lower()))
     query_words = keywords(query)
     faq_matches = []
@@ -382,6 +404,7 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
         if len(inter) >= 2:
             faq_matches.append((len(inter), idx, f))
 
+    print('DEBUG: handle_text: faq_matches:', len(faq_matches))
     if faq_matches:
         faq_matches.sort(reverse=True)
         if len(faq_matches) == 1:
@@ -400,10 +423,9 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
         )
         return
 
-    # 5. Если ничего не нашли — эскалация менеджеру
+    print('DEBUG: handle_text: escalate to менеджеру')
     await update.message.reply_text("Передаю вопрос менеджеру 👨‍🔧")
 
-    # --- ОТПРАВКА ВОПРОСА В ГРУППУ ---
     try:
         user_info = f"<b>ID:</b> <code>{update.effective_user.id}</code>"
         if update.effective_user.username:
@@ -419,9 +441,9 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
             parse_mode="HTML",
         )
     except Exception as e:
+        print('DEBUG: handle_text: Exception send to manager', e)
         logging.exception("Не удалось отправить вопрос менеджеру в чат: %s", e)
 
-    # --- Сохраняем вопрос через API (старое поведение) ---
     try:
         async with aiohttp.ClientSession(timeout=HTTP_TIMEOUT) as sess:
             await sess.post(
@@ -433,28 +455,33 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
                 },
             )
     except Exception:
+        print('DEBUG: handle_text: Exception send question to manager API')
         logging.exception("Failed to send question to manager API")
 
 def _rank_products(query: str, products: list[dict], *, k: int | None = 1, return_scores: bool = True):
+    print('DEBUG: _rank_products called')
     q_toks = tokenize(query)
     scored: list[tuple[float, dict]] = []
     for p in products:
         prod_toks = tokenize(p["name"]) | tokenize(p.get("model_compat", ""))
         coverage = len(q_toks & prod_toks) / (len(q_toks) or 1)
-        score = fuzzy(query, p["name"]) * 0.4 + coverage * 0.6  # coverage важнее
+        score = fuzzy(query, p["name"]) * 0.4 + coverage * 0.6
         scored.append((score, p))
     scored.sort(key=lambda x: x[0], reverse=True)
     if k == 1:
+        print('DEBUG: _rank_products: return k==1')
         return scored[0][1], scored[0][0]
     top = [p for _, p in scored[:k]]
+    print('DEBUG: _rank_products: return', ('tuple', top, None) if not return_scores else top)
     return (top, None) if not return_scores else top
 
-# --- ОБРАБОТЧИК для кнопки "Показать ещё" ---
 async def handle_show_more(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
+    print('DEBUG: handle_show_more called')
     query = update.callback_query
     data = query.data
     m = re.match(r"showmore_(\d+)_(\d+)", data)
     if not m:
+        print('DEBUG: handle_show_more: bad callback data')
         await query.answer("Ошибка данных.")
         return
     user_id = int(m.group(1))
@@ -464,11 +491,10 @@ async def handle_show_more(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> No
     orig_query = data_obj.get("query", "")
 
     await query.edit_message_reply_markup(reply_markup=None)
-    # Показываем следующие 3 карточки
     for prod in products[offset:offset+3]:
+        print('DEBUG: handle_show_more: Iterating product:', prod.get("name"))
         txt, kb = build_product_message(prod)
         await query.message.reply_text(txt, reply_markup=kb)
-    # >>> NEW: Кнопка "Показать ещё" всегда с "Вернуться в меню"
     if offset + 3 < len(products):
         remaining = len(products) - (offset + 3)
         btn = InlineKeyboardMarkup([
@@ -490,7 +516,6 @@ async def handle_show_more(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> No
             ])
             await query.message.reply_text(msg, reply_markup=kb)
         await send_product_hint(query)
-        # >>> NEW: После окончания товаров обязательно выводим "Вернуться в меню"
         await query.message.reply_text(
             "Вы можете вернуться в главное меню 👇",
             reply_markup=InlineKeyboardMarkup([
@@ -499,8 +524,8 @@ async def handle_show_more(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> No
         )
     await query.answer()
     
-
 def main() -> None:
+    print('DEBUG: main called')
     app = (
         ApplicationBuilder()
         .token(BOT_TOKEN)
@@ -510,7 +535,6 @@ def main() -> None:
     app.add_handler(CommandHandler("start", cmd_start))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
     app.add_handler(CallbackQueryHandler(handle_show_more, pattern=r"^showmore_\d+_\d+$"))
-    # >>> NEW: обработчик кнопки main_menu
     app.add_handler(CallbackQueryHandler(handle_main_menu, pattern=r"^main_menu$"))
     logging.info("Bot started")
     app.run_polling(allowed_updates=["message", "callback_query"])
