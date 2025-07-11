@@ -245,6 +245,11 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
             # Постраничный вывод по 3 карточки с кнопкой "Показать ещё"
             all_ranked = _rank_products(query, pool, k=len(pool), return_scores=False)
             all_ranked = get_list_from_ranked(all_ranked)
+            if not isinstance(all_ranked, list):
+                all_ranked = get_list_from_ranked(all_ranked)
+                
+            print('DEBUG: all_ranked type:', type(all_ranked))
+            print('DEBUG: all_ranked repr:', repr(all_ranked))
             user_id = update.effective_user.id
             # -- ВАЖНО! Сохраняем и карточки, и исходный текст запроса --
             USER_SEARCH_RESULTS[user_id] = {"products": all_ranked, "query": query}
@@ -289,6 +294,11 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
         if best_score >= 0.4:
             top3 = _rank_products(query, pool, k=3, return_scores=False)
             top3 = get_list_from_ranked(top3)
+            if not isinstance(top3, list):
+                top3 = get_list_from_ranked(top3)
+            
+            print('DEBUG: top3 type:', type(top3))
+            print('DEBUG: top3 repr:', repr(top3))
             buttons = [
                 InlineKeyboardButton(
                     p["name"], web_app=WebAppInfo(url=f"{FRONT_URL.rstrip('/')}/product/{p['id']}")
