@@ -107,6 +107,20 @@ async def cmd_start(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
         reply_markup=MAIN_MENU,
     )
 
+# >>> NEW: Строгое подстрочное совпадение для поиска по названию
+def match_exact_substr(query, name):
+    q = re.sub(r"[^\w\dа-яё-]+", "", query.lower().replace("ё", "е"))
+    n = re.sub(r"[^\w\dа-яё-]+", "", name.lower().replace("ё", "е"))
+    return q in n
+
+# >>> NEW: обработчик кнопки "Вернуться в меню"
+async def handle_main_menu(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+    await update.callback_query.message.reply_text(
+        "Выберите пункт меню:",
+        reply_markup=MAIN_MENU
+    )
+    await update.callback_query.answer()
+
 async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     text  = update.message.text or ""
     query = text.strip()
@@ -209,6 +223,13 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
             logging.exception("API request failed [fallback load all]")
             products = []
 
+    # >>> NEW: Строгая фильтрация по подстроке запроса для товаров
+    if products:
+        filtered_products = [p for p in products if match_exact_substr(query, p["name"])]
+        if filtered_products:
+            products = filtered_products
+        # если фильтр ничего не дал — используем старую логику pool
+
     if products:
         q_toks = tokenize(query)
         exact_name = [p for p in products if q_toks.issubset(tokenize(p["name"]))]
@@ -236,16 +257,17 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
                 await update.message.reply_text(f"По вашему запросу найдено <b>{count}</b> товаров.\n"
                                                 "Нажмите <b>«Открыть карточку»</b>, чтобы узнать подробнее о товаре, посмотреть характеристики и фото.")
 
-
             for prod in all_ranked[:3]:
                 txt, kb = build_product_message(prod)
                 await update.message.reply_text(txt, reply_markup=kb)
 
+            # >>> NEW: Кнопка "Показать еще" + "Вернуться в меню"
             if len(all_ranked) > 3:
                 remaining = len(all_ranked) - 3
-                btn = InlineKeyboardMarkup([[
-                    InlineKeyboardButton(f"Показать ещё ({remaining})", callback_data=f"showmore_{user_id}_3")
-                ]])
+                btn = InlineKeyboardMarkup([
+                    [InlineKeyboardButton(f"Показать ещё ({remaining})", callback_data=f"showmore_{user_id}_3")],
+                    [InlineKeyboardButton("Вернуться в меню", callback_data="main_menu")]
+                ])
                 await update.message.reply_text(f"<b>Показать ещё подходящие товары ({remaining})?</b>", reply_markup=btn)
                 return
             # Если карточек <= 3, выводим каталог и магазин сразу
@@ -434,11 +456,13 @@ async def handle_show_more(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> No
     for prod in products[offset:offset+3]:
         txt, kb = build_product_message(prod)
         await query.message.reply_text(txt, reply_markup=kb)
+    # >>> NEW: Кнопка "Показать ещё" всегда с "Вернуться в меню"
     if offset + 3 < len(products):
         remaining = len(products) - (offset + 3)
-        btn = InlineKeyboardMarkup([[
-            InlineKeyboardButton(f"Показать ещё ({remaining})", callback_data=f"showmore_{user_id}_{offset+3}")
-        ]])
+        btn = InlineKeyboardMarkup([
+            [InlineKeyboardButton(f"Показать ещё ({remaining})", callback_data=f"showmore_{user_id}_{offset+3}")],
+            [InlineKeyboardButton("Вернуться в меню", callback_data="main_menu")]
+        ])
         await query.message.reply_text(f"<b>Показать ещё подходящие товары ({remaining})?</b>", reply_markup=btn)
     else:
         model_card = await find_model_card_link(orig_query)
@@ -454,6 +478,13 @@ async def handle_show_more(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> No
             ])
             await query.message.reply_text(msg, reply_markup=kb)
         await send_product_hint(query)
+        # >>> NEW: После окончания товаров обязательно выводим "Вернуться в меню"
+        await query.message.reply_text(
+            "Вы можете вернуться в главное меню 👇",
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton("Вернуться в меню", callback_data="main_menu")]
+            ])
+        )
     await query.answer()
     
 
@@ -467,6 +498,8 @@ def main() -> None:
     app.add_handler(CommandHandler("start", cmd_start))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
     app.add_handler(CallbackQueryHandler(handle_show_more, pattern=r"^showmore_\d+_\d+$"))
+    # >>> NEW: обработчик кнопки main_menu
+    app.add_handler(CallbackQueryHandler(handle_main_menu, pattern=r"^main_menu$"))
     logging.info("Bot started")
     app.run_polling(allowed_updates=["message", "callback_query"])
 
