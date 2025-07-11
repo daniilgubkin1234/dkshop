@@ -120,7 +120,11 @@ async def handle_main_menu(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         reply_markup=MAIN_MENU
     )
     await update.callback_query.answer()
-
+def get_list_from_ranked(res):
+    # "раскручиваем" tuple, пока не получим список (list)
+    while isinstance(res, tuple):
+        res = res[0]
+    return res
 async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     text  = update.message.text or ""
     query = text.strip()
@@ -240,8 +244,7 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
         if best_score >= 0.6:
             # Постраничный вывод по 3 карточки с кнопкой "Показать ещё"
             all_ranked = _rank_products(query, pool, k=len(pool), return_scores=False)
-            if isinstance(all_ranked, tuple):
-                all_ranked = all_ranked[0]
+            all_ranked = get_list_from_ranked(all_ranked)
             user_id = update.effective_user.id
             # -- ВАЖНО! Сохраняем и карточки, и исходный текст запроса --
             USER_SEARCH_RESULTS[user_id] = {"products": all_ranked, "query": query}
@@ -256,7 +259,7 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
             else:
                 await update.message.reply_text(f"По вашему запросу найдено <b>{count}</b> товаров.\n"
                                                 "Нажмите <b>«Открыть карточку»</b>, чтобы узнать подробнее о товаре, посмотреть характеристики и фото.")
-
+            
             for prod in all_ranked[:3]:
                 txt, kb = build_product_message(prod)
                 await update.message.reply_text(txt, reply_markup=kb)
@@ -285,8 +288,7 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
 
         if best_score >= 0.4:
             top3 = _rank_products(query, pool, k=3, return_scores=False)
-            if isinstance(top3, tuple):  # фикс для кортежа (список, None)
-                top3 = top3[0]
+            top3 = get_list_from_ranked(top3)
             buttons = [
                 InlineKeyboardButton(
                     p["name"], web_app=WebAppInfo(url=f"{FRONT_URL.rstrip('/')}/product/{p['id']}")
