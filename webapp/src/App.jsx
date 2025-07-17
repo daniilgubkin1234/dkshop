@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 
 import Header                from './components/Header.jsx';
 import Footer                from './components/Footer.jsx';
@@ -29,7 +29,7 @@ export default function App() {
 
   const [search, setSearch] = useState("");
   const location = useLocation();
-
+  const navigate = useNavigate();
   // Telegram WebApp initData → /login → сохраняем в localStorage и React-стейт
   useEffect(() => {
     const initData = window.Telegram?.WebApp?.initData;
@@ -50,7 +50,23 @@ export default function App() {
       })
       .catch(err => console.error('Login error:', err));
   }, []);
-
+  useEffect(() => {
+    // Telegram WebApp deep-link
+    const tg = window.Telegram?.WebApp;
+    const startParam = tg?.initDataUnsafe?.start_param;
+    if (startParam && startParam.startsWith('product_')) {
+      const id = startParam.replace('product_', '');
+      navigate(`/product/${id}`);
+    } else {
+      // резерв: если пришёл через ?startapp=product_123
+      const url = new URL(window.location.href);
+      const startapp = url.searchParams.get('startapp');
+      if (startapp && startapp.startsWith('product_')) {
+        const id = startapp.replace('product_', '');
+        navigate(`/product/${id}`);
+      }
+    }
+  }, [navigate]);
   // Автоматически обновлять данные пользователя при любом переходе по страницам
   useEffect(() => {
     if (user?.id) {

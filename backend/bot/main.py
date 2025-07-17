@@ -48,11 +48,13 @@ MAIN_MENU = ReplyKeyboardMarkup(
 )
 
 def build_product_message(product: dict) -> tuple[str, InlineKeyboardMarkup]:
-    url  = f"{FRONT_URL.rstrip('/')}/product/{product['id']}"
+    url_site = f"{FRONT_URL.rstrip('/')}/product/{product['id']}"
+    url_tg = f"https://t.me/DK_PROduct_bot?startapp=product_{product['id']}"
     text = f"<b>{product['name']}</b>\nЦена: <b>{product['price']} ₽</b>"
-    kb   = InlineKeyboardMarkup([[InlineKeyboardButton(
-        "Открыть карточку", web_app=WebAppInfo(url=url)
-    )]])
+    kb = InlineKeyboardMarkup([
+        [InlineKeyboardButton("Открыть карточку", url=url_tg)],
+        
+    ])
     return text, kb
 
 def fuzzy(a: str, b: str) -> float:
