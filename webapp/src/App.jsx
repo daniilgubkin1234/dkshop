@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 
 import Header                from './components/Header.jsx';
@@ -33,6 +33,9 @@ export default function App() {
   const location = useLocation();
   const navigate = useNavigate();
 
+  // --- Внутренний флаг, чтобы переход по deep-link был только 1 раз ---
+  const hasHandledDeepLink = useRef(false);
+
   // Telegram WebApp initData → /login → сохраняем в localStorage и React-стейт
   useEffect(() => {
     const initData = window.Telegram?.WebApp?.initData;
@@ -59,8 +62,10 @@ export default function App() {
       .catch(err => console.error('[App.jsx] Login error:', err));
   }, []);
 
-  // --- Надёжная логика deep-link перехода на карточку ---
+  // --- Deep-link переход только при первом запуске MiniApp ---
   useEffect(() => {
+    if (hasHandledDeepLink.current) return;
+
     const tg = window.Telegram?.WebApp;
     const url = new URL(window.location.href);
 
@@ -71,18 +76,20 @@ export default function App() {
     // 3. Проверяем оба параметра и логируем оба
     console.log("[App.jsx] [DEEP LINK] start_param:", startParam, " | startapp:", startapp, " | href:", window.location.href);
 
-    // Открываем карточку по первому найденному параметру
+    // Открываем карточку по deep-link только один раз
     if (startParam && startParam.startsWith('product_')) {
       const id = startParam.replace('product_', '');
       console.log("[App.jsx] [DEEP LINK] NAVIGATE BY start_param:", id);
       navigate(`/product/${id}`, { replace: true });
+      hasHandledDeepLink.current = true;
     } else if (startapp && startapp.startsWith('product_')) {
       const id = startapp.replace('product_', '');
       console.log("[App.jsx] [DEEP LINK] NAVIGATE BY startapp:", id);
       navigate(`/product/${id}`, { replace: true });
+      hasHandledDeepLink.current = true;
     }
-    // Обновление при каждом изменении адреса
-  }, [navigate, location.key]);
+    // Больше никогда не навигируем по deep-link до перезагрузки страницы
+  }, [navigate]);
 
   // Автоматически обновлять данные пользователя при любом переходе по страницам
   useEffect(() => {
