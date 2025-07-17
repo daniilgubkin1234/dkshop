@@ -59,27 +59,30 @@ export default function App() {
       .catch(err => console.error('[App.jsx] Login error:', err));
   }, []);
 
+  // --- Надёжная логика deep-link перехода на карточку ---
   useEffect(() => {
-    // Telegram WebApp deep-link
     const tg = window.Telegram?.WebApp;
+    const url = new URL(window.location.href);
+
+    // 1. Проверяем initDataUnsafe
     const startParam = tg?.initDataUnsafe?.start_param;
-    console.log("[App.jsx] initDataUnsafe.start_param:", startParam);
+    // 2. Проверяем строку запроса (?startapp=product_...)
+    const startapp = url.searchParams.get('startapp');
+    // 3. Проверяем оба параметра и логируем оба
+    console.log("[App.jsx] [DEEP LINK] start_param:", startParam, " | startapp:", startapp, " | href:", window.location.href);
+
+    // Открываем карточку по первому найденному параметру
     if (startParam && startParam.startsWith('product_')) {
       const id = startParam.replace('product_', '');
-      console.log("[App.jsx] Навигация по start_param (product_...):", id);
-      navigate(`/product/${id}`);
-    } else {
-      // резерв: если пришёл через ?startapp=product_123
-      const url = new URL(window.location.href);
-      const startapp = url.searchParams.get('startapp');
-      console.log("[App.jsx] window.location.href:", window.location.href, "startapp param:", startapp);
-      if (startapp && startapp.startsWith('product_')) {
-        const id = startapp.replace('product_', '');
-        console.log("[App.jsx] Навигация по startapp param (product_...):", id);
-        navigate(`/product/${id}`);
-      }
+      console.log("[App.jsx] [DEEP LINK] NAVIGATE BY start_param:", id);
+      navigate(`/product/${id}`, { replace: true });
+    } else if (startapp && startapp.startsWith('product_')) {
+      const id = startapp.replace('product_', '');
+      console.log("[App.jsx] [DEEP LINK] NAVIGATE BY startapp:", id);
+      navigate(`/product/${id}`, { replace: true });
     }
-  }, [navigate]);
+    // Обновление при каждом изменении адреса
+  }, [navigate, location.key]);
 
   // Автоматически обновлять данные пользователя при любом переходе по страницам
   useEffect(() => {
