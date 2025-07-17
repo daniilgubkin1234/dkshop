@@ -21,6 +21,8 @@ import WholesalesClient from './admin/WholesalesClient.jsx';
 
 import { API_URL, fetchUserById } from './api.js';
 
+console.log("App запускается. API_URL =", API_URL);
+
 export default function App() {
   const [user, setUser] = useState(() => {
     const saved = localStorage.getItem('dkshop_user');
@@ -30,10 +32,15 @@ export default function App() {
   const [search, setSearch] = useState("");
   const location = useLocation();
   const navigate = useNavigate();
+
   // Telegram WebApp initData → /login → сохраняем в localStorage и React-стейт
   useEffect(() => {
     const initData = window.Telegram?.WebApp?.initData;
-    if (!initData) return;
+    console.log("[App.jsx] initData =", initData);
+    if (!initData) {
+      console.warn("[App.jsx] Нет initData для Telegram WebApp");
+      return;
+    }
 
     fetch(`${API_URL}/login`, {
       method: 'POST',
@@ -41,43 +48,52 @@ export default function App() {
       body: JSON.stringify({ initData })
     })
       .then(res => {
-        if (!res.ok) throw new Error(`Auth failed: ${res.status}`);
+        if (!res.ok) throw new Error(`[App.jsx] Auth failed: ${res.status}`);
         return res.json();
       })
       .then(data => {
         localStorage.setItem('dkshop_user', JSON.stringify(data.user));
         setUser(data.user);
+        console.log("[App.jsx] Пользователь успешно залогинен:", data.user);
       })
-      .catch(err => console.error('Login error:', err));
+      .catch(err => console.error('[App.jsx] Login error:', err));
   }, []);
+
   useEffect(() => {
     // Telegram WebApp deep-link
     const tg = window.Telegram?.WebApp;
     const startParam = tg?.initDataUnsafe?.start_param;
+    console.log("[App.jsx] initDataUnsafe.start_param:", startParam);
     if (startParam && startParam.startsWith('product_')) {
       const id = startParam.replace('product_', '');
+      console.log("[App.jsx] Навигация по start_param (product_...):", id);
       navigate(`/product/${id}`);
     } else {
       // резерв: если пришёл через ?startapp=product_123
       const url = new URL(window.location.href);
       const startapp = url.searchParams.get('startapp');
+      console.log("[App.jsx] window.location.href:", window.location.href, "startapp param:", startapp);
       if (startapp && startapp.startsWith('product_')) {
         const id = startapp.replace('product_', '');
+        console.log("[App.jsx] Навигация по startapp param (product_...):", id);
         navigate(`/product/${id}`);
       }
     }
   }, [navigate]);
+
   // Автоматически обновлять данные пользователя при любом переходе по страницам
   useEffect(() => {
     if (user?.id) {
+      console.log("[App.jsx] Обновляю пользователя, id:", user.id);
       fetchUserById(user.id)
         .then(fresh => {
           if (fresh) {
             localStorage.setItem('dkshop_user', JSON.stringify(fresh));
             setUser(fresh);
+            console.log("[App.jsx] Данные пользователя обновлены:", fresh);
           }
         })
-        .catch(() => {});
+        .catch((e) => console.warn("[App.jsx] Ошибка при обновлении пользователя:", e));
     }
     // eslint-disable-next-line
   }, [location.pathname]);
