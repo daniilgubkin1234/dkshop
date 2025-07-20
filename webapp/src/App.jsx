@@ -71,21 +71,31 @@ export default function App() {
 
     // 1. Проверяем initDataUnsafe
     const startParam = tg?.initDataUnsafe?.start_param;
-    // 2. Проверяем строку запроса (?startapp=product_...)
+    // 2. Проверяем строку запроса (?startapp=product_... или product-...)
     const startapp = url.searchParams.get('startapp');
     // 3. Проверяем оба параметра и логируем оба
     console.log("[App.jsx] [DEEP LINK] start_param:", startParam, " | startapp:", startapp, " | href:", window.location.href);
 
+    // Универсальная функция для извлечения id товара из параметра
+    function extractProductId(param) {
+      if (!param) return null;
+      if (param.startsWith('product_')) {
+        return param.replace('product_', '');
+      }
+      if (param.startsWith('product-')) {
+        return param.replace('product-', '');
+      }
+      return null;
+    }
+
     // Открываем карточку по deep-link только один раз
-    if (startParam && startParam.startsWith('product_')) {
-      const id = startParam.replace('product_', '');
-      console.log("[App.jsx] [DEEP LINK] NAVIGATE BY start_param:", id);
-      navigate(`/product/${id}`, { replace: true });
-      hasHandledDeepLink.current = true;
-    } else if (startapp && startapp.startsWith('product_')) {
-      const id = startapp.replace('product_', '');
-      console.log("[App.jsx] [DEEP LINK] NAVIGATE BY startapp:", id);
-      navigate(`/product/${id}`, { replace: true });
+    const productId =
+      extractProductId(startParam) ||
+      extractProductId(startapp);
+
+    if (productId) {
+      console.log("[App.jsx] [DEEP LINK] NAVIGATE BY param:", productId);
+      navigate(`/product/${productId}`, { replace: true });
       hasHandledDeepLink.current = true;
     }
     // Больше никогда не навигируем по deep-link до перезагрузки страницы
