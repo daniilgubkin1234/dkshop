@@ -2,7 +2,7 @@ import requests
 import os
 import hashlib
 
-API_URL = "https://dkshopbot.ru/products"
+API_URL = "https://dkshopbot.ru/api/products"
 UPLOAD_DIR = "/var/dkshop/backend/app/static/uploads"
 
 def download_and_save_image(url):

@@ -2,7 +2,7 @@ import os
 import requests
 from urllib.parse import urlparse
 
-API_URL = "https://dkshopbot.ru/products"
+API_URL = "https://dkshopbot.ru/api/products"
 UPLOADS_DIR = "/var/dkshop/backend/app/static/uploads"
 
 def get_filename_from_url(img_url):
