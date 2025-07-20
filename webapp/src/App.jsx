@@ -33,17 +33,41 @@ export default function App() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // --- Внутренний флаг, чтобы переход по deep-link был только 1 раз ---
+  // Флаг, чтобы переход по deep-link был только 1 раз
   const hasHandledDeepLink = useRef(false);
+  // Ref для хранения productId, если deep-link обнаружен ДО логина
+  const pendingProductId = useRef(null);
 
-  // Telegram WebApp initData → /login → сохраняем в localStorage и React-стейт
+  // --- Сначала ищем deeplink (до логина) ---
+  useEffect(() => {
+    const tg = window.Telegram?.WebApp;
+    const url = new URL(window.location.href);
+
+    const startParam = tg?.initDataUnsafe?.start_param;
+    const startapp = url.searchParams.get('startapp');
+
+    function extractProductId(param) {
+      if (!param) return null;
+      if (param.startsWith('product_')) return param.replace('product_', '');
+      if (param.startsWith('product-')) return param.replace('product-', '');
+      return null;
+    }
+
+    const productId =
+      extractProductId(startParam) ||
+      extractProductId(startapp);
+
+    if (productId) {
+      pendingProductId.current = productId;
+      // Не делаем navigate здесь!
+      // Навигируем после логина
+    }
+  }, []);
+
+  // --- Логин пользователя ---
   useEffect(() => {
     const initData = window.Telegram?.WebApp?.initData;
-    console.log("[App.jsx] initData =", initData);
-    if (!initData) {
-      console.warn("[App.jsx] Нет initData для Telegram WebApp");
-      return;
-    }
+    if (!initData) return;
 
     fetch(`${API_URL}/login`, {
       method: 'POST',
@@ -57,60 +81,36 @@ export default function App() {
       .then(data => {
         localStorage.setItem('dkshop_user', JSON.stringify(data.user));
         setUser(data.user);
-        console.log("[App.jsx] Пользователь успешно залогинен:", data.user);
+
+        // После логина: если был deep-link, делаем navigate!
+        if (pendingProductId.current && !hasHandledDeepLink.current) {
+          navigate(`/product/${pendingProductId.current}`, { replace: true });
+          hasHandledDeepLink.current = true;
+        }
       })
       .catch(err => console.error('[App.jsx] Login error:', err));
-  }, []);
+  }, [navigate]);
 
-  // --- Deep-link переход только при первом запуске MiniApp ---
+  // --- Если пользователь уже залогинен и мы зашли по deep-link (редкий кейс) ---
   useEffect(() => {
-    if (hasHandledDeepLink.current) return;
-
-    const tg = window.Telegram?.WebApp;
-    const url = new URL(window.location.href);
-
-    // 1. Проверяем initDataUnsafe
-    const startParam = tg?.initDataUnsafe?.start_param;
-    // 2. Проверяем строку запроса (?startapp=product_... или product-...)
-    const startapp = url.searchParams.get('startapp');
-    // 3. Проверяем оба параметра и логируем оба
-    console.log("[App.jsx] [DEEP LINK] start_param:", startParam, " | startapp:", startapp, " | href:", window.location.href);
-
-    // Универсальная функция для извлечения id товара из параметра
-    function extractProductId(param) {
-      if (!param) return null;
-      if (param.startsWith('product_')) {
-        return param.replace('product_', '');
-      }
-      if (param.startsWith('product-')) {
-        return param.replace('product-', '');
-      }
-      return null;
-    }
-
-    // Открываем карточку по deep-link только один раз
-    const productId =
-      extractProductId(startParam) ||
-      extractProductId(startapp);
-
-    if (productId) {
-      console.log("[App.jsx] [DEEP LINK] NAVIGATE BY param:", productId);
-      navigate(`/product/${productId}`, { replace: true });
+    if (
+      user &&
+      pendingProductId.current &&
+      !hasHandledDeepLink.current
+    ) {
+      navigate(`/product/${pendingProductId.current}`, { replace: true });
       hasHandledDeepLink.current = true;
     }
-    // Больше никогда не навигируем по deep-link до перезагрузки страницы
-  }, [navigate]);
+  }, [user, navigate]);
 
   // Автоматически обновлять данные пользователя при любом переходе по страницам
   useEffect(() => {
     if (user?.id) {
-      console.log("[App.jsx] Обновляю пользователя, id:", user.id);
       fetchUserById(user.id)
         .then(fresh => {
           if (fresh) {
             localStorage.setItem('dkshop_user', JSON.stringify(fresh));
             setUser(fresh);
-            console.log("[App.jsx] Данные пользователя обновлены:", fresh);
           }
         })
         .catch((e) => console.warn("[App.jsx] Ошибка при обновлении пользователя:", e));
