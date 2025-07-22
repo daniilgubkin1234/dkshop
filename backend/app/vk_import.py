@@ -3,8 +3,8 @@ import requests
 from dotenv import load_dotenv
 from pathlib import Path
 
-env_path = Path(__file__).resolve().parent / ".env.production"
-load_dotenv(dotenv_path=env_path, override=True)
+load_dotenv(dotenv_path="/var/dkshop/webapp/.env.production", override=True)
+
 
 VK_TOKEN    = os.getenv("VK_TOKEN")
 API_V       = "5.131"
