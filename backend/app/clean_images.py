@@ -31,9 +31,12 @@ def main():
         for img in images:
             fname = get_filename_from_url(img)
             fpath = os.path.join(UPLOADS_DIR, fname)
+            print(f"Проверяю файл: {fpath} для {img}")
             if os.path.isfile(fpath):
                 filtered.append(img)
+        print(f"id={product['id']} images={images} filtered={filtered}")
         if filtered != images:
+            print(f"Обновляю товар {product['id']}: {filtered}")
             patch_images(product["id"], filtered)
 
 if __name__ == "__main__":

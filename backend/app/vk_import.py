@@ -3,7 +3,9 @@ import requests
 from dotenv import load_dotenv
 from pathlib import Path
 
-load_dotenv(dotenv_path="/var/dkshop/webapp/.env.production", override=True)
+
+env_path = Path(__file__).resolve().parent.parent.parent / "webapp" / ".env.production"
+load_dotenv(dotenv_path=env_path, override=True)
 
 
 VK_TOKEN    = os.getenv("VK_TOKEN")
