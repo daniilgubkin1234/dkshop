@@ -31,13 +31,16 @@ def main():
         for img in images:
             fname = get_filename_from_url(img)
             fpath = os.path.join(UPLOADS_DIR, fname)
-            print(f"Проверяю файл: {fpath} для {img}")
             if os.path.isfile(fpath):
                 filtered.append(img)
-        print(f"id={product['id']} images={images} filtered={filtered}")
+            else:
+                print(f"Битая картинка у товара {product['id']}: {img}")
         if filtered != images:
-            print(f"Обновляю товар {product['id']}: {filtered}")
+            print(f"Патчим {product['id']}: оставляем {len(filtered)}, было {len(images)}")
             patch_images(product["id"], filtered)
+        # Если вообще нет картинок — ставим заглушку (по желанию)
+        # elif not filtered:
+        #     patch_images(product["id"], ["/static/no-image.png"])
 
 if __name__ == "__main__":
     main()
