@@ -101,35 +101,50 @@ def get_user(user_id: int, db: Session = Depends(get_db)):
 
 @app.post("/admin/login")
 def admin_login(body: AdminLoginIn, response: Response, db: Session = Depends(get_db)):
-    print("===> ЛОГИН: ", repr(body.username), "ПАРОЛЬ: ", repr(body.password))
-    user = db.exec(select(AdminUser).where(AdminUser.username == body.username)).first()
-    print("===> НАЙДЕН В БД: ", user)
-    if not user:
-        print("===> Нет такого пользователя в БД!")
-    elif not argon2.verify(body.password, user.password_hash):
-        print("===> Пароль не совпал!")
-    else:
+    try:
+        print("===> ЛОГИН: ", repr(body.username), "ПАРОЛЬ: ", repr(body.password))
+        user = db.exec(select(AdminUser).where(AdminUser.username == body.username)).first()
+        print("===> НАЙДЕН В БД: ", user)
+        
+        if not user:
+            print("===> Нет такого пользователя в БД!")
+            raise HTTPException(401, "Invalid credentials")
+        
+        # Проверяем пароль с обработкой ошибок
+        try:
+            password_valid = argon2.verify(body.password, user.password_hash)
+        except Exception as e:
+            print(f"===> Ошибка проверки пароля: {e}")
+            password_valid = False
+            
+        if not password_valid:
+            print("===> Пароль не совпал!")
+            raise HTTPException(401, "Invalid credentials")
+
         print("===> АВТОРИЗАЦИЯ УСПЕШНА")
 
-    if not user or not argon2.verify(body.password, user.password_hash):
-        raise HTTPException(401, "Invalid credentials")
-
-    access_token = create_access_token({
-        "sub": str(user.id),
-        "is_super": user.is_super
-    })
-    response.set_cookie(
-        key="access_token",
-        value=access_token,
-        httponly=True,
-        secure=True,
-        samesite="strict",
-        max_age=ACCESS_TOKEN_EXPIRE_MINUTES*60
-    )
-    return {
-        "ok": True,
-        "user": {"id": user.id, "username": user.username, "is_super": user.is_super}
-    }
+        access_token = create_access_token({
+            "sub": str(user.id),
+            "is_super": user.is_super
+        })
+        response.set_cookie(
+            key="access_token",
+            value=access_token,
+            httponly=True,
+            secure=True,
+            samesite="strict",
+            max_age=ACCESS_TOKEN_EXPIRE_MINUTES*60
+        )
+        return {
+            "ok": True,
+            "user": {"id": user.id, "username": user.username, "is_super": user.is_super}
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"===> КРИТИЧЕСКАЯ ОШИБКА В admin_login: {e}")
+        raise HTTPException(500, f"Internal server error: {str(e)}")
 @app.get("/admin/me")
 def get_current_me(user=Depends(get_current_admin)):
     return {

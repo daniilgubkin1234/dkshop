@@ -1,16 +1,15 @@
 import os
 import requests
+import json
 from dotenv import load_dotenv
 from pathlib import Path
-
 
 env_path = Path(__file__).resolve().parent.parent.parent / "webapp" / ".env.production"
 load_dotenv(dotenv_path=env_path, override=True)
 
-
-VK_TOKEN    = os.getenv("VK_TOKEN")
-API_V       = "5.131"
-OWNER_ID    = int(os.getenv("OWNER_ID", "-135559990"))
+VK_TOKEN = os.getenv("VK_TOKEN")
+API_V = "5.131"
+OWNER_ID = int(os.getenv("OWNER_ID", "-135559990"))
 BACKEND_URL = os.getenv("BACKEND_URL", "https://dkshopbot.ru/api/products")
 
 def vk_request(method_url: str, **params):
@@ -72,19 +71,58 @@ def patch_images(product_id, images):
     try:
         resp = requests.patch(url, json=payload, timeout=10)
         print(f"Patched {product_id}: {resp.status_code}")
+        if resp.status_code != 200:
+            print(f"Error response: {resp.text}")
     except Exception as e:
         print(f"Patch error for {product_id}: {e}")
+
+def get_api_goods():
+    """Безопасное получение товаров из бэкенда"""
+    try:
+        response = requests.get(BACKEND_URL, timeout=30)
+        print(f"Backend response status: {response.status_code}")
+        print(f"Backend response headers: {response.headers.get('content-type', 'Unknown')}")
+        
+        if response.status_code != 200:
+            print(f"Backend error: {response.text}")
+            return []
+        
+        # Пытаемся распарсить JSON
+        data = response.json()
+        
+        # Проверяем структуру ответа
+        if isinstance(data, list):
+            return data
+        elif isinstance(data, dict) and 'data' in data:
+            return data['data']  # Если бэкенд возвращает {data: [...]}
+        elif isinstance(data, dict) and 'products' in data:
+            return data['products']  # Если бэкенд возвращает {products: [...]}
+        else:
+            print(f"Unexpected response structure: {data}")
+            return []
+            
+    except requests.exceptions.RequestException as e:
+        print(f"Network error: {e}")
+        return []
+    except json.JSONDecodeError as e:
+        print(f"JSON decode error: {e}")
+        print(f"Response text: {response.text[:500]}...")  # Первые 500 символов
+        return []
 
 def main():
     # Получить товары из VK
     vk_goods = fetch_items()
     print(f"Из VK получено: {len(vk_goods)} товаров")
 
-    # Получить товары из API (чтобы связать с vk)
-    api_goods = requests.get(BACKEND_URL).json()
+    # Получить товары из API с обработкой ошибок
+    api_goods = get_api_goods()
     print(f"В API: {len(api_goods)} товаров")
+    
+    if not api_goods:
+        print("Не удалось получить товары из API. Завершение работы.")
+        return
 
-    # Тебе нужно связать товары по id или названию (лучше по title, если совпадают!)
+    # Связать товары по названию
     api_goods_by_name = {item['name']: item for item in api_goods}
 
     matched = 0
