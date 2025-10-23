@@ -83,11 +83,17 @@ const filtered = products.filter(p => {
   const productName = name;
 
   if (selectedByName) {
-    // Поиск по названию товара (match_by_name: true)
-    return matchesText && selectedModel.some(modelTerm => 
-      productName.includes(modelTerm)
+  // Поиск по отдельным словам в названии
+  const productWords = productName.split(/\s+/);
+  return matchesText && selectedModel.some(modelTerm => {
+    const searchWords = modelTerm.split(/\s+/);
+    return searchWords.some(searchWord => 
+      productWords.some(productWord => 
+        productWord.includes(searchWord) || searchWord.includes(productWord)
+      )
     );
-  } else {
+  });
+} else {
     // Поиск по точному совпадению модели (match_by_name: false)
     return matchesText && selectedModel.some(modelTerm => 
       productModels.includes(modelTerm)
