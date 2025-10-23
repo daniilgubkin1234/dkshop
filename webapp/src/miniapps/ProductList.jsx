@@ -65,25 +65,35 @@ export default function ProductList({ filterQuery }) {
   }, [filterQuery, selectedModel, selectedByName]);
 
   /* ---------- фильтрация ---------- */
-  const filtered = products.filter(p => {
-    const q      = normalize(filterQuery);
-    const name   = normalize(p.name);
-    const model  = normalize(p.model_compat || '');
-    const type   = normalize(p.type);
+ /* ---------- фильтрация ---------- */
+const filtered = products.filter(p => {
+  const q      = normalize(filterQuery);
+  const name   = normalize(p.name);
+  const model  = normalize(p.model_compat || '');
+  const type   = normalize(p.type);
 
-    const matchesText = !q || name.includes(q) || model.includes(q) || type.includes(q);
+  const matchesText = !q || name.includes(q) || model.includes(q) || type.includes(q);
 
-    // --- исправленная фильтрация по моделям ---
-    const productModels = model.split(/[\s,;]+/).filter(Boolean);
+  // --- ИСПРАВЛЕННАЯ фильтрация по моделям ---
+  if (!selectedModel) {
+    return matchesText; // нет фильтра по модели
+  }
 
-    const matchesModel = !selectedModel || (
-      Array.isArray(selectedModel)
-        ? selectedModel.some(m => productModels.includes(m))
-        : productModels.includes(normalize(selectedModel))
+  const productModels = model.split(/[\s,;]+/).filter(Boolean);
+  const productName = name;
+
+  if (selectedByName) {
+    // Поиск по названию товара (match_by_name: true)
+    return matchesText && selectedModel.some(modelTerm => 
+      productName.includes(modelTerm)
     );
-
-    return matchesText && matchesModel;
-  });
+  } else {
+    // Поиск по точному совпадению модели (match_by_name: false)
+    return matchesText && selectedModel.some(modelTerm => 
+      productModels.includes(modelTerm)
+    );
+  }
+});
 
   const visible = filtered.slice(0, visibleCount);
 

@@ -73,7 +73,27 @@ def get_current_admin(request: Request, access_token: str = Cookie(None), db: Se
     except Exception as e:
         print(f"Ошибка в get_current_admin: {e}")
         raise HTTPException(500, "Internal server error")
-
+@app.post("/admin/fix-password")
+def fix_admin_password(db: Session = Depends(get_db)):
+    """Исправляет хэш пароля администратора"""
+    try:
+        admin = db.exec(select(AdminUser).where(AdminUser.username == "admin")).first()
+        if not admin:
+            return {"error": "Admin not found"}
+        
+        # Создаем правильный хэш пароля
+        correct_hash = argon2.hash("admin123")
+        admin.password_hash = correct_hash
+        db.add(admin)
+        db.commit()
+        
+        return {
+            "status": "password fixed",
+            "new_hash": correct_hash,
+            "hash_length": len(correct_hash)
+        }
+    except Exception as e:
+        return {"error": str(e)}
 def super_required(user=Depends(get_current_admin)):
     if not user.is_super:
         raise HTTPException(403, "Super admin only")
