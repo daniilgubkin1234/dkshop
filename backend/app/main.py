@@ -48,35 +48,37 @@ def create_access_token(data: dict, expires_delta: int = ACCESS_TOKEN_EXPIRE_MIN
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 def get_current_admin(request: Request, access_token: str = Cookie(None), db: Session = Depends(get_db)):
-    print("COOKIES:", request.cookies)
-    print("COOKIE access_token:", access_token)
-    if not access_token:
-        print("Нет access_token в куках!")
-        raise HTTPException(401, "Not authenticated")
     try:
+        print("COOKIES:", request.cookies)
+        print("COOKIE access_token:", access_token)
+        if not access_token:
+            print("Нет access_token в куках!")
+            raise HTTPException(401, "Not authenticated")
+        
         payload = jwt.decode(access_token, SECRET_KEY, algorithms=[ALGORITHM])
         print("JWT PAYLOAD:", payload)
         user_id = int(payload.get("sub"))
         is_super = payload.get("is_super")
+        
+        user = db.get(AdminUser, user_id)
+        print("ADMIN in DB:", user)
+        if not user:
+            print("Не найден админ с id:", user_id)
+            raise HTTPException(401, "Not found")
+        return user
+        
     except JWTError as e:
         print("JWT ERROR:", e)
         raise HTTPException(401, "Invalid token")
-    user = db.get(AdminUser, user_id)
-    print("ADMIN in DB:", user)
-    if not user:
-        print("Не найден админ с id:", user_id)
-        raise HTTPException(401, "Not found")
-    return user
+    except Exception as e:
+        print(f"Ошибка в get_current_admin: {e}")
+        raise HTTPException(500, "Internal server error")
 
 def super_required(user=Depends(get_current_admin)):
     if not user.is_super:
         raise HTTPException(403, "Super admin only")
     return user
 
-def super_required(user=Depends(get_current_admin)):
-    if not user.is_super:
-        raise HTTPException(403, "Super admin only")
-    return user
 def get_current_user(request: Request, db: Session = Depends(get_db)):
     user_id = request.query_params.get("user_id")
     username = request.query_params.get("username")
@@ -145,6 +147,50 @@ def admin_login(body: AdminLoginIn, response: Response, db: Session = Depends(ge
     except Exception as e:
         print(f"===> КРИТИЧЕСКАЯ ОШИБКА В admin_login: {e}")
         raise HTTPException(500, f"Internal server error: {str(e)}")
+    
+
+
+# ДОБАВИТЬ ПОСЛЕ ФУНКЦИИ admin_login
+@app.post("/admin/reset")
+def reset_admin_passwords(db: Session = Depends(get_db)):
+    """Временный эндпоинт для сброса паролей администраторов"""
+    try:
+        # Удаляем всех администраторов
+        db.exec(delete(AdminUser))
+        
+        # Создаем нового суперадмина
+        admin = AdminUser(
+            username="admin",
+            password_hash=argon2.hash("admin123"),
+            is_super=True,
+            created_at=datetime.datetime.now()
+        )
+        db.add(admin)
+        db.commit()
+        
+        return {
+            "status": "passwords reset", 
+            "admin_created": True,
+            "credentials": {"username": "admin", "password": "admin123"}
+        }
+    except Exception as e:
+        raise HTTPException(500, f"Reset failed: {str(e)}")
+
+@app.get("/admin/debug")
+def admin_debug(db: Session = Depends(get_db)):
+    """Диагностический эндпоинт"""
+    admins = db.exec(select(AdminUser)).all()
+    return {
+        "admin_count": len(admins),
+        "admins": [
+            {
+                "id": a.id,
+                "username": a.username, 
+                "password_hash_length": len(a.password_hash) if a.password_hash else 0,
+                "is_super": a.is_super
+            } for a in admins
+        ]
+    }
 @app.get("/admin/me")
 def get_current_me(user=Depends(get_current_admin)):
     return {
@@ -712,7 +758,8 @@ class CartItemFull(BaseModel):
     price: int
     image: str | None = None
     quantity: int
-    class Config: orm_mode = True
+    class Config:
+        from_attributes = True
 
 def _enrich(user_id: int, db: Session) -> list[dict]:
     user = db.get(User, user_id)
